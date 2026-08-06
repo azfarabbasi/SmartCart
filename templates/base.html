@@ -12,6 +12,7 @@
 </head>
 <body>
     {% include 'partials/_contact_bar.html' %}
+    {% include 'partials/_announcement_banner.html' %}
     {% include 'partials/_nav_customer.html' %}
 
     <main class="main-content">
@@ -67,6 +68,7 @@
                 <span>Smart<span class="text-warning">Cart</span></span>
             </div>
             <p>&copy; 2026 SmartCart. All rights reserved.</p>
+            {% if site_settings.get('footer_note') %}<p class="footer-note">{{ site_settings.get('footer_note') }}</p>{% endif %}
         </div>
     </footer>
 

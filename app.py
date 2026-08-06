@@ -27,11 +27,22 @@ def create_app():
     app.jinja_env.globals['max'] = max
 
     @app.context_processor
-    def inject_contact_info():
+    def inject_site_settings():
+        from flask import g
+
+        import sitesettings
+        if 'site_settings' not in g:
+            try:
+                cur = db.get_db().cursor()
+                g.site_settings = sitesettings.get_settings(cur)
+            except Exception:
+                g.site_settings = dict(sitesettings.DEFAULTS)
+        settings = g.site_settings
         return {
-            'contact_phone': app.config['CONTACT_PHONE'],
-            'contact_email': app.config['CONTACT_EMAIL'],
-            'whatsapp_number': app.config['WHATSAPP_NUMBER'],
+            'site_settings': settings,
+            'contact_phone': settings.get('contact_phone') or app.config['CONTACT_PHONE'],
+            'contact_email': settings.get('contact_email') or app.config['CONTACT_EMAIL'],
+            'whatsapp_number': settings.get('whatsapp_number') or app.config['WHATSAPP_NUMBER'],
         }
 
     @app.context_processor

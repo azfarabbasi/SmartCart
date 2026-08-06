@@ -1,0 +1,7 @@
+{% if site_settings.get('site_announcement') %}
+    <div class="announcement-banner">
+        <div class="container-fluid">
+            <i class="bi bi-megaphone-fill"></i> {{ site_settings.get('site_announcement') }}
+        </div>
+    </div>
+{% endif %}

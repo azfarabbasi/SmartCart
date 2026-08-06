@@ -62,7 +62,7 @@
                                             <i class="bi bi-cash-stack"></i>
                                             <div>
                                                 <strong>Cash on Delivery</strong>
-                                                <small>Pay Rs. 300 advance now via bank transfer; the rest on delivery.</small>
+                                                <small>Pay Rs. {{ "%.0f"|format(settings.get('cod_advance_amount', 300)|float) }} advance now via bank transfer; the rest on delivery.</small>
                                             </div>
                                         </div>
                                     </label>
@@ -72,7 +72,7 @@
                                             <i class="bi bi-bank"></i>
                                             <div>
                                                 <strong>Full Bank Transfer</strong>
-                                                <small>Pay the full order now and get a Rs. 200 cashback once verified.</small>
+                                                <small>Pay the full order now and get a Rs. {{ "%.0f"|format(settings.get('cashback_points', 400)|float / 2) }} cashback once verified.</small>
                                             </div>
                                         </div>
                                     </label>
@@ -80,10 +80,10 @@
 
                                 <div class="bank-details-box mt-3">
                                     <h6><i class="bi bi-bank2"></i> Our Bank Account Details</h6>
-                                    <p class="mb-1">Bank: <strong>{{ settings.get('bank_name', 'N/A') }}</strong></p>
-                                    <p class="mb-1">Account Title: <strong>{{ settings.get('bank_account_title', 'N/A') }}</strong></p>
-                                    <p class="mb-1">Account Number: <strong>{{ settings.get('bank_account_number', 'N/A') }}</strong></p>
-                                    <p class="mb-0">IBAN: <strong>{{ settings.get('bank_iban', 'N/A') }}</strong></p>
+                                    <p class="mb-1">Bank: <strong>{{ settings.get('bank_name') or 'N/A' }}</strong></p>
+                                    <p class="mb-1">Account Title: <strong>{{ settings.get('bank_account_title') or 'N/A' }}</strong></p>
+                                    <p class="mb-1">Account Number: <strong>{{ settings.get('bank_account_number') or 'N/A' }}</strong></p>
+                                    <p class="mb-0">IBAN: <strong>{{ settings.get('bank_iban') or 'N/A' }}</strong></p>
                                 </div>
 
                                 <div class="mb-2 mt-3">
@@ -93,9 +93,9 @@
 
                                 <div class="alert alert-info mt-3 mb-0">
                                     <i class="bi bi-info-circle-fill"></i>
-                                    Orders are dispatched once payment is verified. You'll receive an email once your payment is confirmed.
-                                    Advance payments (full bank transfer) receive a Rs. 200 cashback for trusting us.
-                                    Cash on Delivery requires a Rs. 300 advance via online transfer.
+                                    {{ settings.get('checkout_notice') }}
+                                    Advance payments (full bank transfer) receive a Rs. {{ "%.0f"|format(settings.get('cashback_points', 400)|float / 2) }} cashback for trusting us.
+                                    Cash on Delivery requires a Rs. {{ "%.0f"|format(settings.get('cod_advance_amount', 300)|float) }} advance via online transfer.
                                 </div>
                             </div>
                         </div>

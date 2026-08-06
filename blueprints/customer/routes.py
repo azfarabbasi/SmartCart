@@ -4,6 +4,7 @@ import oracledb
 from flask import (Blueprint, current_app, flash, redirect, render_template,
                     request, session, url_for)
 
+import sitesettings
 from activity import log_activity
 from blueprints.auth.decorators import login_required
 from db import get_db
@@ -11,11 +12,6 @@ from uploads import save_upload, validate_upload
 from validators import validate_phone_pk, validate_required_text
 
 customer_bp = Blueprint('customer', __name__)
-
-
-def _site_settings(cur):
-    cur.execute("SELECT setting_key, setting_value FROM SiteSettings")
-    return {k: v for k, v in cur.fetchall()}
 
 
 # ── PUBLIC CATALOG ──────────────────────────────────────────────
@@ -285,10 +281,13 @@ def checkout():
         points_redeemed_var = cur.var(int)
         advance_var = cur.var(float)
 
+        settings = sitesettings.get_settings(cur)
+        cod_advance_amount = sitesettings.get_setting_number(settings, 'cod_advance_amount', 300)
+
         try:
             cur.callproc('place_order', [
                 session['user_id'], payment_method, address, phone, proof_path,
-                points_to_redeem, coupon_code,
+                points_to_redeem, coupon_code, cod_advance_amount,
                 order_id_var, final_total_var, coupon_disc_var, loyalty_disc_var,
                 points_redeemed_var, advance_var,
             ])
@@ -330,7 +329,7 @@ def checkout():
     cart_items = cur.fetchall()
     subtotal = sum(row[1] * row[2] for row in cart_items)
     max_redeemable_points = int(min(points_balance, subtotal * 0.5 * 2))
-    settings = _site_settings(cur)
+    settings = sitesettings.get_settings(cur)
     return render_template(
         'customer/checkout.html', cart_items=cart_items, subtotal=subtotal,
         points_balance=points_balance, max_redeemable_points=max_redeemable_points,

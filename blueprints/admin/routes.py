@@ -8,6 +8,7 @@ import oracledb
 from flask import (Blueprint, current_app, flash, redirect, render_template,
                     request, session, url_for)
 
+import sitesettings
 from blueprints.auth.decorators import admin_required
 from db import get_db
 from extensions import limiter
@@ -452,8 +453,10 @@ def verify_payment(order_id):
     )
 
     if method == 'bank_transfer':
+        settings = sitesettings.get_settings(cur)
+        cashback_points = int(sitesettings.get_setting_number(settings, 'cashback_points', 400))
         pts_var = cur.var(int)
-        cur.callproc('verify_bank_transfer_cashback', [order_id, pts_var])
+        cur.callproc('verify_bank_transfer_cashback', [order_id, cashback_points, pts_var])
 
     log_admin_action(cur, session['user_id'], 'payment.verify', 'Order', order_id)
     get_db().commit()
@@ -547,19 +550,30 @@ def toggle_coupon(coupon_id):
 @admin_required
 def site_settings():
     cur = get_db().cursor()
-    keys = ['bank_name', 'bank_account_title', 'bank_account_number', 'bank_iban']
+    all_keys = [key for _group, fields in sitesettings.FIELD_GROUPS for key, _label, _kind in fields]
+
     if request.method == 'POST':
-        for key in keys:
+        for key in all_keys:
             value = request.form.get(key, '').strip()
-            cur.execute("UPDATE SiteSettings SET setting_value = :v WHERE setting_key = :k", {'v': value, 'k': key})
+            cur.execute(
+                """
+                MERGE INTO SiteSettings s
+                USING (SELECT :k AS setting_key FROM dual) d
+                ON (s.setting_key = d.setting_key)
+                WHEN MATCHED THEN UPDATE SET s.setting_value = :v
+                WHEN NOT MATCHED THEN INSERT (setting_key, setting_value) VALUES (:k, :v)
+                """,
+                {'k': key, 'v': value},
+            )
         log_admin_action(cur, session['user_id'], 'settings.update')
         get_db().commit()
         flash('Settings updated.', 'success')
         return redirect(url_for('admin.site_settings'))
 
-    cur.execute("SELECT setting_key, setting_value FROM SiteSettings")
-    settings = {k: v for k, v in cur.fetchall()}
-    return render_template('admin/site_settings.html', settings=settings)
+    settings = sitesettings.get_settings(cur)
+    return render_template(
+        'admin/site_settings.html', settings=settings, field_groups=sitesettings.FIELD_GROUPS,
+    )
 
 
 # ── USERS / INVENTORY / AUDIT LOG ────────────────────────────────

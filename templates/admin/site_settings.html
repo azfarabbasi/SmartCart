@@ -2,32 +2,34 @@
 {% block title %}Site Settings - Admin | SmartCart{% endblock %}
 {% block page_title %}Site Settings{% endblock %}
 {% block content %}
-    <div class="admin-card">
-        <div class="card-header"><h5><i class="bi bi-bank2 me-2"></i>Bank Transfer Details</h5></div>
-        <div class="card-body">
-            <p class="text-muted">These details are shown to customers at checkout for bank transfer payments.</p>
-            <form method="POST" action="{{ url_for('admin.site_settings') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-3">
-                    <label class="form-label">Bank Name</label>
-                    <input type="text" class="form-control" name="bank_name" value="{{ settings.get('bank_name', '') }}">
+    <p class="text-muted">Everything shown here controls live content on the website &mdash; contact details, bank
+        transfer info, payment amounts, and site messages. Changes take effect immediately, no redeploy needed.</p>
+
+    <form method="POST" action="{{ url_for('admin.site_settings') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        {% for group_name, fields in field_groups %}
+            <div class="admin-card mb-4">
+                <div class="card-header"><h5>{{ group_name }}</h5></div>
+                <div class="card-body">
+                    {% for key, label, kind in fields %}
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ key }}">{{ label }}</label>
+                            {% if kind == 'textarea' %}
+                                <textarea class="form-control" id="{{ key }}" name="{{ key }}" rows="2">{{ settings.get(key, '') }}</textarea>
+                            {% elif kind == 'number' %}
+                                <input type="number" step="1" min="0" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ settings.get(key, '') }}">
+                            {% else %}
+                                <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ settings.get(key, '') }}">
+                            {% endif %}
+                        </div>
+                    {% endfor %}
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Account Title</label>
-                    <input type="text" class="form-control" name="bank_account_title" value="{{ settings.get('bank_account_title', '') }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Account Number</label>
-                    <input type="text" class="form-control" name="bank_account_number" value="{{ settings.get('bank_account_number', '') }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">IBAN</label>
-                    <input type="text" class="form-control" name="bank_iban" value="{{ settings.get('bank_iban', '') }}">
-                </div>
-                <button type="submit" class="btn btn-warning">
-                    <i class="bi bi-check-lg me-2"></i>Save Settings
-                </button>
-            </form>
-        </div>
-    </div>
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-warning">
+            <i class="bi bi-check-lg me-2"></i>Save All Settings
+        </button>
+    </form>
 {% endblock %}

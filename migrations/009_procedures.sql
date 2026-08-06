@@ -6,6 +6,7 @@ CREATE OR REPLACE PROCEDURE place_order(
     p_payment_proof_path IN VARCHAR2,
     p_points_to_redeem  IN  NUMBER,
     p_coupon_code       IN  VARCHAR2,
+    p_cod_advance_amount IN NUMBER,
     p_order_id          OUT NUMBER,
     p_final_total       OUT NUMBER,
     p_coupon_discount   OUT NUMBER,
@@ -78,7 +79,7 @@ BEGIN
     v_loyalty_disc := v_redeem_points / 2;
 
     v_final_total := v_discounted - v_loyalty_disc;
-    v_advance := CASE WHEN p_pay_method = 'cod' THEN 300 ELSE v_final_total END;
+    v_advance := CASE WHEN p_pay_method = 'cod' THEN NVL(p_cod_advance_amount, 300) ELSE v_final_total END;
 
     SELECT orders_seq.NEXTVAL INTO v_order_id FROM DUAL;
 
@@ -179,6 +180,7 @@ END complete_order_loyalty;
 
 CREATE OR REPLACE PROCEDURE verify_bank_transfer_cashback(
     p_order_id       IN  NUMBER,
+    p_cashback_points IN NUMBER,
     p_points_awarded OUT NUMBER
 ) AS
     v_user_id NUMBER;
@@ -195,7 +197,7 @@ BEGIN
     SELECT user_id, payment_method INTO v_user_id, v_method FROM Orders WHERE order_id = p_order_id;
 
     IF v_method = 'bank_transfer' THEN
-        p_points_awarded := 400;  -- Rs. 200 cashback at 2 points = Rs.1
+        p_points_awarded := NVL(p_cashback_points, 400);
         UPDATE Users SET loyalty_points_balance = loyalty_points_balance + p_points_awarded
         WHERE user_id = v_user_id;
 

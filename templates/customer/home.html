@@ -3,8 +3,8 @@
 {% block content %}
     <section class="hero-banner">
         <div class="hero-content">
-            <h1>Welcome to SmartCart</h1>
-            <p>Browse our full catalog &mdash; no account needed to look around.</p>
+            <h1>{{ site_settings.get('hero_title', 'Welcome to SmartCart') }}</h1>
+            <p>{{ site_settings.get('hero_subtitle', '') }}</p>
         </div>
     </section>
 
