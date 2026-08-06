@@ -382,6 +382,41 @@ def order_detail(order_id):
     return render_template('customer/order_detail.html', order=order, items=items, payment=payment)
 
 
+# ── PROFILE ──────────────────────────────────────────────────────
+@customer_bp.route('/account/profile')
+@login_required
+def profile():
+    cur = get_db().cursor()
+    cur.execute(
+        "SELECT name, email, role, created_at, loyalty_points_balance FROM Users WHERE user_id = :1",
+        [session['user_id']],
+    )
+    user = cur.fetchone()
+
+    cur.execute("SELECT COUNT(*) FROM Orders WHERE user_id = :1", [session['user_id']])
+    order_count = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM Wishlist WHERE user_id = :1", [session['user_id']])
+    wishlist_count = cur.fetchone()[0]
+
+    # Oracle 11.2 doesn't support FETCH FIRST N ROWS ONLY, so use a ROWNUM subquery.
+    cur.execute(
+        """
+        SELECT * FROM (
+            SELECT ledger_id, order_id, entry_type, points, rupee_value, balance_after, created_at
+            FROM LoyaltyLedger WHERE user_id = :1 ORDER BY created_at DESC
+        ) WHERE ROWNUM <= 5
+        """,
+        [session['user_id']],
+    )
+    recent_ledger = cur.fetchall()
+
+    return render_template(
+        'customer/profile.html', user=user, order_count=order_count,
+        wishlist_count=wishlist_count, recent_ledger=recent_ledger,
+    )
+
+
 # ── LOYALTY ──────────────────────────────────────────────────────
 @customer_bp.route('/account/loyalty')
 @login_required

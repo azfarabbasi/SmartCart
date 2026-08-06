@@ -39,6 +39,7 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li><h6 class="dropdown-header">Your Account</h6></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('customer.profile') }}"><i class="bi bi-person-circle me-2"></i>My Profile</a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('customer.order_history') }}"><i class="bi bi-box me-2"></i>Your Orders</a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('customer.view_wishlist') }}"><i class="bi bi-heart me-2"></i>Your Wishlist</a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('customer.loyalty_history') }}"><i class="bi bi-gift me-2"></i>Loyalty Points</a></li>
