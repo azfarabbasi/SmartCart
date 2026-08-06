@@ -1,0 +1,76 @@
+{% extends "admin/base.html" %}
+{% block title %}Seasonal Events - Admin | SmartCart{% endblock %}
+{% block page_title %}Seasonal Events{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="admin-card">
+                <div class="card-header"><h5><i class="bi bi-plus-circle me-2"></i>Add Event</h5></div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('analytics.add_seasonal_event') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">Event Name</label>
+                            <input type="text" class="form-control" name="event_name" required placeholder="e.g. Ramadan Sale">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" name="start_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" name="end_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Demand Boost (e.g. 1.4 = +40%)</label>
+                            <input type="number" class="form-control" name="boost_weight" value="1.2" min="1" step="0.05">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <input type="text" class="form-control" name="notes">
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="bi bi-plus-lg me-2"></i>Add Event
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h5>All Seasonal Events</h5>
+                    <span class="badge bg-primary">{{ events|length }} events</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr><th>Event</th><th>Dates</th><th>Boost</th><th>Approx.</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            {% if events %}
+                                {% for ev in events %}
+                                    <tr>
+                                        <td>{{ ev[1] }}<br><small class="text-muted">{{ ev[6] or '' }}</small></td>
+                                        <td>{{ ev[2].strftime('%d %b %Y') }} &ndash; {{ ev[3].strftime('%d %b %Y') }}</td>
+                                        <td>x{{ ev[4] }}</td>
+                                        <td>{% if ev[5] %}<span class="badge bg-secondary">Approx.</span>{% else %}<span class="badge bg-success">Fixed</span>{% endif %}</td>
+                                        <td>
+                                            <form action="{{ url_for('analytics.delete_seasonal_event', event_id=ev[0]) }}" method="POST" onsubmit="return confirm('Remove this event?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="5" class="text-center text-muted py-4">No events configured.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

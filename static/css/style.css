@@ -2476,3 +2476,227 @@ a:hover {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--gray-500);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CONTACT BAR / WHATSAPP
+   ═══════════════════════════════════════════════════════════ */
+.contact-bar {
+    background: var(--primary-dark);
+    color: var(--gray-200);
+    font-size: 0.85rem;
+    padding: 6px 16px;
+}
+
+.contact-bar a {
+    color: var(--gray-200);
+    margin-right: 16px;
+}
+
+.contact-bar a:hover {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.contact-bar-whatsapp a {
+    color: #25D366;
+    font-weight: 600;
+}
+
+.whatsapp-float {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    background: #25D366;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.6rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    transition: var(--transition);
+}
+
+.whatsapp-float:hover {
+    transform: scale(1.08);
+    color: white;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOYALTY POINTS
+   ═══════════════════════════════════════════════════════════ */
+.loyalty-balance-badge {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--orange) 100%);
+    color: var(--primary-dark);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 400px;
+}
+
+.loyalty-balance-badge strong {
+    font-size: 1.8rem;
+}
+
+.loyalty-history-table th, .loyalty-history-table td {
+    vertical-align: middle;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAYMENTS / COUPONS / BANK DETAILS
+   ═══════════════════════════════════════════════════════════ */
+.bank-details-box {
+    background: var(--gray-50);
+    border: 1px dashed var(--gray-400);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+}
+
+.payment-proof-thumb {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+}
+
+.payment-proof-preview {
+    max-width: 320px;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-300);
+    display: block;
+    margin-top: 8px;
+}
+
+.payment-status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.payment-pending_verification { background: var(--warning-light); color: #8a6d00; }
+.payment-verified { background: var(--success-light); color: var(--success); }
+.payment-rejected { background: var(--danger-light); color: var(--danger); }
+
+/* ═══════════════════════════════════════════════════════════
+   PRODUCT GALLERY (admin + customer)
+   ═══════════════════════════════════════════════════════════ */
+.product-gallery-admin {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.gallery-thumb {
+    position: relative;
+    width: 100px;
+}
+
+.gallery-thumb img, .gallery-thumb video {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-300);
+}
+
+.gallery-thumb form {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANALYTICS DASHBOARD
+   ═══════════════════════════════════════════════════════════ */
+.confidence-badge {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-insufficient { background: var(--gray-300); color: var(--gray-800); }
+.badge-low { background: var(--warning-light); color: #8a6d00; }
+.badge-moderate { background: var(--info-light); color: var(--info); }
+.badge-good { background: var(--success-light); color: var(--success); }
+
+/* ═══════════════════════════════════════════════════════════
+   FEEDBACK / REVIEWS
+   ═══════════════════════════════════════════════════════════ */
+.star-rating i {
+    color: var(--orange);
+    font-size: 0.85rem;
+}
+
+.feedback-item {
+    border-bottom: 1px solid var(--gray-200);
+    padding: 16px 0;
+}
+
+.feedback-media img, .feedback-media video {
+    max-width: 240px;
+    max-height: 240px;
+    border-radius: var(--radius);
+    margin-top: 8px;
+    display: block;
+}
+
+.feedback-reply {
+    background: var(--gray-50);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-top: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+    .contact-bar .row,
+    .contact-bar .container-fluid > div {
+        flex-direction: column;
+        text-align: center;
+        gap: 4px;
+    }
+
+    .contact-bar-info a {
+        display: block;
+        margin: 0;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-gallery-admin {
+        justify-content: center;
+    }
+
+    .whatsapp-float {
+        width: 48px;
+        height: 48px;
+        font-size: 1.3rem;
+        bottom: 16px;
+        right: 16px;
+    }
+
+}
+
+@media (max-width: 991px) {
+    .checkout-page .row > .col-lg-8,
+    .checkout-page .row > .col-lg-4,
+    .order-detail-page .row > .col-lg-8,
+    .order-detail-page .row > .col-lg-4 {
+        width: 100%;
+    }
+}

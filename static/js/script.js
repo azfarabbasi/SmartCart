@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeFormValidation();
     initializeSearchEnhancements();
     initializeTooltips();
+    lazyLoadImages();
+    checkLowStock();
+    initializeFormLoadingState();
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -450,20 +453,25 @@ function scrollToTop() {
 // ═══════════════════════════════════════════════════════════
 function previewImage(input) {
     if (input.files && input.files[0]) {
+        const file = input.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
             const preview = document.getElementById('imagePreview');
             const placeholder = document.getElementById('uploadPlaceholder');
-            
+
             if (preview) {
-                preview.src = e.target.result;
+                if (file.type.startsWith('video/')) {
+                    preview.setAttribute('src', '');
+                } else {
+                    preview.src = e.target.result;
+                }
                 preview.classList.remove('d-none');
             }
             if (placeholder) {
                 placeholder.classList.add('d-none');
             }
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
 
@@ -484,13 +492,9 @@ function checkLowStock() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Initialize Additional Features
+// Loading State for Form Submissions
 // ═══════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function() {
-    lazyLoadImages();
-    checkLowStock();
-    
-    // Add loading state to forms
+function initializeFormLoadingState() {
     const forms = document.querySelectorAll('form');
     forms.forEach(function(form) {
         form.addEventListener('submit', function() {
@@ -499,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const originalText = submitBtn.innerHTML;
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
-                
+
                 // Re-enable after 10 seconds as fallback
                 setTimeout(function() {
                     submitBtn.disabled = false;
@@ -508,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-});
+}
 
 // ═══════════════════════════════════════════════════════════
 // Export Functions (if using modules)

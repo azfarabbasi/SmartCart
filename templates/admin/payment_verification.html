@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block title %}Payment Verification - Admin | SmartCart{% endblock %}
+{% block page_title %}Payment Verification{% endblock %}
+{% block content %}
+    <div class="admin-card">
+        <div class="card-header">
+            <h5>Orders Awaiting Payment Verification</h5>
+            <span class="badge bg-warning text-dark">{{ pending|length }} pending</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Order</th><th>Customer</th><th>Phone</th><th>Amount</th>
+                        <th>Method</th><th>Advance</th><th>Proof</th><th>Placed</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if pending %}
+                        {% for row in pending %}
+                            <tr>
+                                <td><strong>#{{ row[0] }}</strong></td>
+                                <td>{{ row[1] }}<br><small class="text-muted">{{ row[2] }}</small></td>
+                                <td>{{ row[3] }}</td>
+                                <td>Rs{{ "{:,.2f}".format(row[4]) }}</td>
+                                <td>{{ row[5]|replace('_', ' ')|capitalize }}</td>
+                                <td>Rs{{ "{:,.2f}".format(row[6]) }}</td>
+                                <td>
+                                    {% if row[7] %}
+                                        <a href="{{ url_for('static', filename=row[7]) }}" target="_blank">
+                                            <img src="{{ url_for('static', filename=row[7]) }}" class="payment-proof-thumb">
+                                        </a>
+                                    {% else %}&mdash;{% endif %}
+                                </td>
+                                <td>{{ row[8].strftime('%d %b %Y') if row[8] else '' }}</td>
+                                <td>
+                                    <a href="{{ url_for('admin.order_detail', order_id=row[0]) }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye"></i> Review
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="9" class="text-center text-muted py-4">No pending payments right now.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

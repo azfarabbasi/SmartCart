@@ -1,0 +1,60 @@
+<aside class="admin-sidebar">
+    <div class="sidebar-header">
+        <a href="{{ url_for('admin.dashboard') }}" class="sidebar-logo">
+            <i class="bi bi-cart4"></i>
+            <span>SmartCart</span>
+        </a>
+    </div>
+    <nav class="sidebar-nav">
+        <ul>
+            <li class="{{ 'active' if request.endpoint == 'admin.dashboard' }}">
+                <a href="{{ url_for('admin.dashboard') }}"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint in ('admin.products', 'admin.add_product', 'admin.edit_product') }}">
+                <a href="{{ url_for('admin.products') }}"><i class="bi bi-box-seam"></i><span>Products</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'admin.categories' }}">
+                <a href="{{ url_for('admin.categories') }}"><i class="bi bi-tags"></i><span>Categories</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint in ('admin.orders', 'admin.order_detail') }}">
+                <a href="{{ url_for('admin.orders') }}"><i class="bi bi-clipboard-check"></i><span>Orders</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'admin.payment_verification' }}">
+                <a href="{{ url_for('admin.payment_verification') }}"><i class="bi bi-credit-card"></i><span>Payment Verification</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'admin.coupons' }}">
+                <a href="{{ url_for('admin.coupons') }}"><i class="bi bi-ticket-perforated"></i><span>Coupons</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'analytics.dashboard' }}">
+                <a href="{{ url_for('analytics.dashboard') }}"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'analytics.customer_insights' }}">
+                <a href="{{ url_for('analytics.customer_insights') }}"><i class="bi bi-person-lines-fill"></i><span>Customer Insights</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'analytics.seasonal_events' }}">
+                <a href="{{ url_for('analytics.seasonal_events') }}"><i class="bi bi-calendar-event"></i><span>Seasonal Events</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint and request.endpoint.startswith('feedback.admin') }}">
+                <a href="{{ url_for('feedback.admin_feedback_list') }}"><i class="bi bi-chat-square-text"></i><span>Feedback</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'admin.users' }}">
+                <a href="{{ url_for('admin.users') }}"><i class="bi bi-people"></i><span>Users</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'admin.inventory' }}">
+                <a href="{{ url_for('admin.inventory') }}"><i class="bi bi-archive"></i><span>Inventory</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'admin.audit_log' }}">
+                <a href="{{ url_for('admin.audit_log') }}"><i class="bi bi-shield-check"></i><span>Audit Log</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint == 'admin.site_settings' }}">
+                <a href="{{ url_for('admin.site_settings') }}"><i class="bi bi-gear"></i><span>Site Settings</span></a>
+            </li>
+        </ul>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="logout-btn">
+            <i class="bi bi-box-arrow-left"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</aside>

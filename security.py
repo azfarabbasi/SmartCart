@@ -34,10 +34,10 @@ def log_admin_action(cur, admin_user_id, action, target_type=None, target_id=Non
         """
         INSERT INTO AdminAuditLog (audit_id, admin_user_id, action, target_type, target_id,
                                     details, ip_address, created_at)
-        VALUES (adminauditlog_seq.NEXTVAL, :uid, :act, :ttype, :tid, :det, :ip, SYSDATE)
+        VALUES (adminauditlog_seq.NEXTVAL, :p_uid, :act, :ttype, :tid, :det, :ip, SYSDATE)
         """,
         {
-            'uid': admin_user_id,
+            'p_uid': admin_user_id,
             'act': action,
             'ttype': target_type,
             'tid': target_id,

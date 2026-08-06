@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Loyalty Points - SmartCart{% endblock %}
+{% block content %}
+    <div class="container py-4">
+        <h1 class="mb-3"><i class="bi bi-gift"></i> Loyalty Points</h1>
+        <div class="loyalty-balance-badge mb-4">
+            <span>Current Balance</span>
+            <strong>{{ balance }} points</strong>
+            <small>2 points = Rs. 1 discount, redeemable up to 50% of an order</small>
+        </div>
+
+        {% if ledger %}
+            <div class="table-responsive">
+                <table class="table loyalty-history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Order</th>
+                            <th>Points</th>
+                            <th>Value</th>
+                            <th>Balance After</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in ledger %}
+                            <tr>
+                                <td>{{ entry[6].strftime('%d %b %Y') if entry[6] else '' }}</td>
+                                <td>
+                                    {% if entry[2] == 'earn' %}
+                                        <span class="badge bg-success">Earned</span>
+                                    {% elif entry[2] == 'cashback' %}
+                                        <span class="badge bg-info text-dark">Cashback</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Redeemed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry[1] %}
+                                        <a href="{{ url_for('customer.order_detail', order_id=entry[1]) }}">#{{ entry[1] }}</a>
+                                    {% else %}&mdash;{% endif %}
+                                </td>
+                                <td>{{ '+' if entry[2] != 'redeem' else '-' }}{{ entry[3] }}</td>
+                                <td>{{ 'Rs. ' + '%.2f'|format(entry[4]) if entry[4] else '&mdash;' }}</td>
+                                <td>{{ entry[5] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No loyalty activity yet. Spend Rs. 5,000+ on an order to start earning points!</p>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,97 @@
+<header class="main-header">
+    <div class="header-top">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <a href="{{ url_for('customer.index') }}" class="logo">
+                        <i class="bi bi-cart4"></i>
+                        <span>Smart<span class="text-warning">Cart</span></span>
+                    </a>
+                </div>
+
+                <div class="col">
+                    <form action="{{ url_for('customer.index') }}" method="GET" class="search-form">
+                        <div class="input-group">
+                            <select name="category_id" class="form-select search-category">
+                                <option value="">All Categories</option>
+                                {% for cat in nav_categories|default([]) %}
+                                    <option value="{{ cat[0] }}">{{ cat[1] }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="search" class="form-control search-input" placeholder="Search SmartCart">
+                            <button type="submit" class="btn btn-warning search-btn">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="col-auto">
+                    <div class="header-actions">
+                        {% if session.get('user_id') %}
+                            <div class="dropdown user-dropdown">
+                                <a href="#" class="header-action" data-bs-toggle="dropdown">
+                                    <i class="bi bi-person"></i>
+                                    <div class="action-text">
+                                        <small>Hello, {{ session['name'] }}</small>
+                                        <span>Account & Lists <i class="bi bi-caret-down-fill"></i></span>
+                                    </div>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><h6 class="dropdown-header">Your Account</h6></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('customer.order_history') }}"><i class="bi bi-box me-2"></i>Your Orders</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('customer.view_wishlist') }}"><i class="bi bi-heart me-2"></i>Your Wishlist</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('customer.loyalty_history') }}"><i class="bi bi-gift me-2"></i>Loyalty Points</a></li>
+                                    {% if session.get('role') == 'admin' %}
+                                        <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+                                </ul>
+                            </div>
+
+                            <a href="{{ url_for('customer.order_history') }}" class="header-action">
+                                <i class="bi bi-box"></i>
+                                <div class="action-text">
+                                    <small>Returns</small>
+                                    <span>& Orders</span>
+                                </div>
+                            </a>
+
+                            <a href="{{ url_for('customer.view_wishlist') }}" class="header-action">
+                                <i class="bi bi-heart"></i>
+                                <div class="action-text">
+                                    <small>Your</small>
+                                    <span>Wishlist</span>
+                                </div>
+                            </a>
+
+                            <a href="{{ url_for('customer.view_cart') }}" class="header-action cart-action">
+                                <i class="bi bi-cart3"></i>
+                                <span>Cart</span>
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-sm me-2">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-warning btn-sm">
+                                <i class="bi bi-person-plus"></i> Register
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="header-nav">
+        <div class="container-fluid">
+            <ul class="nav-links">
+                <li><a href="{{ url_for('customer.index') }}">All</a></li>
+                {% for cat in nav_categories|default([]) %}
+                    <li><a href="{{ url_for('customer.index', category_id=cat[0]) }}">{{ cat[1] }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </nav>
+</header>

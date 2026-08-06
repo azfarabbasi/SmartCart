@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+{% block title %}Feedback - Admin | SmartCart{% endblock %}
+{% block page_title %}Customer Feedback{% endblock %}
+{% block content %}
+    <form method="GET" action="{{ url_for('feedback.admin_feedback_list') }}" class="mb-3 d-flex gap-2">
+        <select name="product_id" class="form-select w-auto" onchange="this.form.submit()">
+            <option value="">All Products</option>
+            {% for p in products %}
+                <option value="{{ p[0] }}" {% if selected_product == p[0]|string %}selected{% endif %}>{{ p[1] }}</option>
+            {% endfor %}
+        </select>
+        <div class="form-check align-self-center">
+            <input class="form-check-input" type="checkbox" name="unreplied" value="1" id="unrepliedOnly"
+                   {% if unreplied_only %}checked{% endif %} onchange="this.form.submit()">
+            <label class="form-check-label" for="unrepliedOnly">Unreplied only</label>
+        </div>
+    </form>
+
+    {% if feedback_rows %}
+        {% for fb in feedback_rows %}
+            <div class="admin-card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ fb[1] }}</strong> &mdash; by {{ fb[3] }}
+                            {% if fb[4] %}
+                                <span class="star-rating">{% for i in range(fb[4]) %}<i class="bi bi-star-fill"></i>{% endfor %}</span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">{{ fb[8].strftime('%d %b %Y') if fb[8] else '' }}</small>
+                    </div>
+                    {% if fb[5] %}<p class="mt-2">{{ fb[5] }}</p>{% endif %}
+                    {% if fb[6] %}
+                        <div class="feedback-media">
+                            {% if fb[7] == 'video' %}
+                                <video src="{{ url_for('static', filename=fb[6]) }}" controls></video>
+                            {% else %}
+                                <img src="{{ url_for('static', filename=fb[6]) }}" alt="feedback media">
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <form action="{{ url_for('feedback.admin_reply_feedback', feedback_id=fb[0]) }}" method="POST" enctype="multipart/form-data" class="mt-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <textarea name="reply_text" class="form-control" rows="2" placeholder="Write a reply..." required></textarea>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="file" name="media" class="form-control" accept="image/*,video/*">
+                            </div>
+                            <div class="col-md-1">
+                                <button type="submit" class="btn btn-warning w-100"><i class="bi bi-send"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                    {% if fb[9] > 0 %}
+                        <span class="badge bg-success mt-2">{{ fb[9] }} repl{{ 'y' if fb[9] == 1 else 'ies' }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No feedback found.</p>
+    {% endif %}
+{% endblock %}

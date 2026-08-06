@@ -1,0 +1,102 @@
+{% extends "admin/base.html" %}
+{% block title %}Sales Analytics - Admin | SmartCart{% endblock %}
+{% block page_title %}Sales Analytics{% endblock %}
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+    <form action="{{ url_for('analytics.refresh_forecast') }}" method="POST" class="mb-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-warning" id="refreshForecastBtn">
+            <i class="bi bi-arrow-clockwise"></i> Refresh Forecast
+        </button>
+    </form>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-orders">
+            <div class="stat-icon"><i class="bi bi-calendar-week"></i></div>
+            <div class="stat-info">
+                {% if cached.week %}
+                    <h3>Rs{{ "{:,.2f}".format(cached.week[1]) }}</h3>
+                    <p>Predicted Next 7 Days
+                        ({{ '+' if cached.week[2] >= 0 else '' }}{{ cached.week[2] }}% vs trailing week)</p>
+                    <span class="confidence-badge badge-{{ cached.week[4] }}">{{ cached.week[4]|capitalize }} confidence ({{ cached.week[3] }}%)</span>
+                {% else %}
+                    <h3>&mdash;</h3><p>Predicted Next 7 Days</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="stat-card stat-revenue">
+            <div class="stat-icon"><i class="bi bi-calendar-month"></i></div>
+            <div class="stat-info">
+                {% if cached.month %}
+                    <h3>Rs{{ "{:,.2f}".format(cached.month[1]) }}</h3>
+                    <p>Predicted Next 30 Days
+                        ({{ '+' if cached.month[2] >= 0 else '' }}{{ cached.month[2] }}% vs trailing month)</p>
+                    <span class="confidence-badge badge-{{ cached.month[4] }}">{{ cached.month[4]|capitalize }} confidence ({{ cached.month[3] }}%)</span>
+                {% else %}
+                    <h3>&mdash;</h3><p>Predicted Next 30 Days</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-card mt-4">
+        <div class="card-header"><h5>30-Day Sales Forecast</h5></div>
+        <div class="card-body">
+            <canvas id="forecastChart" height="90"></canvas>
+        </div>
+    </div>
+
+    <div class="admin-card mt-4">
+        <div class="card-header"><h5><i class="bi bi-calendar-event me-2"></i>Upcoming Seasonal Events</h5></div>
+        <div class="card-body">
+            {% if upcoming_events %}
+                <ul class="list-unstyled">
+                    {% for ev in upcoming_events %}
+                        <li class="mb-2">
+                            <strong>{{ ev.name }}</strong> &mdash; {{ ev.start_date }} to {{ ev.end_date }}
+                            <span class="badge bg-info text-dark">x{{ ev.boost_weight }} demand</span>
+                            {% if ev.is_approximate %}<span class="badge bg-secondary">approx. date</span>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No seasonal events in the next 35 days.</p>
+            {% endif %}
+            <a href="{{ url_for('analytics.seasonal_events') }}" class="btn btn-sm btn-outline-secondary">Manage Seasonal Events</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script>
+        const weekSeries = {{ week_series|tojson }};
+        const monthSeries = {{ month_series|tojson }};
+        const labels = Object.keys(monthSeries);
+        const data = Object.values(monthSeries);
+        new Chart(document.getElementById('forecastChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Forecasted Daily Sales (Rs)',
+                    data: data,
+                    borderColor: '#febd69',
+                    backgroundColor: 'rgba(254,189,105,0.2)',
+                    tension: 0.3,
+                    fill: true,
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: true } } }
+        });
+
+        const refreshBtn = document.getElementById('refreshForecastBtn');
+        if (refreshBtn) {
+            refreshBtn.closest('form').addEventListener('submit', function() {
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Refreshing...';
+            });
+        }
+    </script>
+{% endblock %}

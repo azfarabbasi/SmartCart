@@ -1,258 +1,146 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order #{{ order[0] }} - SmartCart</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-</head>
-<body>
-    <!-- Header -->
-    <header class="main-header">
-        <div class="header-top">
-            <div class="container-fluid">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        <a href="{{ url_for('customer_home') }}" class="logo">
-                            <i class="bi bi-cart4"></i>
-                            <span>Smart<span class="text-warning">Cart</span></span>
-                        </a>
-                    </div>
-                    
-                    <div class="col">
-                        <form action="{{ url_for('customer_home') }}" method="GET" class="search-form">
-                            <div class="input-group">
-                                <input type="text" name="search" class="form-control search-input" placeholder="Search SmartCart">
-                                <button type="submit" class="btn btn-warning search-btn">
-                                    <i class="bi bi-search"></i>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <div class="col-auto">
-                        <div class="header-actions">
-                            <div class="dropdown user-dropdown">
-                                <a href="#" class="header-action" data-bs-toggle="dropdown">
-                                    <i class="bi bi-person"></i>
-                                    <div class="action-text">
-                                        <small>Hello, {{ session['name'] }}</small>
-                                        <span>Account & Lists <i class="bi bi-caret-down-fill"></i></span>
-                                    </div>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><h6 class="dropdown-header">Your Account</h6></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('order_history') }}"><i class="bi bi-box me-2"></i>Your Orders</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('view_wishlist') }}"><i class="bi bi-heart me-2"></i>Your Wishlist</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
-                                </ul>
-                            </div>
-                            
-                            <a href="{{ url_for('order_history') }}" class="header-action active">
-                                <i class="bi bi-box"></i>
-                                <div class="action-text">
-                                    <small>Returns</small>
-                                    <span>& Orders</span>
-                                </div>
-                            </a>
-                            
-                            <a href="{{ url_for('view_cart') }}" class="header-action cart-action">
-                                <i class="bi bi-cart3"></i>
-                                <span>Cart</span>
-                            </a>
-                        </div>
-                    </div>
+{% extends "base.html" %}
+{% block title %}Order #{{ order[0] }} - SmartCart{% endblock %}
+{% block content %}
+    <div class="container py-4 order-detail-page">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('customer.order_history') }}">Your Orders</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Order #{{ order[0] }}</li>
+            </ol>
+        </nav>
+
+        <div class="order-detail-container">
+            <div class="order-detail-header">
+                <div class="order-title">
+                    <h1>Order Details</h1>
+                    <span class="order-date">Ordered on {{ order[1].strftime('%d %B %Y') if order[1] else 'N/A' }} | Order# {{ order[0] }}</span>
                 </div>
             </div>
-        </div>
-    </header>
-    
-    <main class="main-content order-detail-page">
-        <div class="container py-4">
-            <!-- Breadcrumb -->
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('customer_home') }}">Home</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('order_history') }}">Your Orders</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Order #{{ order[0] }}</li>
-                </ol>
-            </nav>
-            
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
-                            <i class="bi bi-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}-fill me-2"></i>
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+            {% if order[7] == 'rejected' %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle-fill"></i> Your payment could not be verified: {{ order[15] or 'Please contact support.' }}
+                </div>
+            {% elif order[7] == 'pending_verification' %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-hourglass-split"></i> Your payment is awaiting verification. Orders are dispatched once payment is verified &mdash; you'll get an email once confirmed.
+                </div>
+            {% elif order[7] == 'verified' %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle-fill"></i> Payment verified! Your order will be dispatched shortly.
+                </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="order-status-card">
+                        <h5>Order Status</h5>
+                        <div class="current-status">
+                            <span class="status-badge status-{{ order[3] }}">
+                                {% if order[3] == 'pending' %}
+                                    <i class="bi bi-clock"></i> Pending
+                                {% elif order[3] == 'shipped' %}
+                                    <i class="bi bi-truck"></i> Shipped
+                                {% elif order[3] == 'delivered' %}
+                                    <i class="bi bi-check-circle"></i> Delivered
+                                {% elif order[3] == 'cancelled' %}
+                                    <i class="bi bi-x-circle"></i> Cancelled
+                                {% else %}
+                                    <i class="bi bi-info-circle"></i> {{ order[3]|capitalize }}
+                                {% endif %}
+                            </span>
                         </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <div class="order-detail-container">
-                <div class="order-detail-header">
-                    <div class="order-title">
-                        <h1>Order Details</h1>
-                        <span class="order-date">Ordered on {{ order[1].strftime('%d %B %Y') if order[1] else 'N/A' }} | Order# {{ order[0] }}</span>
+                    </div>
+
+                    <div class="order-items-card">
+                        <h5>Items Ordered</h5>
+                        <div class="items-list">
+                            {% for item in items %}
+                                <div class="order-item-row">
+                                    <div class="item-info">
+                                        <h6>{{ item[0] }}</h6>
+                                        <span class="text-muted">Qty: {{ item[1] }}</span>
+                                    </div>
+                                    <div class="item-price">Rs{{ "{:,.2f}".format(item[2]) }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
-                
-                <div class="row">
-                    <div class="col-lg-8">
-                        <!-- Order Status -->
-                        <div class="order-status-card">
-                            <h5>Order Status</h5>
-                            <div class="status-timeline">
-                                <div class="status-step {% if order[3] in ['pending', 'processing', 'shipped', 'delivered'] %}completed{% endif %}">
-                                    <div class="step-icon"><i class="bi bi-check"></i></div>
-                                    <span>Order Placed</span>
-                                </div>
-                                <div class="status-line {% if order[3] in ['processing', 'shipped', 'delivered'] %}completed{% endif %}"></div>
-                                <div class="status-step {% if order[3] in ['processing', 'shipped', 'delivered'] %}completed{% endif %}">
-                                    <div class="step-icon"><i class="bi bi-check"></i></div>
-                                    <span>Processing</span>
-                                </div>
-                                <div class="status-line {% if order[3] in ['shipped', 'delivered'] %}completed{% endif %}"></div>
-                                <div class="status-step {% if order[3] in ['shipped', 'delivered'] %}completed{% endif %}">
-                                    <div class="step-icon"><i class="bi bi-check"></i></div>
-                                    <span>Shipped</span>
-                                </div>
-                                <div class="status-line {% if order[3] == 'delivered' %}completed{% endif %}"></div>
-                                <div class="status-step {% if order[3] == 'delivered' %}completed{% endif %}">
-                                    <div class="step-icon"><i class="bi bi-check"></i></div>
-                                    <span>Delivered</span>
-                                </div>
-                            </div>
-                            <div class="current-status">
-                                <span class="status-badge status-{{ order[3] }}">
-                                    {% if order[3] == 'pending' %}
-                                        <i class="bi bi-clock"></i> Pending
-                                    {% elif order[3] == 'processing' %}
-                                        <i class="bi bi-gear"></i> Processing
-                                    {% elif order[3] == 'shipped' %}
-                                        <i class="bi bi-truck"></i> Shipped
-                                    {% elif order[3] == 'delivered' %}
-                                        <i class="bi bi-check-circle"></i> Delivered
-                                    {% elif order[3] == 'cancelled' %}
-                                        <i class="bi bi-x-circle"></i> Cancelled
-                                    {% else %}
-                                        <i class="bi bi-info-circle"></i> {{ order[3]|capitalize }}
-                                    {% endif %}
-                                </span>
-                            </div>
+
+                <div class="col-lg-4">
+                    <div class="info-card">
+                        <h5><i class="bi bi-geo-alt me-2"></i>Shipping Address</h5>
+                        <div class="info-content">
+                            <strong>{{ session['name'] }}</strong>
+                            <p>
+                                {{ order[5] if order[5] else 'Address not provided' }}<br>
+                                <strong>Phone:</strong> {{ order[4] if order[4] else 'N/A' }}
+                            </p>
                         </div>
-                        
-                        <!-- Order Items -->
-                        <div class="order-items-card">
-                            <h5>Items Ordered</h5>
-                            <div class="items-list">
-                                {% for item in items %}
-                                    <div class="order-item-row">
-                                        <div class="item-info">
-                                            <h6>{{ item[0] }}</h6>
-                                            <span class="text-muted">Qty: {{ item[1] }}</span>
-                                        </div>
-                                        <div class="item-price">
-                                            Rs{{ "{:,.2f}".format(item[2]) }}
-                                        </div>
-                                    </div>
-                                {% endfor %}
+                    </div>
+
+                    <div class="info-card">
+                        <h5><i class="bi bi-credit-card me-2"></i>Payment Information</h5>
+                        <div class="info-content">
+                            <div class="payment-detail">
+                                <span>Method:</span>
+                                <strong>{{ order[6]|replace('_', ' ')|capitalize }}</strong>
+                            </div>
+                            <div class="payment-detail">
+                                <span>Status:</span>
+                                <strong>{{ order[7]|replace('_', ' ')|capitalize }}</strong>
+                            </div>
+                            <div class="payment-detail">
+                                <span>Advance Required:</span>
+                                <strong>Rs{{ "{:,.2f}".format(order[8]) }}</strong>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="col-lg-4">
-                        <!-- Delivery Address -->
-                        <div class="info-card">
-                            <h5><i class="bi bi-geo-alt me-2"></i>Shipping Address</h5>
-                            <div class="info-content">
-                                <strong>{{ session['name'] }}</strong>
-                                <p>
-                                    {% if order[5] %}
-                                        {{ order[5] | replace('\n', '<br>') | safe }}<br>
-                                    {% else %}
-                                        Address not provided<br>
-                                    {% endif %}
-                                    <strong>Phone:</strong> {{ order[4] if order[4] else 'N/A' }}
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Payment Info -->
-                        {% if payment %}
-                            <div class="info-card">
-                                <h5><i class="bi bi-credit-card me-2"></i>Payment Information</h5>
-                                <div class="info-content">
-                                    <div class="payment-detail">
-                                        <span>Method:</span>
-                                        <strong>{{ payment[2]|capitalize if payment[2] else 'Cash on Delivery' }}</strong>
-                                    </div>
-                                    <div class="payment-detail">
-                                        <span>Amount Paid:</span>
-                                        <strong>Rs{{ "{:,.2f}".format(payment[0]) }}</strong>
-                                    </div>
-                                    <div class="payment-detail">
-                                        <span>Payment Date:</span>
-                                        <strong>{{ payment[1].strftime('%d %B %Y') if payment[1] else 'N/A' }}</strong>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
-                        
-                        <!-- Order Summary -->
-                        <div class="info-card order-summary-card">
-                            <h5><i class="bi bi-receipt me-2"></i>Order Summary</h5>
-                            <div class="info-content">
+
+                    <div class="info-card order-summary-card">
+                        <h5><i class="bi bi-receipt me-2"></i>Order Summary</h5>
+                        <div class="info-content">
+                            {% if order[9] %}
                                 <div class="summary-row">
-                                    <span>Items:</span>
-                                    <span>Rs{{ "{:,.2f}".format(order[2]) }}</span>
+                                    <span>Coupon ({{ order[9] }}):</span>
+                                    <span class="text-success">-Rs{{ "{:,.2f}".format(order[10]) }}</span>
                                 </div>
+                            {% endif %}
+                            {% if order[11] %}
                                 <div class="summary-row">
-                                    <span>Delivery:</span>
-                                    <span class="text-success">FREE</span>
+                                    <span>Loyalty points redeemed ({{ order[11] }}):</span>
+                                    <span class="text-success">-Rs{{ "{:,.2f}".format(order[12]) }}</span>
                                 </div>
-                                <hr>
-                                <div class="summary-row total">
-                                    <span>Order Total:</span>
-                                    <span class="text-danger">Rs{{ "{:,.2f}".format(order[2]) }}</span>
+                            {% endif %}
+                            {% if order[13] %}
+                                <div class="summary-row">
+                                    <span>Loyalty points earned:</span>
+                                    <span class="text-success">+{{ order[13] }} pts</span>
                                 </div>
+                            {% endif %}
+                            {% if order[14] %}
+                                <div class="summary-row">
+                                    <span>Cashback points awarded:</span>
+                                    <span class="text-success">+{{ order[14] }} pts</span>
+                                </div>
+                            {% endif %}
+                            <hr>
+                            <div class="summary-row total">
+                                <span>Order Total:</span>
+                                <span class="text-danger">Rs{{ "{:,.2f}".format(order[2]) }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="order-actions-footer">
-                    <a href="{{ url_for('order_history') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Back to Orders
-                    </a>
-                    <button class="btn btn-warning">
-                        <i class="bi bi-arrow-repeat me-2"></i>Buy Again
-                    </button>
-                </div>
+            </div>
+
+            <div class="order-actions-footer">
+                <a href="{{ url_for('customer.order_history') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Orders
+                </a>
             </div>
         </div>
-    </main>
-    
-    <!-- Footer -->
-    <footer class="main-footer">
-        <div class="footer-top">
-            <a href="#" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">Back to top</a>
-        </div>
-        <div class="footer-bottom">
-            <div class="footer-logo">
-                <i class="bi bi-cart4"></i>
-                <span>Smart<span class="text-warning">Cart</span></span>
-            </div>
-            <p>&copy; 2025 SmartCart. All rights reserved.</p>
-        </div>
-    </footer>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-</html>
+    </div>
+{% endblock %}

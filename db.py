@@ -4,6 +4,15 @@ from flask import g
 _pool = None
 
 
+def _output_type_handler(cursor, metadata):
+    # Auto-fetch CLOB/BLOB columns as plain str/bytes instead of LOB objects
+    # (Oracle 11.2 thick-mode default), so callers never need cur.read().
+    if metadata.type_code is oracledb.DB_TYPE_CLOB:
+        return cursor.var(oracledb.DB_TYPE_LONG, arraysize=cursor.arraysize)
+    if metadata.type_code is oracledb.DB_TYPE_BLOB:
+        return cursor.var(oracledb.DB_TYPE_LONG_RAW, arraysize=cursor.arraysize)
+
+
 def init_pool(app):
     global _pool
     oracledb.init_oracle_client(lib_dir=app.config['ORACLE_CLIENT_LIB_DIR'])
@@ -20,7 +29,9 @@ def init_pool(app):
 
 def get_db():
     if 'db_conn' not in g:
-        g.db_conn = _pool.acquire()
+        conn = _pool.acquire()
+        conn.outputtypehandler = _output_type_handler
+        g.db_conn = conn
     return g.db_conn
 
 

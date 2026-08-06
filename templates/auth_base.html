@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}SmartCart{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="auth-page">
+    {% include 'partials/_contact_bar.html' %}
+    <div class="auth-container">
+        <div class="auth-logo">
+            <a href="{{ url_for('customer.index') }}">
+                <i class="bi bi-cart4"></i>
+                <div class="logo-text">
+                    <span>Smart<span class="text-warning">Cart</span></span>
+                </div>
+            </a>
+        </div>
+
+        <div class="auth-card">
+            {% include 'partials/_flash_messages.html' %}
+            {% block content %}{% endblock %}
+        </div>
+
+        <div class="auth-footer">
+            <div class="auth-footer-links">
+                <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+                <a href="tel:{{ contact_phone }}">{{ contact_phone }}</a>
+            </div>
+            <p>&copy; 2026 SmartCart. All rights reserved.</p>
+        </div>
+    </div>
+    {% include 'partials/_whatsapp_button.html' %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

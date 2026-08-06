@@ -1,0 +1,33 @@
+{% extends "admin/base.html" %}
+{% block title %}Site Settings - Admin | SmartCart{% endblock %}
+{% block page_title %}Site Settings{% endblock %}
+{% block content %}
+    <div class="admin-card">
+        <div class="card-header"><h5><i class="bi bi-bank2 me-2"></i>Bank Transfer Details</h5></div>
+        <div class="card-body">
+            <p class="text-muted">These details are shown to customers at checkout for bank transfer payments.</p>
+            <form method="POST" action="{{ url_for('admin.site_settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label">Bank Name</label>
+                    <input type="text" class="form-control" name="bank_name" value="{{ settings.get('bank_name', '') }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Account Title</label>
+                    <input type="text" class="form-control" name="bank_account_title" value="{{ settings.get('bank_account_title', '') }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Account Number</label>
+                    <input type="text" class="form-control" name="bank_account_number" value="{{ settings.get('bank_account_number', '') }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">IBAN</label>
+                    <input type="text" class="form-control" name="bank_iban" value="{{ settings.get('bank_iban', '') }}">
+                </div>
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-check-lg me-2"></i>Save Settings
+                </button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

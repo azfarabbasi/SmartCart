@@ -1,0 +1,84 @@
+{% extends "admin/base.html" %}
+{% block title %}Coupons - Admin | SmartCart{% endblock %}
+{% block page_title %}Coupons{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="admin-card">
+                <div class="card-header"><h5><i class="bi bi-plus-circle me-2"></i>Create Coupon</h5></div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.add_coupon') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">Coupon Code</label>
+                            <input type="text" class="form-control text-uppercase" name="code" required minlength="3" maxlength="30" placeholder="e.g. WELCOME10">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Discount Percent</label>
+                            <input type="number" class="form-control" name="discount_percent" required min="1" max="100" step="0.01" placeholder="10">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Max Uses (optional)</label>
+                            <input type="number" class="form-control" name="max_uses" min="1" placeholder="Unlimited">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Expiry Date (optional)</label>
+                            <input type="date" class="form-control" name="valid_to">
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="bi bi-plus-lg me-2"></i>Create Coupon
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h5>All Coupons</h5>
+                    <span class="badge bg-primary">{{ coupons|length }} coupons</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr><th>Code</th><th>Discount</th><th>Usage</th><th>Valid</th><th>Status</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            {% if coupons %}
+                                {% for c in coupons %}
+                                    <tr>
+                                        <td><strong>{{ c[1] }}</strong></td>
+                                        <td>{{ c[2] }}%</td>
+                                        <td>{{ c[4] }}{% if c[3] %} / {{ c[3] }}{% else %} / &infin;{% endif %}</td>
+                                        <td>
+                                            {{ c[5].strftime('%d %b %Y') if c[5] else '' }}
+                                            {% if c[6] %} &ndash; {{ c[6].strftime('%d %b %Y') }}{% endif %}
+                                        </td>
+                                        <td>
+                                            {% if c[7] %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <form action="{{ url_for('admin.toggle_coupon', coupon_id=c[0]) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                    {{ 'Deactivate' if c[7] else 'Activate' }}
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="6" class="text-center text-muted py-4">No coupons yet.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

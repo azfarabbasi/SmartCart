@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}SmartCart{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% include 'partials/_contact_bar.html' %}
+    {% include 'partials/_nav_customer.html' %}
+
+    <main class="main-content">
+        {% include 'partials/_flash_messages.html' %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-top">
+            <a href="#" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">Back to top</a>
+        </div>
+        <div class="footer-middle">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h5>Get to Know Us</h5>
+                        <ul>
+                            <li><a href="#">About SmartCart</a></li>
+                            <li><a href="#">Careers</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h5>Connect with Us</h5>
+                        <ul>
+                            <li><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp: +{{ whatsapp_number }}</a></li>
+                            <li><a href="mailto:{{ contact_email }}"><i class="bi bi-envelope"></i> {{ contact_email }}</a></li>
+                            <li><a href="tel:{{ contact_phone }}"><i class="bi bi-telephone"></i> {{ contact_phone }}</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h5>Make Money with Us</h5>
+                        <ul>
+                            <li><a href="#">Sell on SmartCart</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h5>Let Us Help You</h5>
+                        <ul>
+                            {% if session.get('user_id') %}
+                                <li><a href="{{ url_for('customer.order_history') }}">Your Orders</a></li>
+                                <li><a href="{{ url_for('customer.loyalty_history') }}">Loyalty Points</a></li>
+                            {% else %}
+                                <li><a href="{{ url_for('auth.login') }}">Sign In</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-logo">
+                <i class="bi bi-cart4"></i>
+                <span>Smart<span class="text-warning">Cart</span></span>
+            </div>
+            <p>&copy; 2026 SmartCart. All rights reserved.</p>
+        </div>
+    </footer>
+
+    {% include 'partials/_whatsapp_button.html' %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

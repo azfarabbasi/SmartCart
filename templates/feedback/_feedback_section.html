@@ -1,0 +1,82 @@
+<section id="reviews" class="feedback-section mt-5">
+    <h3 class="mb-3"><i class="bi bi-chat-square-text"></i> Customer Feedback</h3>
+
+    {% if session.get('user_id') %}
+        <form action="{{ url_for('feedback.submit_feedback', product_id=product[0]) }}" method="POST" enctype="multipart/form-data" class="feedback-form mb-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-2 align-items-start">
+                <div class="col-auto">
+                    <select name="rating" class="form-select">
+                        <option value="">No rating</option>
+                        {% for i in range(1, 6) %}
+                            <option value="{{ i }}">{{ i }} star{{ 's' if i != 1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col">
+                    <textarea name="comment" class="form-control" rows="2" placeholder="Share your experience with this product..."></textarea>
+                </div>
+            </div>
+            <div class="row g-2 mt-2 align-items-center">
+                <div class="col-auto">
+                    <input type="file" name="media" class="form-control" accept="image/*,video/*">
+                    <small class="text-muted">Optional photo or video (max 5MB image / 50MB video)</small>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-send"></i> Submit Feedback</button>
+                </div>
+            </div>
+        </form>
+    {% else %}
+        <p><a href="{{ url_for('auth.login', next=request.path) }}">Login</a> to leave feedback on this product.</p>
+    {% endif %}
+
+    {% if feedback_list %}
+        <div class="feedback-list">
+            {% for entry in feedback_list %}
+                {% set fb = entry.feedback %}
+                <div class="feedback-item">
+                    <div class="feedback-meta">
+                        <strong>{{ fb[1] }}</strong>
+                        {% if fb[2] %}
+                            <span class="star-rating">
+                                {% for i in range(fb[2]) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                            </span>
+                        {% endif %}
+                        <span class="text-muted small">{{ fb[6].strftime('%d %b %Y') if fb[6] else '' }}</span>
+                    </div>
+                    {% if fb[3] %}<p>{{ fb[3] }}</p>{% endif %}
+                    {% if fb[4] %}
+                        <div class="feedback-media">
+                            {% if fb[5] == 'video' %}
+                                <video src="{{ url_for('static', filename=fb[4]) }}" controls></video>
+                            {% else %}
+                                <img src="{{ url_for('static', filename=fb[4]) }}" alt="feedback media">
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% for reply in entry.replies %}
+                        <div class="feedback-reply">
+                            <span class="badge bg-warning text-dark">Official Reply</span>
+                            <strong>{{ reply[4] }}</strong>
+                            <span class="text-muted small">{{ reply[3].strftime('%d %b %Y') if reply[3] else '' }}</span>
+                            <p>{{ reply[0] }}</p>
+                            {% if reply[1] %}
+                                <div class="feedback-media">
+                                    {% if reply[2] == 'video' %}
+                                        <video src="{{ url_for('static', filename=reply[1]) }}" controls></video>
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename=reply[1]) }}" alt="reply media">
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">No feedback yet. Be the first to review this product!</p>
+    {% endif %}
+</section>
