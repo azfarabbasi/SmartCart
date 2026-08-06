@@ -45,20 +45,25 @@ function togglePassword(inputId) {
 function initializeSidebar() {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.querySelector('.admin-sidebar');
-    
+    const backdrop = document.getElementById('sidebarBackdrop');
+
     if (sidebarToggle && sidebar) {
         sidebarToggle.addEventListener('click', function() {
             sidebar.classList.toggle('show');
+            if (backdrop) backdrop.classList.toggle('show');
         });
-        
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            if (window.innerWidth <= 992) {
-                if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
-                    sidebar.classList.remove('show');
-                }
-            }
-        });
+
+        // The backdrop is a real element covering the rest of the page while
+        // the sidebar is open, so a click on it is fully consumed here and
+        // can never fall through to a link/button underneath.
+        if (backdrop) {
+            backdrop.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                sidebar.classList.remove('show');
+                backdrop.classList.remove('show');
+            });
+        }
     }
 }
 

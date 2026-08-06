@@ -2331,26 +2331,45 @@ a:hover {
 /* ═══════════════════════════════════════════════════════════
    RESPONSIVE STYLES
    ═══════════════════════════════════════════════════════════ */
-@media (max-width: 992px) {
+/* Sidebar stays visible on normal desktop/laptop widths; only
+   collapses behind the hamburger toggle on genuinely small
+   (tablet/phone) screens, so admin nav items like Coupons aren't
+   hidden by default on an ordinary browser window. */
+@media (max-width: 768px) {
     .admin-sidebar {
         transform: translateX(-100%);
     }
-    
+
     .admin-sidebar.show {
         transform: translateX(0);
     }
-    
+
     .admin-main {
         margin-left: 0;
     }
-    
+
     .sidebar-toggle {
         display: block;
     }
-    
+
     .header-actions .action-text {
         display: none;
     }
+}
+
+/* Backdrop behind the open mobile sidebar — a real element (not just a
+   click-outside JS handler) so a tap/click on it is fully consumed and
+   can never fall through to a link or button underneath. */
+.sidebar-backdrop {
+    display: none;
+}
+
+.sidebar-backdrop.show {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
 }
 
 @media (max-width: 768px) {
