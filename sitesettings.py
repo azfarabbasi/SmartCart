@@ -23,10 +23,10 @@ FIELD_GROUPS = [
         ('whatsapp_number', 'WhatsApp Number (digits only, country code first, e.g. 923001234567)', 'text'),
     ]),
     ('Bank Transfer Details', [
-        ('bank_name', 'Bank Name', 'text'),
-        ('bank_account_title', 'Account Title', 'text'),
-        ('bank_account_number', 'Account Number', 'text'),
-        ('bank_iban', 'IBAN', 'text'),
+        ('bank_name', 'Bank Name (e.g. NayaPay, HBL, Meezan Bank)', 'text'),
+        ('bank_account_title', 'Account Title (the name on the account)', 'text'),
+        ('bank_account_number', 'Account Number (or NayaPay/mobile wallet number)', 'text'),
+        ('bank_iban', 'IBAN (optional — leave blank if you don\'t have one, e.g. most NayaPay accounts don\'t need this)', 'text'),
     ]),
     ('Payment Amounts', [
         ('cod_advance_amount', 'Cash on Delivery advance (Rs)', 'number'),
