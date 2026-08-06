@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order #{{ order[0] }} - Admin | SmartCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-logo">
+                <i class="bi bi-cart4"></i>
+                <span>SmartCart</span>
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('admin_dashboard') }}">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_products') }}">
+                        <i class="bi bi-box-seam"></i>
+                        <span>Products</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_categories') }}">
+                        <i class="bi bi-tags"></i>
+                        <span>Categories</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="{{ url_for('admin_orders') }}">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Orders</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_users') }}">
+                        <i class="bi bi-people"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_inventory') }}">
+                        <i class="bi bi-archive"></i>
+                        <span>Inventory</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="admin-main">
+        <!-- Admin Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('admin_orders') }}">Orders</a></li>
+                        <li class="breadcrumb-item active">Order #{{ order[0] }}</li>
+                    </ol>
+                </nav>
+            </div>
+        </header>
+        
+        <!-- Order Detail Content -->
+        <main class="admin-content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }}-fill me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="order-detail-header mb-4">
+                <div class="order-info-header">
+                    <h2><i class="bi bi-receipt me-2"></i>Order #{{ order[0] }}</h2>
+                    <span class="order-date">{{ order[3].strftime('%d %B %Y, %I:%M %p') if order[3] else 'N/A' }}</span>
+                </div>
+                <span class="status-badge status-{{ order[5] }} large">
+                    {% if order[5] == 'pending' %}
+                        <i class="bi bi-clock"></i>
+                    {% elif order[5] == 'processing' %}
+                        <i class="bi bi-gear"></i>
+                    {% elif order[5] == 'shipped' %}
+                        <i class="bi bi-truck"></i>
+                    {% elif order[5] == 'delivered' %}
+                        <i class="bi bi-check-circle"></i>
+                    {% elif order[5] == 'cancelled' %}
+                        <i class="bi bi-x-circle"></i>
+                    {% endif %}
+                    {{ order[5]|capitalize }}
+                </span>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Customer Info -->
+                    <div class="admin-card mb-4" id="invoiceCustomerInfo">
+                        <div class="card-header">
+                            <h5><i class="bi bi-person me-2"></i>Customer Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Name:</strong> {{ order[1] }}</p>
+                                    <p><strong>Email:</strong> {{ order[2] }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Shipping Address:</strong></p>
+                                    <p class="text-muted">
+                                        {% if order[7] %}
+                                            {{ order[7] | replace('\n', '<br>') | safe }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Phone Number:</strong> {{ order[6] if order[6] else 'N/A' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Items -->
+                    <div class="admin-card mb-4" id="invoiceOrderItems">
+                        <div class="card-header">
+                            <h5><i class="bi bi-box-seam me-2"></i>Order Items</h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                        <tr>
+                                            <td>{{ item[0] }}</td>
+                                            <td>{{ item[1] }}</td>
+                                            <td>Rs{{ "{:,.2f}".format(item[2]) }}</td>
+                                            <td><strong>Rs{{ "{:,.2f}".format(item[1] * item[2]) }}</strong></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Order Total:</strong></td>
+                                        <td><strong class="text-danger">Rs{{ "{:,.2f}".format(order[4]) }}</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <!-- Update Status -->
+                    <div class="admin-card mb-4">
+                        <div class="card-header">
+                            <h5><i class="bi bi-arrow-repeat me-2"></i>Update Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('admin_update_order_status') }}">
+                                <input type="hidden" name="order_id" value="{{ order[0] }}">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Order Status</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="pending" {% if order[5] == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="processing" {% if order[5] == 'processing' %}selected{% endif %}>Processing</option>
+                                        <option value="shipped" {% if order[5] == 'shipped' %}selected{% endif %}>Shipped</option>
+                                        <option value="delivered" {% if order[5] == 'delivered' %}selected{% endif %}>Delivered</option>
+                                        <option value="cancelled" {% if order[5] == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="bi bi-check-lg me-2"></i>Update Status
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Info -->
+                    {% if payment %}
+                        <div class="admin-card mb-4" id="invoicePaymentInfo">
+                            <div class="card-header">
+                                <h5><i class="bi bi-credit-card me-2"></i>Payment Info</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="payment-info-row">
+                                    <span>Amount:</span>
+                                    <strong>Rs{{ "{:,.2f}".format(payment[0]) }}</strong>
+                                </div>
+                                <div class="payment-info-row">
+                                    <span>Method:</span>
+                                    <strong>{{ payment[2]|capitalize if payment[2] else 'Cash' }}</strong>
+                                </div>
+                                <div class="payment-info-row">
+                                    <span>Date:</span>
+                                    <strong>{{ payment[1].strftime('%d %b %Y') if payment[1] else 'N/A' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Quick Actions -->
+                    <div class="admin-card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-secondary w-100 mb-2">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Orders
+                            </a>
+                            <button class="btn btn-outline-primary w-100" onclick="printInvoice()">
+                                <i class="bi bi-printer me-2"></i>Print Invoice
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

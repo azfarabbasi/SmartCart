@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SmartCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-logo">
+                <i class="bi bi-cart4"></i>
+                <span>SmartCart</span>
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="active">
+                    <a href="{{ url_for('admin_dashboard') }}">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_products') }}">
+                        <i class="bi bi-box-seam"></i>
+                        <span>Products</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_categories') }}">
+                        <i class="bi bi-tags"></i>
+                        <span>Categories</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_orders') }}">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Orders</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_users') }}">
+                        <i class="bi bi-people"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_inventory') }}">
+                        <i class="bi bi-archive"></i>
+                        <span>Inventory</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="admin-main">
+        <!-- Admin Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1>Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <div class="admin-user">
+                    <i class="bi bi-person-circle"></i>
+                    <span>{{ session['name'] }}</span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Dashboard Content -->
+        <main class="admin-content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card stat-products">
+                    <div class="stat-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ total_products }}</h3>
+                        <p>Total Products</p>
+                    </div>
+                </div>
+                <div class="stat-card stat-orders">
+                    <div class="stat-icon">
+                        <i class="bi bi-clipboard-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ total_orders }}</h3>
+                        <p>Total Orders</p>
+                    </div>
+                </div>
+                <div class="stat-card stat-customers">
+                    <div class="stat-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ total_customers }}</h3>
+                        <p>Total Customers</p>
+                    </div>
+                </div>
+                <div class="stat-card stat-revenue">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Rs{{ "{:,.2f}".format(total_revenue) }}</h3>
+                        <p>Total Revenue</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h2>Quick Actions</h2>
+                <div class="actions-grid">
+                    <a href="{{ url_for('admin_add_product') }}" class="action-card">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>Add Product</span>
+                    </a>
+                    <a href="{{ url_for('admin_orders') }}" class="action-card">
+                        <i class="bi bi-eye"></i>
+                        <span>View Orders</span>
+                    </a>
+                    <a href="{{ url_for('admin_inventory') }}" class="action-card">
+                        <i class="bi bi-archive"></i>
+                        <span>Check Inventory</span>
+                    </a>
+                    <a href="{{ url_for('admin_users') }}" class="action-card">
+                        <i class="bi bi-person-plus"></i>
+                        <span>Manage Users</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Recent Orders -->
+            <div class="recent-orders">
+                <div class="section-header">
+                    <h2>Recent Orders</h2>
+                    <a href="{{ url_for('admin_orders') }}" class="view-all">View All <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_orders %}
+                                {% for order in recent_orders %}
+                                    <tr>
+                                        <td><strong>#{{ order[0] }}</strong></td>
+                                        <td>{{ order[1] }}</td>
+                                        <td>{{ order[2].strftime('%d %b %Y') if order[2] else 'N/A' }}</td>
+                                        <td>Rs{{ "{:,.2f}".format(order[3]) }}</td>
+                                        <td>
+                                            <span class="status-badge status-{{ order[4] }}">
+                                                {{ order[4]|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('admin_order_detail', order_id=order[0]) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No recent orders</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

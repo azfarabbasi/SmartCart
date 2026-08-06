@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users - Admin | SmartCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-logo">
+                <i class="bi bi-cart4"></i>
+                <span>SmartCart</span>
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('admin_dashboard') }}">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_products') }}">
+                        <i class="bi bi-box-seam"></i>
+                        <span>Products</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_categories') }}">
+                        <i class="bi bi-tags"></i>
+                        <span>Categories</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_orders') }}">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Orders</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="{{ url_for('admin_users') }}">
+                        <i class="bi bi-people"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_inventory') }}">
+                        <i class="bi bi-archive"></i>
+                        <span>Inventory</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="admin-main">
+        <!-- Admin Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1>Users</h1>
+            </div>
+        </header>
+        
+        <!-- Users Content -->
+        <main class="admin-content">
+            <!-- User Stats -->
+            <div class="order-stats mb-4">
+                <div class="stat-pill">
+                    <i class="bi bi-people"></i>
+                    <span>{{ users|length }} Total Users</span>
+                </div>
+                <div class="stat-pill">
+                    <i class="bi bi-person-check"></i>
+                    <span>{{ users|selectattr(3, 'equalto', 'customer')|list|length }} Customers</span>
+                </div>
+                <div class="stat-pill">
+                    <i class="bi bi-shield-check"></i>
+                    <span>{{ users|selectattr(3, 'equalto', 'admin')|list|length }} Admins</span>
+                </div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="card-header">
+                    <h5>All Users</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if users %}
+                                {% for user in users %}
+                                    <tr>
+                                        <td><strong>#{{ user[0] }}</strong></td>
+                                        <td>
+                                            <div class="user-info">
+                                                <div class="user-avatar">
+                                                    <i class="bi bi-person"></i>
+                                                </div>
+                                                <span>{{ user[1] }}</span>
+                                            </div>
+                                        </td>
+                                        <td>{{ user[2] }}</td>
+                                        <td>
+                                            {% if user[3] == 'admin' %}
+                                                <span class="role-badge role-admin">
+                                                    <i class="bi bi-shield-check me-1"></i>Admin
+                                                </span>
+                                            {% else %}
+                                                <span class="role-badge role-customer">
+                                                    <i class="bi bi-person me-1"></i>Customer
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ user[4].strftime('%d %b %Y') if user[4] else 'N/A' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="bi bi-people fs-1 d-block mb-2"></i>
+                                        No users found
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

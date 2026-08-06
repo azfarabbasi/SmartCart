@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product - Admin | SmartCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-logo">
+                <i class="bi bi-cart4"></i>
+                <span>SmartCart</span>
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('admin_dashboard') }}">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="{{ url_for('admin_products') }}">
+                        <i class="bi bi-box-seam"></i>
+                        <span>Products</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_categories') }}">
+                        <i class="bi bi-tags"></i>
+                        <span>Categories</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_orders') }}">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Orders</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_users') }}">
+                        <i class="bi bi-people"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_inventory') }}">
+                        <i class="bi bi-archive"></i>
+                        <span>Inventory</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="admin-main">
+        <!-- Admin Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('admin_products') }}">Products</a></li>
+                        <li class="breadcrumb-item active">Edit Product</li>
+                    </ol>
+                </nav>
+            </div>
+        </header>
+        
+        <!-- Edit Product Content -->
+        <main class="admin-content">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-pencil me-2"></i>Edit Product #{{ product[0] }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin_edit_product', product_id=product[0]) }}" enctype="multipart/form-data" class="product-form">
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Product Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name" name="name" required value="{{ product[2] }}">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="category_id" name="category_id" required>
+                                            <option value="">Select Category</option>
+                                            {% for cat in categories %}
+                                                <option value="{{ cat[0] }}" {% if cat[0] == product[1] %}selected{% endif %}>{{ cat[1] }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="price" class="form-label">Price (Rs) <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="price" name="price" required min="0" step="0.01" value="{{ product[3] }}">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="stock" class="form-label">Stock <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="stock" name="stock" required min="0" value="{{ product[4] }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="5">{{ product[5] if product[5] else '' }}</textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-4">
+                                <div class="mb-3">
+                                    <label for="image" class="form-label">Product Image</label>
+                                    <div class="image-upload-area" id="imageUploadArea">
+                                        <input type="file" class="form-control d-none" id="image" name="image" accept="image/*" onchange="previewImage(this)">
+                                        <div class="upload-placeholder {% if product[6] %}d-none{% endif %}" id="uploadPlaceholder">
+                                            <i class="bi bi-cloud-upload"></i>
+                                            <p>Click to upload image</p>
+                                            <small class="text-muted">PNG, JPG, JPEG, GIF, WEBP</small>
+                                        </div>
+                                        {% if product[6] %}
+                                            <img src="{{ url_for('static', filename=product[6]) }}" alt="Current Image" class="image-preview" id="imagePreview">
+                                        {% else %}
+                                            <img src="" alt="Preview" class="image-preview d-none" id="imagePreview">
+                                        {% endif %}
+                                    </div>
+                                    {% if product[6] %}
+                                        <small class="text-muted">Click to change image</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="form-actions">
+                            <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-lg me-2"></i>Update Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        document.getElementById('imageUploadArea').addEventListener('click', function() {
+            document.getElementById('image').click();
+        });
+        
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('imagePreview').classList.remove('d-none');
+                    document.getElementById('uploadPlaceholder').classList.add('d-none');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - SmartCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Simple Header for Checkout -->
+    <header class="checkout-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <a href="{{ url_for('customer_home') }}" class="logo">
+                        <i class="bi bi-cart4"></i>
+                        <span>Smart<span class="text-warning">Cart</span></span>
+                    </a>
+                </div>
+                <div class="col text-center">
+                    <h1 class="checkout-title">Checkout (<span>{{ cart_items|length }} item{% if cart_items|length != 1 %}s{% endif %}</span>)</h1>
+                </div>
+                <div class="col-auto">
+                    <i class="bi bi-lock-fill text-muted"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="checkout-page">
+        <div class="container py-4">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}-fill me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% if cart_items %}
+                <form method="POST" action="{{ url_for('checkout') }}" id="checkoutForm">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <!-- Delivery Address -->
+                            <div class="checkout-section">
+                                <div class="section-number">1</div>
+                                <div class="section-content">
+                                    <h2>Delivery address</h2>
+                                    <div class="address-card selected">
+                                        <div class="address-info">
+                                            <strong>{{ session['name'] }}</strong>
+                                            <p class="text-muted mb-1">Please enter your delivery details below.</p>
+                                            <p class="text-muted mb-0">We’ll use them to deliver your order.</p>
+                                        </div>
+                                        <div class="address-badge">
+                                            <i class="bi bi-check-circle-fill text-success"></i> Delivering here
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delivery Information -->
+                            <div class="checkout-section">
+                                <div class="section-number">2</div>
+                                <div class="section-content">
+                                    <h2>Delivery Information</h2>
+                                    <div class="mb-3">
+                                        <label class="sc-form-label" for="phone">Phone number</label>
+                                        <input class="sc-form-control form-control" id="phone" name="phone" type="tel" required placeholder="+92 300 0000000">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="sc-form-label" for="address">Delivery address</label>
+                                        <textarea class="sc-form-control form-control" id="address" name="address" rows="3" required placeholder="House #, Street, Area, City"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Payment Method -->
+                            <div class="checkout-section">
+                                <div class="section-number">3</div>
+                                <div class="section-content">
+                                    <h2>Payment method</h2>
+                                    <div class="payment-methods">
+                                        <label class="payment-option">
+                                            <input type="radio" name="payment_method" value="cash" checked>
+                                            <div class="payment-card">
+                                                <i class="bi bi-cash-stack"></i>
+                                                <div>
+                                                    <strong>Cash on Delivery</strong>
+                                                    <small>Pay when your order arrives</small>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="payment-option">
+                                            <input type="radio" name="payment_method" value="card">
+                                            <div class="payment-card">
+                                                <i class="bi bi-credit-card"></i>
+                                                <div>
+                                                    <strong>Credit/Debit Card</strong>
+                                                    <small>All major cards accepted</small>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="payment-option">
+                                            <input type="radio" name="payment_method" value="upi">
+                                            <div class="payment-card">
+                                                <i class="bi bi-phone"></i>
+                                                <div>
+                                                    <strong>UPI</strong>
+                                                    <small>Pay using any UPI app</small>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="payment-option">
+                                            <input type="radio" name="payment_method" value="netbanking">
+                                            <div class="payment-card">
+                                                <i class="bi bi-bank"></i>
+                                                <div>
+                                                    <strong>Net Banking</strong>
+                                                    <small>All banks supported</small>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Order Items -->
+                            <div class="checkout-section">
+                                <div class="section-number">4</div>
+                                <div class="section-content">
+                                    <h2>Review items and delivery</h2>
+                                    <div class="order-items">
+                                        <div class="delivery-estimate">
+                                            <i class="bi bi-truck"></i>
+                                            <span>Estimated delivery: <strong>Tomorrow</strong></span>
+                                        </div>
+                                        {% for item in cart_items %}
+                                            <div class="order-item">
+                                                <div class="item-details">
+                                                    <h5>{{ item[0] }}</h5>
+                                                    <p class="text-muted">Qty: {{ item[1] }}</p>
+                                                </div>
+                                                <div class="item-price">
+                                                    Rs{{ "{:,.2f}".format(item[2]) }}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Order Summary -->
+                        <div class="col-lg-4">
+                            <div class="order-summary-card">
+                                <button type="submit" class="btn btn-warning w-100 mb-3">
+                                    <i class="bi bi-lock-fill me-2"></i>Place your order
+                                </button>
+                                <p class="terms-text">
+                                    By placing your order, you agree to SmartCart's <a href="#">privacy notice</a> and <a href="#">conditions of use</a>.
+                                </p>
+                                <hr>
+                                <h4>Order Summary</h4>
+                                <div class="summary-row">
+                                    <span>Items:</span>
+                                    <span>Rs{{ "{:,.2f}".format(total) }}</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Delivery:</span>
+                                    <span class="text-success">FREE</span>
+                                </div>
+                                <hr>
+                                <div class="summary-row order-total">
+                                    <span>Order Total:</span>
+                                    <span class="text-danger">Rs{{ "{:,.2f}".format(total) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            {% else %}
+                <div class="empty-checkout">
+                    <i class="bi bi-cart-x"></i>
+                    <h3>Your cart is empty</h3>
+                    <p>Add items to your cart before checkout.</p>
+                    <a href="{{ url_for('customer_home') }}" class="btn btn-warning">Continue shopping</a>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="checkout-footer">
+        <div class="container text-center">
+            <div class="footer-links">
+                <a href="#">Conditions of Use</a>
+                <a href="#">Privacy Notice</a>
+                <a href="#">Help</a>
+            </div>
+            <p>&copy; 2025 SmartCart. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
