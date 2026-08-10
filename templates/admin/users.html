@@ -31,6 +31,7 @@
                         <th>Role</th>
                         <th>Loyalty Points</th>
                         <th>Joined</th>
+                        <th>Email Verified</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,11 +55,22 @@
                                 </td>
                                 <td>{{ user[5] }}</td>
                                 <td>{{ user[4].strftime('%d %b %Y') if user[4] else 'N/A' }}</td>
+                                <td>
+                                    {% if user[6] %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                        <form method="POST" action="{{ url_for('admin.verify_user_email', user_id=user[0]) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <span class="badge bg-secondary mb-1 d-block">Not verified</span>
+                                            <button type="submit" class="btn btn-sm btn-outline-warning">Verify Manually</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
+                            <td colspan="7" class="text-center text-muted py-4">
                                 <i class="bi bi-people fs-1 d-block mb-2"></i>
                                 No users found
                             </td>

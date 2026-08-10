@@ -582,10 +582,26 @@ def site_settings():
 def users():
     cur = get_db().cursor()
     cur.execute(
-        "SELECT user_id, name, email, role, created_at, loyalty_points_balance "
+        "SELECT user_id, name, email, role, created_at, loyalty_points_balance, email_verified "
         "FROM Users ORDER BY created_at DESC"
     )
     return render_template('admin/users.html', users=cur.fetchall())
+
+
+@admin_bp.route('/users/<int:user_id>/verify', methods=['POST'])
+@admin_required
+def verify_user_email(user_id):
+    cur = get_db().cursor()
+    cur.execute(
+        "UPDATE Users SET email_verified = 1, verification_code = NULL, "
+        "verification_code_expires = NULL WHERE user_id = :v_user_id",
+        {'v_user_id': user_id},
+    )
+    log_admin_action(cur, session['user_id'], 'user.manual_verify', 'User', user_id,
+                      'Verified manually (e.g. after an email delivery failure)')
+    get_db().commit()
+    flash('Account verified. The customer can now log in.', 'success')
+    return redirect(url_for('admin.users'))
 
 
 @admin_bp.route('/inventory')
