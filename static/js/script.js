@@ -18,7 +18,57 @@ document.addEventListener('DOMContentLoaded', function() {
     lazyLoadImages();
     checkLowStock();
     initializeFormLoadingState();
+    initializeUnobtrusiveHandlers();
 });
+
+// ═══════════════════════════════════════════════════════════
+// Unobtrusive event bindings
+// (Our CSP has no 'unsafe-inline' in script-src, so inline
+// onclick/onchange/onsubmit attributes are silently ignored by
+// the browser -- every interactive behavior gets bound here instead.)
+// ═══════════════════════════════════════════════════════════
+function initializeUnobtrusiveHandlers() {
+    // Password show/hide toggle buttons
+    document.querySelectorAll('.password-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const wrapper = btn.closest('.password-input-wrapper');
+            const input = wrapper ? wrapper.querySelector('input') : null;
+            if (input) togglePassword(input.id);
+        });
+    });
+
+    // Product image file-input preview (add/edit product forms)
+    const imageInput = document.getElementById('image');
+    if (imageInput) {
+        imageInput.addEventListener('change', function() {
+            previewImage(this);
+        });
+    }
+
+    // "Back to top" footer link
+    document.querySelectorAll('.js-back-to-top').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+
+    // Auto-submit selects/checkboxes (quantity dropdowns, filter dropdowns, etc.)
+    document.querySelectorAll('.js-auto-submit').forEach(function(el) {
+        el.addEventListener('change', function() {
+            el.form.submit();
+        });
+    });
+
+    // Confirm-before-submit forms (delete buttons, destructive actions)
+    document.querySelectorAll('form[data-confirm]').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (!window.confirm(form.dataset.confirm)) {
+                e.preventDefault();
+            }
+        });
+    });
+}
 
 // ═══════════════════════════════════════════════════════════
 // Password Toggle

@@ -99,7 +99,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Verify Payment</button>
                             </form>
-                            <form action="{{ url_for('admin.reject_payment', order_id=order[0]) }}" method="POST" class="d-flex gap-2" onsubmit="return confirm('Reject this payment?')">
+                            <form action="{{ url_for('admin.reject_payment', order_id=order[0]) }}" method="POST" class="d-flex gap-2" data-confirm="Reject this payment?">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="text" name="reason" class="form-control" placeholder="Rejection reason (optional)">
                                 <button type="submit" class="btn btn-danger"><i class="bi bi-x-lg"></i> Reject</button>

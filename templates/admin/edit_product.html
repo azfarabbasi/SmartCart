@@ -64,7 +64,7 @@
                         <div class="mb-3">
                             <label for="image" class="form-label">Thumbnail Image</label>
                             <div class="image-upload-area" id="imageUploadArea">
-                                <input type="file" class="form-control d-none" id="image" name="image" accept="image/*" onchange="previewImage(this)">
+                                <input type="file" class="form-control d-none" id="image" name="image" accept="image/*">
                                 <div class="upload-placeholder {% if product[6] %}d-none{% endif %}" id="uploadPlaceholder">
                                     <i class="bi bi-cloud-upload"></i>
                                     <p>Click to upload image</p>
@@ -109,7 +109,7 @@
                             {% else %}
                                 <img src="{{ url_for('static', filename=item[1]) }}" alt="gallery item">
                             {% endif %}
-                            <form action="{{ url_for('admin.delete_product_media', media_id=item[0]) }}" method="POST" onsubmit="return confirm('Remove this media item?')">
+                            <form action="{{ url_for('admin.delete_product_media', media_id=item[0]) }}" method="POST" data-confirm="Remove this media item?">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
                             </form>

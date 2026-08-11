@@ -3,7 +3,7 @@
 {% block page_title %}Admin Audit Log{% endblock %}
 {% block content %}
     <form method="GET" action="{{ url_for('admin.audit_log') }}" class="mb-3">
-        <select name="action" class="form-select w-auto" onchange="this.form.submit()">
+        <select name="action" class="form-select w-auto js-auto-submit">
             <option value="">All Actions</option>
             {% for a in actions %}
                 <option value="{{ a }}" {% if selected_action == a %}selected{% endif %}>{{ a }}</option>

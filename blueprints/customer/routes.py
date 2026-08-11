@@ -1,4 +1,9 @@
 import os
+import re
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from urllib.parse import quote
 
 import oracledb
 from flask import (Blueprint, current_app, flash, redirect, render_template,
@@ -12,6 +17,47 @@ from uploads import save_upload, validate_upload
 from validators import validate_phone_pk, validate_required_text
 
 customer_bp = Blueprint('customer', __name__)
+
+LOW_STOCK_THRESHOLD = 5
+
+
+def whatsapp_link(phone, message):
+    digits = ''.join(ch for ch in phone if ch.isdigit())
+    if digits.startswith('0'):
+        digits = '92' + digits[1:]
+    elif not digits.startswith('92'):
+        digits = '92' + digits
+    return f'https://wa.me/{digits}?text={quote(message)}'
+
+
+def notify_admin_stock_issue(cur, product_name, requested, available, customer_name, customer_email):
+    settings = sitesettings.get_settings(cur)
+    admin_email = settings.get('contact_email') or current_app.config.get('CONTACT_EMAIL')
+    if not admin_email:
+        return
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f'SmartCart stock alert: {product_name}'
+        msg['From'] = current_app.config['EMAIL_USER']
+        msg['To'] = admin_email
+        availability = 'is completely out of stock' if available <= 0 else f'only has {available} left in stock'
+        body = f"""
+        <html><body>
+        <h2>Stock Alert</h2>
+        <p><strong>{customer_name}</strong> ({customer_email}) tried to order <strong>{requested}</strong> of
+        &quot;<strong>{product_name}</strong>&quot;, which {availability}. The order was not processed.</p>
+        <p>Consider restocking soon, or reach out to the customer directly.</p>
+        <br><p>&mdash; SmartCart</p>
+        </body></html>
+        """
+        msg.attach(MIMEText(body, 'html'))
+        server = smtplib.SMTP(current_app.config['EMAIL_HOST'], current_app.config['EMAIL_PORT'])
+        server.starttls()
+        server.login(current_app.config['EMAIL_USER'], current_app.config['EMAIL_PASSWORD'])
+        server.sendmail(current_app.config['EMAIL_USER'], admin_email, msg.as_string())
+        server.quit()
+    except Exception as e:
+        current_app.logger.warning(f'Stock alert email failed: {e}')
 
 
 # ── PUBLIC CATALOG ──────────────────────────────────────────────
@@ -105,14 +151,33 @@ def product_detail(product_id):
 def view_cart():
     cur = get_db().cursor()
     cur.execute(
-        "SELECT c.cart_id, p.product_id, p.name, p.price, c.quantity, p.image_path "
+        "SELECT c.cart_id, p.product_id, p.name, p.price, c.quantity, p.image_path, p.stock "
         "FROM Cart c JOIN Products p ON c.product_id = p.product_id "
         "WHERE c.user_id = :1",
         [session['user_id']],
     )
     items = cur.fetchall()
     total = sum(row[3] * row[4] for row in items)
-    return render_template('customer/cart.html', items=items, total=total)
+    stock_alert = session.pop('stock_alert', None)
+    whatsapp_cta = None
+    if stock_alert:
+        message = (
+            f"Hi! I wanted to order {stock_alert['requested']} of \"{stock_alert['product']}\" "
+            f"but only {stock_alert['available']} {'was' if stock_alert['available'] == 1 else 'were'} available. "
+            "Can you help me out?"
+        )
+        whatsapp_cta = whatsapp_link(current_app.config.get('WHATSAPP_NUMBER', ''), message)
+    return render_template(
+        'customer/cart.html', items=items, total=total,
+        stock_alert=stock_alert, whatsapp_cta=whatsapp_cta,
+    )
+
+
+def _record_stock_conflict(cur, product_name, requested, available):
+    cur.execute("SELECT name, email FROM Users WHERE user_id = :1", [session['user_id']])
+    cust_name, cust_email = cur.fetchone()
+    notify_admin_stock_issue(cur, product_name, requested, available, cust_name, cust_email)
+    session['stock_alert'] = {'product': product_name, 'available': available, 'requested': requested}
 
 
 @customer_bp.route('/cart/add', methods=['POST'])
@@ -122,11 +187,42 @@ def add_to_cart():
     quantity = int(request.form.get('quantity', 1))
 
     cur = get_db().cursor()
+    cur.execute("SELECT name, stock FROM Products WHERE product_id = :1", [product_id])
+    prod = cur.fetchone()
+    if not prod:
+        flash('Product not found.', 'error')
+        return redirect(url_for('customer.index'))
+    product_name, stock = prod
+
     cur.execute(
-        "SELECT cart_id FROM Cart WHERE user_id = :1 AND product_id = :2",
+        "SELECT cart_id, quantity FROM Cart WHERE user_id = :1 AND product_id = :2",
         [session['user_id'], product_id],
     )
     existing = cur.fetchone()
+    current_qty = existing[1] if existing else 0
+    desired_total = current_qty + quantity
+
+    if desired_total > stock:
+        capped = max(stock, 0)
+        if existing:
+            cur.execute("UPDATE Cart SET quantity = :1 WHERE cart_id = :2", [capped, existing[0]])
+        elif capped > 0:
+            cur.execute(
+                "INSERT INTO Cart (cart_id, user_id, product_id, quantity) "
+                "VALUES (cart_seq.NEXTVAL, :1, :2, :3)",
+                [session['user_id'], product_id, capped],
+            )
+        _record_stock_conflict(cur, product_name, desired_total, stock)
+        log_activity(cur, session['user_id'], 'add_to_cart', product_id=product_id)
+        get_db().commit()
+        if stock <= 0:
+            flash(f'Sorry, "{product_name}" is currently out of stock.', 'error')
+        else:
+            flash(
+                f'Only {stock} of "{product_name}" {"is" if stock == 1 else "are"} available -- '
+                'we\'ve added the most we have in stock.', 'error',
+            )
+        return redirect(url_for('customer.view_cart'))
 
     if existing:
         cur.execute(
@@ -157,11 +253,40 @@ def update_cart():
             "DELETE FROM Cart WHERE cart_id = :1 AND user_id = :2",
             [cart_id, session['user_id']],
         )
-    else:
-        cur.execute(
-            "UPDATE Cart SET quantity = :1 WHERE cart_id = :2 AND user_id = :3",
-            [quantity, cart_id, session['user_id']],
-        )
+        get_db().commit()
+        return redirect(url_for('customer.view_cart'))
+
+    cur.execute(
+        "SELECT p.name, p.stock FROM Cart c JOIN Products p ON c.product_id = p.product_id "
+        "WHERE c.cart_id = :1 AND c.user_id = :2",
+        [cart_id, session['user_id']],
+    )
+    row = cur.fetchone()
+    if not row:
+        return redirect(url_for('customer.view_cart'))
+    product_name, stock = row
+
+    if quantity > stock:
+        capped = max(stock, 0)
+        if capped > 0:
+            cur.execute(
+                "UPDATE Cart SET quantity = :1 WHERE cart_id = :2 AND user_id = :3",
+                [capped, cart_id, session['user_id']],
+            )
+        else:
+            cur.execute("DELETE FROM Cart WHERE cart_id = :1 AND user_id = :2", [cart_id, session['user_id']])
+        _record_stock_conflict(cur, product_name, quantity, stock)
+        get_db().commit()
+        if stock <= 0:
+            flash(f'Sorry, "{product_name}" just sold out and was removed from your cart.', 'error')
+        else:
+            flash(f'Only {stock} of "{product_name}" available -- quantity adjusted.', 'error')
+        return redirect(url_for('customer.view_cart'))
+
+    cur.execute(
+        "UPDATE Cart SET quantity = :1 WHERE cart_id = :2 AND user_id = :3",
+        [quantity, cart_id, session['user_id']],
+    )
     get_db().commit()
     return redirect(url_for('customer.view_cart'))
 
@@ -260,6 +385,26 @@ def checkout():
             flash('Your cart is empty.', 'error')
             return redirect(url_for('customer.view_cart'))
 
+        # Re-check stock right before placing the order -- items may have been
+        # added to the cart earlier, before someone else bought them.
+        cur.execute(
+            "SELECT p.name, c.quantity, p.stock FROM Cart c "
+            "JOIN Products p ON c.product_id = p.product_id WHERE c.user_id = :1",
+            [session['user_id']],
+        )
+        for item_name, item_qty, item_stock in cur.fetchall():
+            if item_qty > item_stock:
+                _record_stock_conflict(cur, item_name, item_qty, item_stock)
+                get_db().commit()
+                if item_stock <= 0:
+                    flash(f'Sorry, "{item_name}" just sold out. Please remove it from your cart to continue.', 'error')
+                else:
+                    flash(
+                        f'Sorry, we only have {item_stock} of "{item_name}" left '
+                        f'(you have {item_qty} in your cart). Please adjust the quantity to continue.', 'error',
+                    )
+                return redirect(url_for('customer.view_cart'))
+
         proof_file = request.files.get('payment_proof')
         if not proof_file or not proof_file.filename:
             flash('Please upload a screenshot of your bank transfer as payment proof.', 'error')
@@ -308,7 +453,22 @@ def checkout():
         except oracledb.DatabaseError as e:
             error_msg = str(e)
             if 'ORA-20001' in error_msg:
-                flash(error_msg.split('ORA-20001:')[-1].strip(), 'error')
+                # A rare race: stock changed between our pre-check above and the
+                # actual insert (e.g. another customer bought it in that window).
+                m = re.search(
+                    r'product "(?P<name>.+?)"\. Requested: (?P<req>\d+), Available: (?P<avail>\d+)',
+                    error_msg,
+                )
+                if m:
+                    name, req, avail = m.group('name'), int(m.group('req')), int(m.group('avail'))
+                    _record_stock_conflict(cur, name, req, avail)
+                    get_db().commit()
+                    flash(
+                        f'Sorry, "{name}" sold out just now (only {avail} left). '
+                        'Please adjust the quantity in your cart to continue.', 'error',
+                    )
+                else:
+                    flash('Sorry, one of your items just sold out. Please check your cart and try again.', 'error')
             elif 'ORA-20002' in error_msg:
                 flash('Your cart is empty.', 'error')
             elif 'ORA-20003' in error_msg:

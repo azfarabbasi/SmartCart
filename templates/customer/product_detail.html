@@ -93,7 +93,7 @@
                         {% endif %}
 
                         <div class="buy-box-stock {% if product[3] > 0 %}in-stock{% else %}out-of-stock{% endif %}">
-                            {% if product[3] > 10 %}
+                            {% if product[3] > 5 %}
                                 <i class="bi bi-check-circle-fill"></i> In Stock
                             {% elif product[3] > 0 %}
                                 <i class="bi bi-exclamation-circle-fill"></i> Only {{ product[3] }} left in stock

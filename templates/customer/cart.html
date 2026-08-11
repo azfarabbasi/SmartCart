@@ -10,6 +10,21 @@
                         <span class="price-label">Price</span>
                     </div>
 
+                    {% if stock_alert %}
+                        <div class="stock-alert-box">
+                            <p>
+                                <i class="bi bi-info-circle-fill"></i>
+                                We only have {{ stock_alert.available }} of "{{ stock_alert.product }}" available right now.
+                                We've let our team know &mdash; if you need more than that, reach out and we'll help.
+                            </p>
+                            {% if whatsapp_cta %}
+                                <a href="{{ whatsapp_cta }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
+                                    <i class="bi bi-whatsapp"></i> Chat with us on WhatsApp
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
                     {% if items %}
                         {% for item in items %}
                             <div class="cart-item">
@@ -24,18 +39,26 @@
                                 </div>
                                 <div class="cart-item-details">
                                     <a href="{{ url_for('customer.product_detail', product_id=item[1]) }}" class="cart-item-title">{{ item[2] }}</a>
-                                    <p class="cart-item-stock text-success"><i class="bi bi-check-circle-fill"></i> In Stock</p>
+                                    {% if item[6] <= 0 %}
+                                        <p class="cart-item-stock text-danger"><i class="bi bi-x-circle-fill"></i> Out of Stock</p>
+                                    {% elif item[6] <= 5 %}
+                                        <p class="cart-item-stock text-warning"><i class="bi bi-exclamation-circle-fill"></i> Only {{ item[6] }} left</p>
+                                    {% else %}
+                                        <p class="cart-item-stock text-success"><i class="bi bi-check-circle-fill"></i> In Stock</p>
+                                    {% endif %}
                                     <div class="cart-item-actions">
-                                        <form action="{{ url_for('customer.update_cart') }}" method="POST" class="quantity-form">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <input type="hidden" name="cart_id" value="{{ item[0] }}">
-                                            <label>Qty:</label>
-                                            <select name="quantity" class="form-select form-select-sm" onchange="this.form.submit()">
-                                                {% for i in range(1, 11) %}
-                                                    <option value="{{ i }}" {% if item[4] == i %}selected{% endif %}>{{ i }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </form>
+                                        {% if item[6] > 0 %}
+                                            <form action="{{ url_for('customer.update_cart') }}" method="POST" class="quantity-form">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="cart_id" value="{{ item[0] }}">
+                                                <label>Qty:</label>
+                                                <select name="quantity" class="form-select form-select-sm js-auto-submit">
+                                                    {% for i in range(1, min(item[6], 10) + 1) %}
+                                                        <option value="{{ i }}" {% if item[4] == i %}selected{% endif %}>{{ i }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </form>
+                                        {% endif %}
                                         <span class="separator">|</span>
                                         <form action="{{ url_for('customer.remove_from_cart', cart_id=item[0]) }}" method="POST" class="d-inline">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

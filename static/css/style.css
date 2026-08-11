@@ -2560,6 +2560,28 @@ a:hover {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   STOCK ALERT (cart page)
+   ═══════════════════════════════════════════════════════════ */
+.stock-alert-box {
+    background: var(--gray-100);
+    border: 1px solid var(--accent-dark);
+    border-left: 4px solid var(--orange);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.stock-alert-box p {
+    margin: 0;
+    flex: 1 1 260px;
+}
+
+/* ═══════════════════════════════════════════════════════════
    ANNOUNCEMENT BANNER
    ═══════════════════════════════════════════════════════════ */
 .announcement-banner {
