@@ -52,6 +52,12 @@
                                         <i class="bi bi-x-circle-fill"></i> Out of Stock
                                     {% endif %}
                                 </div>
+                                {% if product[7] or product[8] %}
+                                    <p class="product-delivery">
+                                        {% if product[8] %}<span class="badge bg-success">Free Delivery</span>{% endif %}
+                                        {% if product[7] %}<i class="bi bi-truck"></i> {{ product[7] }}{% endif %}
+                                    </p>
+                                {% endif %}
                                 <div class="product-actions">
                                     {% if session.get('user_id') %}
                                         <form action="{{ url_for('customer.add_to_cart') }}" method="POST" class="d-inline">

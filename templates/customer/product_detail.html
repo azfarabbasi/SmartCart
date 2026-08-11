@@ -82,9 +82,15 @@
                             <span class="amount">{{ "{:,.2f}".format(product[2]) }}</span>
                         </div>
 
-                        <div class="buy-box-delivery">
-                            <p><i class="bi bi-truck"></i> FREE delivery <strong>Tomorrow</strong></p>
-                        </div>
+                        {% if product[7] or product[8] %}
+                            <div class="buy-box-delivery">
+                                <p>
+                                    <i class="bi bi-truck"></i>
+                                    {% if product[8] %}<strong>FREE Delivery</strong>{% else %}Delivery charges apply{% endif %}
+                                    {% if product[7] %} &mdash; {{ product[7] }}{% endif %}
+                                </p>
+                            </div>
+                        {% endif %}
 
                         <div class="buy-box-stock {% if product[3] > 0 %}in-stock{% else %}out-of-stock{% endif %}">
                             {% if product[3] > 10 %}

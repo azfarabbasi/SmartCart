@@ -23,7 +23,7 @@ def index():
     cur = get_db().cursor()
     query = (
         "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
-        "p.image_path, c.category_name "
+        "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery "
         "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
         "WHERE 1=1"
     )
@@ -51,7 +51,7 @@ def product_detail(product_id):
     cur = get_db().cursor()
     cur.execute(
         "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
-        "p.image_path, c.category_name "
+        "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery "
         "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
         "WHERE p.product_id = :pid",
         {'pid': product_id},

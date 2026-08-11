@@ -40,6 +40,24 @@
                             <label for="description" class="form-label">Description</label>
                             <textarea class="form-control" id="description" name="description" rows="5">{{ product[5] if product[5] else '' }}</textarea>
                         </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="delivery_time_text" class="form-label">Delivery Time</label>
+                                <input type="text" class="form-control" id="delivery_time_text" name="delivery_time_text"
+                                       placeholder="e.g. Delivery in 2-3 business days" maxlength="100"
+                                       value="{{ product[7] if product[7] else '' }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label d-block">Delivery Charges</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="free_delivery" name="free_delivery"
+                                           value="1" {% if product[8] %}checked{% endif %}>
+                                    <label class="form-check-label" for="free_delivery">Free Delivery (offer)</label>
+                                </div>
+                                <small class="text-muted">Off = delivery charges apply</small>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col-lg-4">

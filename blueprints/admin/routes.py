@@ -137,6 +137,8 @@ def add_product():
         name = request.form.get('name', '').strip()
         category_id = request.form.get('category_id')
         description = request.form.get('description', '').strip()
+        delivery_time_text = request.form.get('delivery_time_text', '').strip()
+        free_delivery = 1 if request.form.get('free_delivery') else 0
 
         ok, err = validate_required_text(name, 'Product name', min_len=2, max_len=150)
         price = stock = None
@@ -159,9 +161,11 @@ def add_product():
             image_path = f'uploads/{safe_name}'
 
         cur.execute(
-            "INSERT INTO Products (product_id, category_id, name, price, stock, description, image_path) "
-            "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :s, :d, :img)",
-            {'cid': category_id, 'n': name, 'p': price, 's': stock, 'd': description, 'img': image_path},
+            "INSERT INTO Products (product_id, category_id, name, price, stock, description, image_path, "
+            "delivery_time_text, free_delivery) "
+            "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :s, :d, :img, :dt, :fd)",
+            {'cid': category_id, 'n': name, 'p': price, 's': stock, 'd': description, 'img': image_path,
+             'dt': delivery_time_text or None, 'fd': free_delivery},
         )
         cur.execute("SELECT products_seq.CURRVAL FROM dual")
         new_product_id = cur.fetchone()[0]
@@ -187,6 +191,8 @@ def edit_product(product_id):
         name = request.form.get('name', '').strip()
         category_id = request.form.get('category_id')
         description = request.form.get('description', '').strip()
+        delivery_time_text = request.form.get('delivery_time_text', '').strip()
+        free_delivery = 1 if request.form.get('free_delivery') else 0
 
         ok, err = validate_required_text(name, 'Product name', min_len=2, max_len=150)
         price = stock = None
@@ -212,10 +218,10 @@ def edit_product(product_id):
             image_path = f'uploads/{safe_name}'
 
         cur.execute(
-            "UPDATE Products SET name=:n, category_id=:cid, price=:p, stock=:s, description=:d, image_path=:img "
-            "WHERE product_id=:pid",
+            "UPDATE Products SET name=:n, category_id=:cid, price=:p, stock=:s, description=:d, image_path=:img, "
+            "delivery_time_text=:dt, free_delivery=:fd WHERE product_id=:pid",
             {'n': name, 'cid': category_id, 'p': price, 's': stock, 'd': description,
-             'img': image_path, 'pid': product_id},
+             'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery, 'pid': product_id},
         )
 
         cur.execute("SELECT COUNT(*) FROM ProductMedia WHERE product_id = :pid", {'pid': product_id})
