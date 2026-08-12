@@ -34,8 +34,11 @@
             <li class="{{ 'active' if request.endpoint == 'analytics.seasonal_events' }}">
                 <a href="{{ url_for('analytics.seasonal_events') }}"><i class="bi bi-calendar-event"></i><span>Seasonal Events</span></a>
             </li>
-            <li class="{{ 'active' if request.endpoint and request.endpoint.startswith('feedback.admin') }}">
+            <li class="{{ 'active' if request.endpoint in ('feedback.admin_feedback_list', 'feedback.admin_reply_feedback') }}">
                 <a href="{{ url_for('feedback.admin_feedback_list') }}"><i class="bi bi-chat-square-text"></i><span>Feedback</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint in ('feedback.admin_product_suggestions', 'feedback.update_suggestion_status') }}">
+                <a href="{{ url_for('feedback.admin_product_suggestions') }}"><i class="bi bi-lightbulb"></i><span>Product Suggestions</span></a>
             </li>
             <li class="{{ 'active' if request.endpoint == 'admin.users' }}">
                 <a href="{{ url_for('admin.users') }}"><i class="bi bi-people"></i><span>Users</span></a>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Packing Slip - Order #{{ order[0] }} | SmartCart</title>
+    <style>
+        body {
+            font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            color: #131921;
+            max-width: 420px;
+            margin: 24px auto;
+            padding: 16px;
+            border: 2px solid #131921;
+        }
+        h1 { font-size: 1.25rem; margin: 0 0 4px; }
+        .order-id { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+        .block { margin-bottom: 16px; }
+        .block h2 {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+            color: #5b6472; margin: 0 0 4px; border-bottom: 1px solid #e4ded2; padding-bottom: 4px;
+        }
+        .address-line { font-size: 1.05rem; line-height: 1.5; }
+        table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        th, td { text-align: left; padding: 4px 2px; font-size: 0.9rem; border-bottom: 1px dashed #e4ded2; }
+        th:last-child, td:last-child { text-align: right; }
+        .totals-row { font-weight: 700; }
+        .print-btn {
+            margin: 16px auto 0; display: block; padding: 10px 20px; background: #ff9900; color: #131921;
+            border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 1rem;
+        }
+        @media print {
+            body { border: 2px solid #000; margin: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <h1>SmartCart</h1>
+    <div class="order-id">Order #{{ order[0] }}</div>
+
+    <div class="block">
+        <h2>Ship To</h2>
+        <div class="address-line">
+            <strong>{{ order[1] }}</strong><br>
+            {{ order[2] }}<br>
+            {% if order[6] or order[5] %}
+                {{ order[6] }}{% if order[7] %}, {{ order[7] }}{% endif %}<br>
+                {{ order[5] }}, {{ order[4] }}<br>
+                {% if order[8] %}Near {{ order[8] }}<br>{% endif %}
+                {% if order[9] %}{{ order[9] }}<br>{% endif %}
+            {% else %}
+                {{ order[3] }}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="block">
+        <h2>Items</h2>
+        <table>
+            <thead>
+                <tr><th>Item</th><th>Qty</th><th>Price</th></tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>{{ item[0] }}</td>
+                        <td>{{ item[1] }}</td>
+                        <td>Rs {{ "{:,.2f}".format(item[1] * item[2]) }}</td>
+                    </tr>
+                {% endfor %}
+                <tr class="totals-row">
+                    <td colspan="2">Total</td>
+                    <td>Rs {{ "{:,.2f}".format(order[10]) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="block">
+        <h2>Payment</h2>
+        <p style="margin:0;">
+            {{ 'Cash on Delivery' if order[11] == 'cod' else 'Bank Transfer (paid in full)' }}
+            {% if order[11] == 'cod' %}&mdash; Rs {{ "{:,.2f}".format(order[12]) }} advance paid, collect the rest on delivery{% endif %}
+        </p>
+    </div>
+
+    <button class="print-btn no-print" id="printSlipBtn">Print Packing Slip</button>
+    <script src="{{ url_for('static', filename='js/packing_slip.js') }}"></script>
+</body>
+</html>

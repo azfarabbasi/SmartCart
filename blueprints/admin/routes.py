@@ -373,6 +373,34 @@ def order_detail(order_id):
     )
 
 
+@admin_bp.route('/orders/<int:order_id>/packing-slip')
+@admin_required
+def packing_slip(order_id):
+    cur = get_db().cursor()
+    cur.execute(
+        """
+        SELECT o.order_id, u.name, o.phone_number, o.delivery_address,
+               o.address_city, o.address_area, o.address_house_no,
+               o.address_block_sector, o.address_landmark, o.address_notes,
+               o.total_amount, o.payment_method, o.advance_amount
+        FROM Orders o JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1
+        """,
+        [order_id],
+    )
+    order = cur.fetchone()
+    if not order:
+        flash('Order not found.', 'error')
+        return redirect(url_for('admin.orders'))
+
+    cur.execute(
+        "SELECT p.name, oi.quantity, oi.unit_price "
+        "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
+        [order_id],
+    )
+    items = cur.fetchall()
+    return render_template('admin/packing_slip.html', order=order, items=items)
+
+
 @admin_bp.route('/orders/update_status', methods=['POST'])
 @admin_required
 def update_order_status():

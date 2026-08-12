@@ -19,9 +19,39 @@
                                            placeholder="03001234567" pattern="^(\+92|0)3\d{9}$"
                                            title="Enter a valid Pakistani mobile number, e.g. 03001234567">
                                 </div>
-                                <div class="mb-3">
-                                    <label class="sc-form-label" for="address">Delivery address</label>
-                                    <textarea class="sc-form-control form-control" id="address" name="address" rows="3" required minlength="8" placeholder="House #, Street, Area, City"></textarea>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="sc-form-label" for="address_city">City</label>
+                                        <select class="sc-form-control form-control" id="address_city" name="address_city" required>
+                                            <option value="Karachi">Karachi</option>
+                                        </select>
+                                        <small class="text-muted">We currently deliver in Karachi only.</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="sc-form-label" for="address_area">Area</label>
+                                        <input class="sc-form-control form-control" id="address_area" name="address_area" type="text" required
+                                               minlength="2" maxlength="150" placeholder="e.g. Gulshan-e-Iqbal">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="sc-form-label" for="address_house_no">Flat No. / House No.</label>
+                                        <input class="sc-form-control form-control" id="address_house_no" name="address_house_no" type="text" required
+                                               maxlength="100" placeholder="e.g. House 12-A, Street 5">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="sc-form-label" for="address_block_sector">Block / Phase / Sector <span class="text-muted">(optional)</span></label>
+                                        <input class="sc-form-control form-control" id="address_block_sector" name="address_block_sector" type="text"
+                                               maxlength="100" placeholder="e.g. Block A, Phase 6">
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label class="sc-form-label" for="address_landmark">Nearest Landmark</label>
+                                        <input class="sc-form-control form-control" id="address_landmark" name="address_landmark" type="text" required
+                                               maxlength="150" placeholder="e.g. Near ABC Bakery">
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label class="sc-form-label" for="address_notes">Additional details <span class="text-muted">(optional)</span></label>
+                                        <textarea class="sc-form-control form-control" id="address_notes" name="address_notes" rows="2" maxlength="255"
+                                                  placeholder="Anything else that helps the rider find you"></textarea>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -40,10 +70,11 @@
                         <div class="checkout-section">
                             <div class="section-number">3</div>
                             <div class="section-content">
-                                <h2>Loyalty Points</h2>
+                                <h2>Redeem Loyalty Points</h2>
                                 <p>Your balance: <strong>{{ points_balance }}</strong> points. You can redeem up to
                                     <strong>{{ max_redeemable_points }}</strong> points on this order (2 points = Rs. 1, capped at 50% of your order).</p>
                                 <div class="mb-2">
+                                    <label class="sc-form-label" for="pointsToRedeem">How many points would you like to redeem on this order?</label>
                                     <input type="number" name="points_to_redeem" id="pointsToRedeem" class="form-control"
                                            min="0" max="{{ max_redeemable_points }}" value="0" step="1">
                                     <small class="text-muted" id="pointsDiscountPreview">Discount: Rs. 0.00</small>

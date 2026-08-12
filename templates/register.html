@@ -31,11 +31,12 @@
         <div class="form-group">
             <label for="confirm_password">Re-enter password</label>
             <div class="password-input-wrapper">
-                <input type="password" id="confirm_password" class="form-control" required>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
                 <button type="button" class="password-toggle">
                     <i class="bi bi-eye"></i>
                 </button>
             </div>
+            <small class="form-text" id="passwordMatchMsg"></small>
         </div>
 
         <input type="hidden" name="role" value="customer">
@@ -52,17 +53,4 @@
     </div>
 
     <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-auth">Sign in</a>
-{% endblock %}
-
-{% block extra_scripts %}
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
-            if (password !== confirmPassword) {
-                e.preventDefault();
-                alert('Passwords do not match!');
-            }
-        });
-    </script>
 {% endblock %}

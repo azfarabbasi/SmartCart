@@ -364,14 +364,27 @@ def checkout():
     if request.method == 'POST':
         payment_method = request.form.get('payment_method', 'cod')
         phone = request.form.get('phone', '').strip()
-        address = request.form.get('address', '').strip()
+        city = request.form.get('address_city', '').strip()
+        area = request.form.get('address_area', '').strip()
+        house_no = request.form.get('address_house_no', '').strip()
+        block_sector = request.form.get('address_block_sector', '').strip()
+        landmark = request.form.get('address_landmark', '').strip()
+        address_notes = request.form.get('address_notes', '').strip()
         coupon_code = request.form.get('coupon_code', '').strip() or None
         try:
             points_to_redeem = int(request.form.get('points_to_redeem', 0) or 0)
         except ValueError:
             points_to_redeem = 0
 
-        ok, err = validate_required_text(address, 'Delivery address', min_len=8, max_len=255)
+        ok, err = (True, None)
+        if city != 'Karachi':
+            ok, err = False, 'We currently only deliver in Karachi.'
+        if ok:
+            ok, err = validate_required_text(area, 'Area', min_len=2, max_len=150)
+        if ok:
+            ok, err = validate_required_text(house_no, 'Flat No. / House No.', min_len=1, max_len=100)
+        if ok:
+            ok, err = validate_required_text(landmark, 'Nearest landmark', min_len=2, max_len=150)
         if ok:
             ok, err = validate_phone_pk(phone)
         if payment_method not in ('cod', 'bank_transfer'):
@@ -379,6 +392,15 @@ def checkout():
         if not ok:
             flash(err, 'error')
             return redirect(url_for('customer.checkout'))
+
+        address_line_parts = [house_no]
+        if block_sector:
+            address_line_parts.append(block_sector)
+        address_line_parts.append(area)
+        address_line_parts.append(city)
+        address = ', '.join(address_line_parts) + f' (Near {landmark})'
+        if address_notes:
+            address += f' -- {address_notes}'
 
         cur.execute("SELECT COUNT(*) FROM Cart WHERE user_id = :1", [session['user_id']])
         if cur.fetchone()[0] == 0:
@@ -439,14 +461,28 @@ def checkout():
             get_db().commit()
 
             new_order_id = order_id_var.getvalue()
+
+            cur.execute(
+                "UPDATE Orders SET address_city=:c, address_area=:a, address_house_no=:h, "
+                "address_block_sector=:b, address_landmark=:l, address_notes=:n WHERE order_id=:oid",
+                {'c': city, 'a': area, 'h': house_no, 'b': block_sector or None,
+                 'l': landmark, 'n': address_notes or None, 'oid': new_order_id},
+            )
             log_activity(cur, session['user_id'], 'order_placed', order_id=new_order_id)
             get_db().commit()
+
+            final_total = final_total_var.getvalue()
+            points_earned_estimate = 0
+            if final_total >= 5000:
+                points_earned_estimate = 100 + int((final_total - 5000) // 1000) * 20
 
             msg = f'Order #{new_order_id} placed! Advance required: Rs. {advance_var.getvalue():.2f}.'
             if points_redeemed_var.getvalue():
                 msg += f' {points_redeemed_var.getvalue()} loyalty points redeemed.'
             if coupon_disc_var.getvalue():
                 msg += f' Coupon saved you Rs. {coupon_disc_var.getvalue():.2f}.'
+            if points_earned_estimate:
+                msg += f" You'll earn {points_earned_estimate} loyalty points once this order is delivered."
             flash(msg, 'success')
             return redirect(url_for('customer.order_detail', order_id=new_order_id))
 
@@ -473,6 +509,8 @@ def checkout():
                 flash('Your cart is empty.', 'error')
             elif 'ORA-20003' in error_msg:
                 flash('Invalid or expired coupon code.', 'error')
+            elif 'ORA-20004' in error_msg:
+                flash('You have already used this coupon code on a previous order.', 'error')
             else:
                 flash('Order could not be placed. Please try again.', 'error')
             return redirect(url_for('customer.view_cart'))
@@ -539,7 +577,16 @@ def order_detail(order_id):
 
     cur.execute("SELECT amount, payment_date, method FROM Payments WHERE order_id = :1", [order_id])
     payment = cur.fetchone()
-    return render_template('customer/order_detail.html', order=order, items=items, payment=payment)
+
+    total_amount, status, points_earned = order[2], order[3], order[13]
+    pending_points_estimate = 0
+    if not points_earned and status != 'cancelled' and total_amount >= 5000:
+        pending_points_estimate = 100 + int((total_amount - 5000) // 1000) * 20
+
+    return render_template(
+        'customer/order_detail.html', order=order, items=items, payment=payment,
+        pending_points_estimate=pending_points_estimate,
+    )
 
 
 # ── PROFILE ──────────────────────────────────────────────────────

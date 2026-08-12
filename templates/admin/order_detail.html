@@ -7,6 +7,9 @@
             <h2><i class="bi bi-receipt me-2"></i>Order #{{ order[0] }}</h2>
             <span class="order-date">{{ order[3].strftime('%d %B %Y, %I:%M %p') if order[3] else 'N/A' }}</span>
         </div>
+        <a href="{{ url_for('admin.packing_slip', order_id=order[0]) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-printer"></i> Print Packing Slip
+        </a>
         <span class="status-badge status-{{ order[5] }} large">
             {% if order[5] == 'pending' %}<i class="bi bi-clock"></i>
             {% elif order[5] == 'shipped' %}<i class="bi bi-truck"></i>

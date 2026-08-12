@@ -50,6 +50,79 @@ def submit_feedback(product_id):
     return redirect(url_for('customer.product_detail', product_id=product_id))
 
 
+@feedback_bp.route('/product-suggestions', methods=['POST'])
+@login_required
+def submit_product_suggestion():
+    description = request.form.get('description', '').strip()
+    file = request.files.get('media')
+    has_media = bool(file and file.filename)
+
+    if not description and not has_media:
+        flash('Please describe the product or attach a picture (or both).', 'error')
+        return redirect(request.referrer or url_for('customer.index'))
+    if description:
+        ok, err = validate_required_text(description, 'Description', min_len=1, max_len=1000)
+        if not ok:
+            flash(err, 'error')
+            return redirect(request.referrer or url_for('customer.index'))
+
+    media_path, media_type = None, None
+    if has_media:
+        up_ok, up_err, safe_name, kind = validate_upload(file, allow_video=True)
+        if not up_ok:
+            flash(up_err, 'error')
+            return redirect(request.referrer or url_for('customer.index'))
+        save_upload(file, current_app.config['FEEDBACK_UPLOAD_FOLDER'], safe_name)
+        media_path = f'uploads/feedback/{safe_name}'
+        media_type = kind
+
+    cur = get_db().cursor()
+    cur.execute(
+        """
+        INSERT INTO ProductSuggestions (suggestion_id, user_id, description, media_path, media_type, created_at)
+        VALUES (productsuggestions_seq.NEXTVAL, :v_uid, :d, :mp, :mt, SYSDATE)
+        """,
+        {'v_uid': session['user_id'], 'd': description or None, 'mp': media_path, 'mt': media_type},
+    )
+    get_db().commit()
+    flash("Thanks! We've received your suggestion and will look into it.", 'success')
+    return redirect(request.referrer or url_for('customer.index'))
+
+
+@feedback_bp.route('/admin/product-suggestions')
+@admin_required
+def admin_product_suggestions():
+    cur = get_db().cursor()
+    cur.execute(
+        """
+        SELECT s.suggestion_id, u.name, u.email, s.description, s.media_path, s.media_type,
+               s.status, s.created_at
+        FROM ProductSuggestions s JOIN Users u ON s.user_id = u.user_id
+        ORDER BY s.created_at DESC
+        """
+    )
+    suggestions = cur.fetchall()
+    return render_template('admin/product_suggestions.html', suggestions=suggestions)
+
+
+@feedback_bp.route('/admin/product-suggestions/<int:suggestion_id>/status', methods=['POST'])
+@admin_required
+def update_suggestion_status(suggestion_id):
+    status = request.form.get('status')
+    if status not in ('new', 'reviewed', 'added'):
+        flash('Invalid status.', 'error')
+        return redirect(url_for('feedback.admin_product_suggestions'))
+    cur = get_db().cursor()
+    cur.execute(
+        "UPDATE ProductSuggestions SET status = :s WHERE suggestion_id = :sid",
+        {'s': status, 'sid': suggestion_id},
+    )
+    log_admin_action(cur, session['user_id'], 'suggestion.status_update', 'ProductSuggestion', suggestion_id, status)
+    get_db().commit()
+    flash('Status updated.', 'success')
+    return redirect(url_for('feedback.admin_product_suggestions'))
+
+
 @feedback_bp.route('/admin/feedback')
 @admin_required
 def admin_feedback_list():

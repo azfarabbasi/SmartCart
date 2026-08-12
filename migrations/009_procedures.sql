@@ -25,6 +25,7 @@ CREATE OR REPLACE PROCEDURE place_order(
     v_coupon_id     NUMBER;
     v_coupon_pct    NUMBER;
     v_coupon_disc   NUMBER(10,2) := 0;
+    v_already_used  NUMBER;
     v_discounted    NUMBER(10,2);
     v_final_total   NUMBER(10,2);
     v_advance       NUMBER(10,2);
@@ -57,6 +58,15 @@ BEGIN
             WHEN NO_DATA_FOUND THEN
                 RAISE_APPLICATION_ERROR(-20003, 'Invalid or expired coupon code.');
         END;
+
+        -- Each account may use a given coupon code at most once (excluding orders
+        -- that never went through, i.e. cancelled ones).
+        SELECT COUNT(*) INTO v_already_used FROM Orders
+        WHERE user_id = p_user_id AND UPPER(coupon_code) = UPPER(p_coupon_code) AND status != 'cancelled';
+        IF v_already_used > 0 THEN
+            RAISE_APPLICATION_ERROR(-20004, 'You have already used this coupon code.');
+        END IF;
+
         v_coupon_disc := ROUND(v_subtotal * v_coupon_pct / 100, 2);
     END IF;
 

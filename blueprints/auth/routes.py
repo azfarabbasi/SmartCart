@@ -146,12 +146,15 @@ def register():
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
 
         ok, err = validate_required_text(name, 'Name', min_len=2, max_len=100)
         if ok:
             ok, err = validate_email_format(email)
         if ok:
             ok, err = validate_required_text(password, 'Password', min_len=6, max_len=255)
+        if ok and password != confirm_password:
+            ok, err = False, 'Passwords do not match.'
         if not ok:
             flash(err, 'error')
             return render_template('register.html')

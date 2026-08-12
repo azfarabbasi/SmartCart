@@ -68,6 +68,40 @@ function initializeUnobtrusiveHandlers() {
             }
         });
     });
+
+    // Registration: live password-match indicator + hard submit block on mismatch
+    const registerForm = document.getElementById('registerForm');
+    const pw = document.getElementById('password');
+    const confirmPw = document.getElementById('confirm_password');
+    const matchMsg = document.getElementById('passwordMatchMsg');
+    if (registerForm && pw && confirmPw && matchMsg) {
+        const checkMatch = function() {
+            if (!confirmPw.value) {
+                matchMsg.textContent = '';
+                matchMsg.className = 'form-text';
+                confirmPw.setCustomValidity('');
+                return;
+            }
+            if (pw.value === confirmPw.value) {
+                matchMsg.textContent = 'Passwords match.';
+                matchMsg.className = 'form-text text-success';
+                confirmPw.setCustomValidity('');
+            } else {
+                matchMsg.textContent = 'Passwords do not match.';
+                matchMsg.className = 'form-text text-danger';
+                confirmPw.setCustomValidity('Passwords do not match.');
+            }
+        };
+        pw.addEventListener('input', checkMatch);
+        confirmPw.addEventListener('input', checkMatch);
+        registerForm.addEventListener('submit', function(e) {
+            if (pw.value !== confirmPw.value) {
+                e.preventDefault();
+                checkMatch();
+                confirmPw.reportValidity();
+            }
+        });
+    }
 }
 
 // ═══════════════════════════════════════════════════════════

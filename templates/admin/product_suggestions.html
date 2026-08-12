@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block title %}Product Suggestions - Admin | SmartCart{% endblock %}
+{% block page_title %}Product Suggestions{% endblock %}
+{% block content %}
+    <p class="text-muted">Products customers couldn't find and asked us to stock.</p>
+
+    {% if suggestions %}
+        {% for s in suggestions %}
+            <div class="admin-card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between flex-wrap gap-2">
+                        <div>
+                            <strong>{{ s[1] }}</strong> <span class="text-muted">({{ s[2] }})</span>
+                        </div>
+                        <small class="text-muted">{{ s[7].strftime('%d %b %Y') if s[7] else '' }}</small>
+                    </div>
+                    {% if s[3] %}<p class="mt-2 mb-2">{{ s[3] }}</p>{% endif %}
+                    {% if s[4] %}
+                        <div class="feedback-media mb-2">
+                            {% if s[5] == 'video' %}
+                                <video src="{{ url_for('static', filename=s[4]) }}" controls></video>
+                            {% else %}
+                                <img src="{{ url_for('static', filename=s[4]) }}" alt="suggested product media">
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <form action="{{ url_for('feedback.update_suggestion_status', suggestion_id=s[0]) }}" method="POST" class="d-flex align-items-center gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label class="mb-0 text-muted">Status:</label>
+                        <select name="status" class="form-select form-select-sm w-auto js-auto-submit">
+                            <option value="new" {% if s[6] == 'new' %}selected{% endif %}>New</option>
+                            <option value="reviewed" {% if s[6] == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                            <option value="added" {% if s[6] == 'added' %}selected{% endif %}>Added to catalog</option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No suggestions yet.</p>
+    {% endif %}
+{% endblock %}

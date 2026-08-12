@@ -2560,6 +2560,21 @@ a:hover {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   SUGGEST A PRODUCT PROMPT
+   ═══════════════════════════════════════════════════════════ */
+.suggest-product-prompt {
+    text-align: center;
+    padding: 32px 16px;
+    margin-top: 24px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.suggest-product-prompt p {
+    color: var(--gray-600);
+    margin-bottom: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════
    STOCK ALERT (cart page)
    ═══════════════════════════════════════════════════════════ */
 .stock-alert-box {

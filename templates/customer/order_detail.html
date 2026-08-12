@@ -119,6 +119,11 @@
                                     <span>Loyalty points earned:</span>
                                     <span class="text-success">+{{ order[13] }} pts</span>
                                 </div>
+                            {% elif pending_points_estimate %}
+                                <div class="summary-row">
+                                    <span>Loyalty points you'll earn (on delivery):</span>
+                                    <span class="text-muted">+{{ pending_points_estimate }} pts</span>
+                                </div>
                             {% endif %}
                             {% if order[14] %}
                                 <div class="summary-row">
