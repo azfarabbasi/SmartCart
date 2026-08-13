@@ -13,7 +13,7 @@ class Config:
     DB_USER = os.environ['DB_USER']
     DB_PASSWORD = os.environ['DB_PASSWORD']
     DB_DSN = os.environ['DB_DSN']
-    ORACLE_CLIENT_LIB_DIR = os.environ['ORACLE_CLIENT_LIB_DIR']
+    ORACLE_CLIENT_LIB_DIR = os.environ.get('ORACLE_CLIENT_LIB_DIR')
 
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
     FEEDBACK_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'feedback')

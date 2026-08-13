@@ -15,7 +15,14 @@ def _output_type_handler(cursor, metadata):
 
 def init_pool(app):
     global _pool
-    oracledb.init_oracle_client(lib_dir=app.config['ORACLE_CLIENT_LIB_DIR'])
+    # Use thick mode only when ORACLE_CLIENT_LIB_DIR is set (local dev).
+    # On Vercel / serverless, thin mode is used automatically (no native libs).
+    oracle_client_dir = app.config.get('ORACLE_CLIENT_LIB_DIR')
+    if oracle_client_dir:
+        try:
+            oracledb.init_oracle_client(lib_dir=oracle_client_dir)
+        except oracledb.ProgrammingError:
+            pass  # Already initialised
     _pool = oracledb.create_pool(
         user=app.config['DB_USER'],
         password=app.config['DB_PASSWORD'],
