@@ -8,8 +8,12 @@ claims near-100% confidence.
 """
 import datetime
 
-import numpy as np
-import pandas as pd
+try:
+    import numpy as np
+    import pandas as pd
+    _HAS_ML_DEPS = True
+except ImportError:
+    _HAS_ML_DEPS = False
 
 from .seasonal import boost_weight_for_date, get_events_in_range
 
@@ -126,6 +130,17 @@ def blend_forecast(naive_value, model_value, level):
 
 
 def forecast_next_week_and_month(cur):
+    if not _HAS_ML_DEPS:
+        return {
+            'sufficiency_level': 'unavailable',
+            'confidence_pct': 0,
+            'days_of_history': 0,
+            'distinct_order_days': 0,
+            'week': {'total': 0, 'pct_change': 0, 'daily_breakdown': {}},
+            'month': {'total': 0, 'pct_change': 0, 'daily_breakdown': {}},
+            'upcoming_events': [],
+            'error': 'Forecast unavailable: ML dependencies not installed.',
+        }
     daily_series = load_daily_sales(cur)
     sufficiency = data_sufficiency(daily_series)
     model = train_model(daily_series) if sufficiency['level'] != 'insufficient' else None
