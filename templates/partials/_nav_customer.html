@@ -10,15 +10,15 @@
                 </div>
 
                 <div class="col">
-                    <form action="{{ url_for('customer.index') }}" method="GET" class="search-form">
+                    <form action="{{ url_for('customer.search') }}" method="GET" class="search-form">
                         <div class="input-group">
-                            <select name="category_id" class="form-select search-category">
+                            <select name="category" class="form-select search-category">
                                 <option value="">All Categories</option>
                                 {% for cat in nav_categories|default([]) %}
-                                    <option value="{{ cat[0] }}">{{ cat[1] }}</option>
+                                    <option value="{{ cat.slug }}" {% if active_slug == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
                                 {% endfor %}
                             </select>
-                            <input type="text" name="search" class="form-control search-input" placeholder="Search SmartCart">
+                            <input type="text" name="q" class="form-control search-input" placeholder="Search SmartCart" value="{{ search|default('') }}">
                             <button type="submit" class="btn btn-warning search-btn">
                                 <i class="bi bi-search"></i>
                             </button>
@@ -88,9 +88,10 @@
     <nav class="header-nav">
         <div class="container-fluid">
             <ul class="nav-links">
-                <li><a href="{{ url_for('customer.index') }}">All</a></li>
+                <li><a href="{{ url_for('customer.index') }}" class="{{ 'active' if not active_slug }}">All</a></li>
                 {% for cat in nav_categories|default([]) %}
-                    <li><a href="{{ url_for('customer.index', category_id=cat[0]) }}">{{ cat[1] }}</a></li>
+                    <li><a href="{{ url_for('customer.category', slug=cat.slug) }}"
+                           class="{{ 'active' if active_slug == cat.slug }}">{{ cat.name }}</a></li>
                 {% endfor %}
             </ul>
         </div>

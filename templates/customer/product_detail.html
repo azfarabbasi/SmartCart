@@ -5,7 +5,7 @@
         <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}">{{ product[6] }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('customer.category', slug=slugify(product[6])) }}">{{ product[6] }}</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ product[1] }}</li>
             </ol>
         </nav>
@@ -65,7 +65,7 @@
 
                         <div class="product-detail-category mb-3">
                             <span class="label">Category:</span>
-                            <a href="{{ url_for('customer.index') }}">{{ product[6] }}</a>
+                            <a href="{{ url_for('customer.category', slug=slugify(product[6])) }}">{{ product[6] }}</a>
                         </div>
 
                         <div class="product-detail-description">

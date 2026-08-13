@@ -11,17 +11,7 @@
     <section class="products-section">
         <div class="container-fluid">
             <div class="section-header">
-                <h2>
-                    {% if search %}
-                        Search Results for "{{ search }}"
-                    {% elif selected_category %}
-                        {% for cat in categories %}
-                            {% if cat[0]|string == selected_category %}{{ cat[1] }}{% endif %}
-                        {% endfor %}
-                    {% else %}
-                        Featured Products
-                    {% endif %}
-                </h2>
+                <h2>{{ heading }}</h2>
                 <span class="results-count">{{ products|length }} results</span>
             </div>
 

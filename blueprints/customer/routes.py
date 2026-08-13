@@ -6,13 +6,14 @@ from email.mime.text import MIMEText
 from urllib.parse import quote
 
 import oracledb
-from flask import (Blueprint, current_app, flash, redirect, render_template,
-                    request, session, url_for)
+from flask import (Blueprint, abort, current_app, flash, redirect,
+                    render_template, request, session, url_for)
 
 import sitesettings
 from activity import log_activity
 from blueprints.auth.decorators import login_required
 from db import get_db
+from slugs import slugify
 from uploads import save_upload, validate_upload
 from validators import validate_phone_pk, validate_required_text
 
@@ -61,34 +62,108 @@ def notify_admin_stock_issue(cur, product_name, requested, available, customer_n
 
 
 # ── PUBLIC CATALOG ──────────────────────────────────────────────
+PRODUCT_SELECT = (
+    "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
+    "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery "
+    "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
+)
+
+
+def _all_categories(cur):
+    cur.execute("SELECT category_id, category_name FROM Categories ORDER BY category_name")
+    return cur.fetchall()
+
+
+def _category_ids_for_slug(cur, slug):
+    """All category ids whose name slugifies to `slug`.
+
+    Returns a list because the catalog can legitimately hold more than one
+    row with the same display name (e.g. two 'Electronics' categories); a
+    shopper clicking 'Electronics' expects to see every electronics item,
+    not an arbitrary half of them.
+    """
+    matches = [(cid, name) for cid, name in _all_categories(cur) if slugify(name) == slug]
+    if not matches:
+        return [], None
+    return [cid for cid, _ in matches], matches[0][1]
+
+
+def _render_catalog(cur, products, heading, search='', active_slug=None):
+    return render_template(
+        'customer/home.html',
+        products=products,
+        categories=_all_categories(cur),
+        heading=heading,
+        search=search,
+        active_slug=active_slug,
+    )
+
+
 @customer_bp.route('/')
 def index():
-    category_id = request.args.get('category_id')
-    search = request.args.get('search', '').strip()
+    # Old bookmarked/indexed links used query strings; send them to the
+    # canonical path so nobody lands on a URL we no longer generate.
+    legacy_category = request.args.get('category_id')
+    legacy_search = request.args.get('search', '').strip()
+    if legacy_category:
+        cur = get_db().cursor()
+        for cid, name in _all_categories(cur):
+            if str(cid) == legacy_category:
+                return redirect(url_for('customer.category', slug=slugify(name)), code=301)
+        return redirect(url_for('customer.index'), code=301)
+    if legacy_search:
+        return redirect(url_for('customer.search', q=legacy_search), code=301)
 
     cur = get_db().cursor()
-    query = (
-        "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
-        "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery "
-        "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
-        "WHERE 1=1"
+    cur.execute(PRODUCT_SELECT + "ORDER BY p.product_id")
+    return _render_catalog(cur, cur.fetchall(), heading='Featured Products')
+
+
+@customer_bp.route('/category/<slug>')
+def category(slug):
+    cur = get_db().cursor()
+    category_ids, display_name = _category_ids_for_slug(cur, slug)
+    if not category_ids:
+        abort(404)
+
+    binds = {f'c{i}': cid for i, cid in enumerate(category_ids)}
+    placeholders = ', '.join(f':{key}' for key in binds)
+    cur.execute(
+        PRODUCT_SELECT + f"WHERE p.category_id IN ({placeholders}) ORDER BY p.product_id",
+        binds,
     )
-    params = {}
-    if category_id:
-        query += " AND p.category_id = :cid"
-        params['cid'] = int(category_id)
-    if search:
-        query += " AND LOWER(p.name) LIKE :s"
-        params['s'] = f'%{search.lower()}%'
-    cur.execute(query, params)
+    return _render_catalog(cur, cur.fetchall(), heading=display_name, active_slug=slug)
+
+
+@customer_bp.route('/search')
+def search():
+    term = request.args.get('q', '').strip()
+    slug = request.args.get('category', '').strip()
+
+    cur = get_db().cursor()
+    if not term and not slug:
+        return redirect(url_for('customer.index'))
+    if not term and slug:
+        return redirect(url_for('customer.category', slug=slug))
+
+    clauses, binds = [], {}
+    if term:
+        clauses.append("LOWER(p.name) LIKE :term")
+        binds['term'] = f'%{term.lower()}%'
+    if slug:
+        category_ids, _ = _category_ids_for_slug(cur, slug)
+        if category_ids:
+            id_binds = {f'c{i}': cid for i, cid in enumerate(category_ids)}
+            binds.update(id_binds)
+            clauses.append("p.category_id IN (%s)" % ', '.join(f':{k}' for k in id_binds))
+
+    cur.execute(
+        PRODUCT_SELECT + "WHERE " + " AND ".join(clauses) + " ORDER BY p.product_id",
+        binds,
+    )
     products = cur.fetchall()
-
-    cur.execute("SELECT category_id, category_name FROM Categories ORDER BY category_name")
-    categories = cur.fetchall()
-
-    return render_template(
-        'customer/home.html', products=products, categories=categories,
-        selected_category=category_id, search=search,
+    return _render_catalog(
+        cur, products, heading=f'Search results for "{term}"', search=term, active_slug=slug or None,
     )
 
 

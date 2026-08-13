@@ -193,15 +193,3 @@
     </div>
 {% endblock %}
 
-{% block extra_scripts %}
-    <script>
-        const pointsInput = document.getElementById('pointsToRedeem');
-        const preview = document.getElementById('pointsDiscountPreview');
-        if (pointsInput) {
-            pointsInput.addEventListener('input', function() {
-                const pts = parseInt(this.value, 10) || 0;
-                preview.textContent = 'Discount: Rs. ' + (pts / 2).toFixed(2) + ' (confirmed at checkout)';
-            });
-        }
-    </script>
-{% endblock %}

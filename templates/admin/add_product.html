@@ -74,7 +74,7 @@
 
                         <div class="mb-3">
                             <label for="media" class="form-label">Product Gallery (up to {{ max_media }} images/videos)</label>
-                            <input type="file" class="form-control" id="media" name="media" accept="image/*,video/*" multiple>
+                            <input type="file" class="form-control" id="media" name="media" accept="image/*,video/*" multiple data-max-media="{{ max_media }}">
                             <small class="text-muted">Shown on the product page. Images up to 5MB, videos up to 50MB each.</small>
                         </div>
                     </div>
@@ -95,18 +95,3 @@
     </div>
 {% endblock %}
 
-{% block extra_scripts %}
-    <script>
-        document.getElementById('imageUploadArea').addEventListener('click', function() {
-            document.getElementById('image').click();
-        });
-
-        const mediaInput = document.getElementById('media');
-        mediaInput.addEventListener('change', function() {
-            if (this.files.length > {{ max_media }}) {
-                alert('You can upload at most {{ max_media }} media items per product.');
-                this.value = '';
-            }
-        });
-    </script>
-{% endblock %}

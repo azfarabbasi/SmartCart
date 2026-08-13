@@ -10,14 +10,20 @@ def register_security_headers(app):
         resp.headers['X-Content-Type-Options'] = 'nosniff'
         resp.headers['X-Frame-Options'] = 'DENY'
         resp.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        # Every asset is self-hosted now (see build_assets.py), so nothing
+        # third-party needs allow-listing. 'unsafe-inline' stays on style-src
+        # only, for the style="" attributes and the print stylesheet.
         resp.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' https://cdn.jsdelivr.net; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
-            "font-src https://cdn.jsdelivr.net; "
+            "font-src 'self'; "
             "media-src 'self'; "
-            "connect-src 'self'"
+            "connect-src 'self'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "frame-ancestors 'none'"
         )
         if app.config.get('SESSION_COOKIE_SECURE'):
             resp.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'

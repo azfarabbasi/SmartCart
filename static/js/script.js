@@ -69,6 +69,38 @@ function initializeUnobtrusiveHandlers() {
         });
     });
 
+    // Admin product form: clicking the drop-zone opens the file picker
+    const uploadArea = document.getElementById('imageUploadArea');
+    const imageField = document.getElementById('image');
+    if (uploadArea && imageField) {
+        uploadArea.addEventListener('click', function () {
+            imageField.click();
+        });
+    }
+
+    // Admin product form: cap how many gallery files can be attached at once
+    const mediaField = document.getElementById('media');
+    if (mediaField && mediaField.dataset.maxMedia) {
+        const maxMedia = parseInt(mediaField.dataset.maxMedia, 10);
+        mediaField.addEventListener('change', function () {
+            if (this.files.length > maxMedia) {
+                showToast('You can upload at most ' + maxMedia + ' media items per product.', 'error');
+                this.value = '';
+            }
+        });
+    }
+
+    // Checkout: live "this is what your points are worth" hint
+    const pointsInput = document.getElementById('pointsToRedeem');
+    const pointsPreview = document.getElementById('pointsDiscountPreview');
+    if (pointsInput && pointsPreview) {
+        pointsInput.addEventListener('input', function () {
+            const pts = parseInt(this.value, 10) || 0;
+            pointsPreview.textContent =
+                'Discount: Rs. ' + (pts / 2).toFixed(2) + ' (confirmed at checkout)';
+        });
+    }
+
     // Registration: live password-match indicator + hard submit block on mismatch
     const registerForm = document.getElementById('registerForm');
     const pw = document.getElementById('password');

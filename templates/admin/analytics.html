@@ -1,9 +1,6 @@
 {% extends "admin/base.html" %}
 {% block title %}Sales Analytics - Admin | SmartCart{% endblock %}
 {% block page_title %}Sales Analytics{% endblock %}
-{% block extra_head %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-{% endblock %}
 {% block content %}
     <form action="{{ url_for('analytics.refresh_forecast') }}" method="POST" class="mb-3">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -70,33 +67,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
-    <script>
-        const weekSeries = {{ week_series|tojson }};
-        const monthSeries = {{ month_series|tojson }};
-        const labels = Object.keys(monthSeries);
-        const data = Object.values(monthSeries);
-        new Chart(document.getElementById('forecastChart'), {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Forecasted Daily Sales (Rs)',
-                    data: data,
-                    borderColor: '#febd69',
-                    backgroundColor: 'rgba(254,189,105,0.2)',
-                    tension: 0.3,
-                    fill: true,
-                }]
-            },
-            options: { responsive: true, plugins: { legend: { display: true } } }
-        });
-
-        const refreshBtn = document.getElementById('refreshForecastBtn');
-        if (refreshBtn) {
-            refreshBtn.closest('form').addEventListener('submit', function() {
-                refreshBtn.disabled = true;
-                refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Refreshing...';
-            });
-        }
-    </script>
+    <script type="application/json" id="forecastData">{{ month_series|tojson }}</script>
+    <script src="{{ url_for('static', filename='dist/analytics.js') }}?v={{ asset_version }}"></script>
 {% endblock %}

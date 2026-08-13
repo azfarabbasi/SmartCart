@@ -1,7 +1,7 @@
 import os
 import traceback
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 
 import db
 import security
@@ -35,8 +35,24 @@ def create_app():
     limiter.init_app(app)
     security.register_security_headers(app)
 
+    from slugs import slugify as _slugify
+
     app.jinja_env.globals['min'] = min
     app.jinja_env.globals['max'] = max
+    app.jinja_env.globals['slugify'] = _slugify
+
+    # Stamp written by build_assets.py; appended to the bundle URLs so a new
+    # deploy is never served from a stale browser cache.
+    try:
+        version_file = os.path.join(app.static_folder, 'dist', 'version.txt')
+        with open(version_file, encoding='utf-8') as fh:
+            app.config['ASSET_VERSION'] = fh.read().strip()
+    except OSError:
+        app.config['ASSET_VERSION'] = 'dev'
+
+    @app.context_processor
+    def inject_asset_version():
+        return {'asset_version': app.config['ASSET_VERSION']}
 
     @app.context_processor
     def inject_site_settings():
@@ -60,27 +76,42 @@ def create_app():
     @app.context_processor
     def inject_nav_categories():
         from flask import g
+
+        from slugs import slugify
         if 'nav_categories' not in g:
             try:
                 cur = db.get_db().cursor()
+                # DISTINCT by name: the catalog can hold several rows sharing a
+                # display name, and the nav should show that category once.
                 cur.execute(
-                    "SELECT category_id, category_name FROM ("
-                    "  SELECT category_id, category_name FROM Categories ORDER BY category_name"
+                    "SELECT category_name FROM ("
+                    "  SELECT DISTINCT category_name FROM Categories ORDER BY category_name"
                     ") WHERE ROWNUM <= 12"
                 )
-                g.nav_categories = cur.fetchall()
+                g.nav_categories = [
+                    {'name': row[0], 'slug': slugify(row[0])} for row in cur.fetchall()
+                ]
             except Exception:
                 g.nav_categories = []
         return {'nav_categories': g.nav_categories}
 
     @app.errorhandler(500)
     def internal_error(e):
-        db_err = getattr(app, '_db_init_error', None)
-        return jsonify({
-            'error': str(e),
-            'db_init_error': db_err,
-            'traceback': traceback.format_exc(),
-        }), 500
+        # Stack traces name internal paths, SQL and config, so they go to the
+        # server log only. They were being returned to the browser while
+        # debugging the Vercel deploy -- fine there, not on a live shop.
+        app.logger.error('Unhandled error: %s\n%s', e, traceback.format_exc())
+        if app.config.get('DEBUG'):
+            return jsonify({
+                'error': str(e),
+                'db_init_error': getattr(app, '_db_init_error', None),
+                'traceback': traceback.format_exc(),
+            }), 500
+        return render_template('error.html', code=500), 500
+
+    @app.errorhandler(404)
+    def not_found(_e):
+        return render_template('error.html', code=404), 404
 
     from blueprints.admin import admin_bp
     from blueprints.analytics import analytics_bp
