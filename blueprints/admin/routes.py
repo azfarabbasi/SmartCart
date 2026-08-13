@@ -6,10 +6,11 @@ from urllib.parse import quote
 
 import oracledb
 from flask import (Blueprint, current_app, flash, redirect, render_template,
-                    request, session, url_for)
+                    request, url_for)
 
 import sitesettings
 from blueprints.auth.decorators import admin_required
+from auth_tokens import current_user_id
 from db import get_db
 from extensions import limiter
 from security import log_admin_action
@@ -172,7 +173,7 @@ def add_product():
 
         _save_gallery_media(cur, new_product_id, request.files.getlist('media'), 0)
 
-        log_admin_action(cur, session['user_id'], 'product.create', 'Product', new_product_id, f'name={name}')
+        log_admin_action(cur, current_user_id(), 'product.create', 'Product', new_product_id, f'name={name}')
         get_db().commit()
         flash('Product added successfully.', 'success')
         return redirect(url_for('admin.products'))
@@ -228,7 +229,7 @@ def edit_product(product_id):
         existing_count = cur.fetchone()[0]
         _save_gallery_media(cur, product_id, request.files.getlist('media'), existing_count)
 
-        log_admin_action(cur, session['user_id'], 'product.update', 'Product', product_id, f'name={name}')
+        log_admin_action(cur, current_user_id(), 'product.update', 'Product', product_id, f'name={name}')
         get_db().commit()
         flash('Product updated.', 'success')
         return redirect(url_for('admin.products'))
@@ -260,7 +261,7 @@ def delete_product_media(media_id):
     row = cur.fetchone()
     product_id = row[0] if row else None
     cur.execute("DELETE FROM ProductMedia WHERE media_id = :m", {'m': media_id})
-    log_admin_action(cur, session['user_id'], 'product.media_delete', 'Product', product_id)
+    log_admin_action(cur, current_user_id(), 'product.media_delete', 'Product', product_id)
     get_db().commit()
     flash('Media removed.', 'success')
     return redirect(url_for('admin.edit_product', product_id=product_id) if product_id else url_for('admin.products'))
@@ -275,7 +276,7 @@ def delete_product(product_id):
         cur.execute("DELETE FROM Wishlist WHERE product_id = :p", {'p': product_id})
         cur.execute("DELETE FROM ProductMedia WHERE product_id = :p", {'p': product_id})
         cur.execute("DELETE FROM Products WHERE product_id = :p", {'p': product_id})
-        log_admin_action(cur, session['user_id'], 'product.delete', 'Product', product_id)
+        log_admin_action(cur, current_user_id(), 'product.delete', 'Product', product_id)
         get_db().commit()
         flash('Product deleted.', 'success')
     except oracledb.IntegrityError:
@@ -306,7 +307,7 @@ def add_category():
         "INSERT INTO Categories (category_id, category_name) VALUES (categories_seq.NEXTVAL, :n)", {'n': name},
     )
     cur.execute("SELECT categories_seq.CURRVAL FROM dual")
-    log_admin_action(cur, session['user_id'], 'category.create', 'Category', cur.fetchone()[0], f'name={name}')
+    log_admin_action(cur, current_user_id(), 'category.create', 'Category', cur.fetchone()[0], f'name={name}')
     get_db().commit()
     flash('Category added.', 'success')
     return redirect(url_for('admin.categories'))
@@ -318,7 +319,7 @@ def delete_category(category_id):
     cur = get_db().cursor()
     try:
         cur.execute("DELETE FROM Categories WHERE category_id = :cid", {'cid': category_id})
-        log_admin_action(cur, session['user_id'], 'category.delete', 'Category', category_id)
+        log_admin_action(cur, current_user_id(), 'category.delete', 'Category', category_id)
         get_db().commit()
         flash('Category deleted.', 'success')
     except oracledb.IntegrityError:
@@ -442,7 +443,7 @@ def update_order_status():
     else:
         flash('Order status updated.', 'success')
 
-    log_admin_action(cur, session['user_id'], 'order.status_change', 'Order', order_id,
+    log_admin_action(cur, current_user_id(), 'order.status_change', 'Order', order_id,
                       f'{current_status} -> {status}')
     get_db().commit()
     return redirect(url_for('admin.order_detail', order_id=order_id))
@@ -483,7 +484,7 @@ def verify_payment(order_id):
     cur.execute(
         "UPDATE Orders SET payment_status = 'verified', payment_verified_at = SYSDATE, "
         "payment_verified_by = :p_uid WHERE order_id = :oid",
-        {'p_uid': session['user_id'], 'oid': order_id},
+        {'p_uid': current_user_id(), 'oid': order_id},
     )
 
     if method == 'bank_transfer':
@@ -492,7 +493,7 @@ def verify_payment(order_id):
         pts_var = cur.var(int)
         cur.callproc('verify_bank_transfer_cashback', [order_id, cashback_points, pts_var])
 
-    log_admin_action(cur, session['user_id'], 'payment.verify', 'Order', order_id)
+    log_admin_action(cur, current_user_id(), 'payment.verify', 'Order', order_id)
     get_db().commit()
 
     send_payment_verified_email(email, name, order_id, total_amount)
@@ -513,7 +514,7 @@ def reject_payment(order_id):
         "UPDATE Orders SET payment_status = 'rejected', payment_rejection_reason = :r WHERE order_id = :oid",
         {'r': reason, 'oid': order_id},
     )
-    log_admin_action(cur, session['user_id'], 'payment.reject', 'Order', order_id, reason)
+    log_admin_action(cur, current_user_id(), 'payment.reject', 'Order', order_id, reason)
     get_db().commit()
     flash('Payment rejected.', 'success')
     return redirect(url_for('admin.order_detail', order_id=order_id))
@@ -551,9 +552,9 @@ def add_coupon():
         cur.execute(
             "INSERT INTO Coupons (coupon_id, code, discount_percent, max_uses, valid_to, created_by) "
             "VALUES (coupons_seq.NEXTVAL, :c, :p, :m, TO_DATE(:vt, 'YYYY-MM-DD'), :u)",
-            {'c': code, 'p': pct, 'm': max_uses, 'vt': valid_to, 'u': session['user_id']},
+            {'c': code, 'p': pct, 'm': max_uses, 'vt': valid_to, 'u': current_user_id()},
         )
-        log_admin_action(cur, session['user_id'], 'coupon.create', 'Coupon', None, f'code={code}')
+        log_admin_action(cur, current_user_id(), 'coupon.create', 'Coupon', None, f'code={code}')
         get_db().commit()
         flash('Coupon created.', 'success')
     except oracledb.IntegrityError:
@@ -573,7 +574,7 @@ def toggle_coupon(coupon_id):
         return redirect(url_for('admin.coupons'))
     new_state = 0 if row[0] else 1
     cur.execute("UPDATE Coupons SET active = :a WHERE coupon_id = :c", {'a': new_state, 'c': coupon_id})
-    log_admin_action(cur, session['user_id'], 'coupon.toggle', 'Coupon', coupon_id, f'active={new_state}')
+    log_admin_action(cur, current_user_id(), 'coupon.toggle', 'Coupon', coupon_id, f'active={new_state}')
     get_db().commit()
     flash('Coupon updated.', 'success')
     return redirect(url_for('admin.coupons'))
@@ -599,7 +600,7 @@ def site_settings():
                 """,
                 {'k': key, 'v': value},
             )
-        log_admin_action(cur, session['user_id'], 'settings.update')
+        log_admin_action(cur, current_user_id(), 'settings.update')
         get_db().commit()
         flash('Settings updated.', 'success')
         return redirect(url_for('admin.site_settings'))
@@ -631,7 +632,7 @@ def verify_user_email(user_id):
         "verification_code_expires = NULL WHERE user_id = :v_user_id",
         {'v_user_id': user_id},
     )
-    log_admin_action(cur, session['user_id'], 'user.manual_verify', 'User', user_id,
+    log_admin_action(cur, current_user_id(), 'user.manual_verify', 'User', user_id,
                       'Verified manually (e.g. after an email delivery failure)')
     get_db().commit()
     flash('Account verified. The customer can now log in.', 'success')

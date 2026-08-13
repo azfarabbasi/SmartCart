@@ -1,9 +1,10 @@
 import datetime
 import json
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from blueprints.auth.decorators import admin_required
+from auth_tokens import current_user_id
 from db import get_db
 from extensions import limiter
 from security import log_admin_action
@@ -71,7 +72,7 @@ def refresh_forecast():
                 'dj': json.dumps(result[horizon]['daily_breakdown']),
             },
         )
-    log_admin_action(cur, session['user_id'], 'analytics.refresh')
+    log_admin_action(cur, current_user_id(), 'analytics.refresh')
     get_db().commit()
     flash('Forecast refreshed.', 'success')
     return redirect(url_for('analytics.dashboard'))
@@ -112,7 +113,7 @@ def add_seasonal_event():
         "TO_DATE(:ed,'YYYY-MM-DD'), :b, 0, :notes)",
         {'n': name, 'sd': start_date, 'ed': end_date, 'b': float(boost), 'notes': notes},
     )
-    log_admin_action(cur, session['user_id'], 'seasonal_event.create', 'SeasonalEvents', None, f'name={name}')
+    log_admin_action(cur, current_user_id(), 'seasonal_event.create', 'SeasonalEvents', None, f'name={name}')
     get_db().commit()
     flash('Seasonal event added.', 'success')
     return redirect(url_for('analytics.seasonal_events'))
@@ -123,7 +124,7 @@ def add_seasonal_event():
 def delete_seasonal_event(event_id):
     cur = get_db().cursor()
     cur.execute("DELETE FROM SeasonalEvents WHERE event_id = :id", {'id': event_id})
-    log_admin_action(cur, session['user_id'], 'seasonal_event.delete', 'SeasonalEvents', event_id)
+    log_admin_action(cur, current_user_id(), 'seasonal_event.delete', 'SeasonalEvents', event_id)
     get_db().commit()
     flash('Seasonal event removed.', 'success')
     return redirect(url_for('analytics.seasonal_events'))
@@ -180,7 +181,7 @@ def refresh_churn():
             {'p_uid': row['user_id'], 'score': row['risk_score'], 'p_level': row['risk_level'],
              'reason': row['reason_summary']},
         )
-    log_admin_action(cur, session['user_id'], 'churn.refresh')
+    log_admin_action(cur, current_user_id(), 'churn.refresh')
     get_db().commit()
     flash('Churn scores refreshed.', 'success')
     return redirect(url_for('analytics.customer_insights'))

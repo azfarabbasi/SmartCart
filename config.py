@@ -27,6 +27,11 @@ class Config:
     SESSION_COOKIE_SECURE = os.environ.get('FORCE_HTTPS', 'false').lower() == 'true'
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
 
+    # How long a login lasts. The identity token is stateless, so there is no
+    # server-side record to revoke -- keep this short enough that a leaked
+    # token stops working, long enough that shoppers aren't logged out mid-visit.
+    JWT_LIFETIME = timedelta(days=int(os.environ.get('JWT_LIFETIME_DAYS', 7)))
+
     EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
     EMAIL_USER = os.environ.get('EMAIL_USER', '')

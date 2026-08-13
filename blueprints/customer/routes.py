@@ -12,6 +12,7 @@ from flask import (Blueprint, abort, current_app, flash, redirect,
 import sitesettings
 from activity import log_activity
 from blueprints.auth.decorators import login_required
+from auth_tokens import current_user_id
 from db import get_db
 from slugs import slugify
 from uploads import save_upload, validate_upload
@@ -212,7 +213,7 @@ def product_detail(product_id):
         feedback_list.append({'feedback': fb, 'replies': replies})
 
     if session.get('user_id'):
-        log_activity(cur, session['user_id'], 'view_product', product_id=product_id)
+        log_activity(cur, current_user_id(), 'view_product', product_id=product_id)
         get_db().commit()
 
     return render_template(
@@ -229,7 +230,7 @@ def view_cart():
         "SELECT c.cart_id, p.product_id, p.name, p.price, c.quantity, p.image_path, p.stock "
         "FROM Cart c JOIN Products p ON c.product_id = p.product_id "
         "WHERE c.user_id = :1",
-        [session['user_id']],
+        [current_user_id()],
     )
     items = cur.fetchall()
     total = sum(row[3] * row[4] for row in items)
@@ -249,7 +250,7 @@ def view_cart():
 
 
 def _record_stock_conflict(cur, product_name, requested, available):
-    cur.execute("SELECT name, email FROM Users WHERE user_id = :1", [session['user_id']])
+    cur.execute("SELECT name, email FROM Users WHERE user_id = :1", [current_user_id()])
     cust_name, cust_email = cur.fetchone()
     notify_admin_stock_issue(cur, product_name, requested, available, cust_name, cust_email)
     session['stock_alert'] = {'product': product_name, 'available': available, 'requested': requested}
@@ -271,7 +272,7 @@ def add_to_cart():
 
     cur.execute(
         "SELECT cart_id, quantity FROM Cart WHERE user_id = :1 AND product_id = :2",
-        [session['user_id'], product_id],
+        [current_user_id(), product_id],
     )
     existing = cur.fetchone()
     current_qty = existing[1] if existing else 0
@@ -285,10 +286,10 @@ def add_to_cart():
             cur.execute(
                 "INSERT INTO Cart (cart_id, user_id, product_id, quantity) "
                 "VALUES (cart_seq.NEXTVAL, :1, :2, :3)",
-                [session['user_id'], product_id, capped],
+                [current_user_id(), product_id, capped],
             )
         _record_stock_conflict(cur, product_name, desired_total, stock)
-        log_activity(cur, session['user_id'], 'add_to_cart', product_id=product_id)
+        log_activity(cur, current_user_id(), 'add_to_cart', product_id=product_id)
         get_db().commit()
         if stock <= 0:
             flash(f'Sorry, "{product_name}" is currently out of stock.', 'error')
@@ -308,9 +309,9 @@ def add_to_cart():
         cur.execute(
             "INSERT INTO Cart (cart_id, user_id, product_id, quantity) "
             "VALUES (cart_seq.NEXTVAL, :1, :2, :3)",
-            [session['user_id'], product_id, quantity],
+            [current_user_id(), product_id, quantity],
         )
-    log_activity(cur, session['user_id'], 'add_to_cart', product_id=product_id)
+    log_activity(cur, current_user_id(), 'add_to_cart', product_id=product_id)
     get_db().commit()
     flash('Item added to cart.', 'success')
     return redirect(url_for('customer.view_cart'))
@@ -326,7 +327,7 @@ def update_cart():
     if quantity <= 0:
         cur.execute(
             "DELETE FROM Cart WHERE cart_id = :1 AND user_id = :2",
-            [cart_id, session['user_id']],
+            [cart_id, current_user_id()],
         )
         get_db().commit()
         return redirect(url_for('customer.view_cart'))
@@ -334,7 +335,7 @@ def update_cart():
     cur.execute(
         "SELECT p.name, p.stock FROM Cart c JOIN Products p ON c.product_id = p.product_id "
         "WHERE c.cart_id = :1 AND c.user_id = :2",
-        [cart_id, session['user_id']],
+        [cart_id, current_user_id()],
     )
     row = cur.fetchone()
     if not row:
@@ -346,10 +347,10 @@ def update_cart():
         if capped > 0:
             cur.execute(
                 "UPDATE Cart SET quantity = :1 WHERE cart_id = :2 AND user_id = :3",
-                [capped, cart_id, session['user_id']],
+                [capped, cart_id, current_user_id()],
             )
         else:
-            cur.execute("DELETE FROM Cart WHERE cart_id = :1 AND user_id = :2", [cart_id, session['user_id']])
+            cur.execute("DELETE FROM Cart WHERE cart_id = :1 AND user_id = :2", [cart_id, current_user_id()])
         _record_stock_conflict(cur, product_name, quantity, stock)
         get_db().commit()
         if stock <= 0:
@@ -360,7 +361,7 @@ def update_cart():
 
     cur.execute(
         "UPDATE Cart SET quantity = :1 WHERE cart_id = :2 AND user_id = :3",
-        [quantity, cart_id, session['user_id']],
+        [quantity, cart_id, current_user_id()],
     )
     get_db().commit()
     return redirect(url_for('customer.view_cart'))
@@ -372,7 +373,7 @@ def remove_from_cart(cart_id):
     cur = get_db().cursor()
     cur.execute(
         "DELETE FROM Cart WHERE cart_id = :1 AND user_id = :2",
-        [cart_id, session['user_id']],
+        [cart_id, current_user_id()],
     )
     get_db().commit()
     flash('Item removed from cart.', 'success')
@@ -388,7 +389,7 @@ def view_wishlist():
         "SELECT w.wishlist_id, p.product_id, p.name, p.price, p.image_path "
         "FROM Wishlist w JOIN Products p ON w.product_id = p.product_id "
         "WHERE w.user_id = :1",
-        [session['user_id']],
+        [current_user_id()],
     )
     items = cur.fetchall()
     return render_template('customer/wishlist.html', items=items)
@@ -401,13 +402,13 @@ def add_to_wishlist():
     cur = get_db().cursor()
     cur.execute(
         "SELECT COUNT(*) FROM Wishlist WHERE user_id = :1 AND product_id = :2",
-        [session['user_id'], product_id],
+        [current_user_id(), product_id],
     )
     if cur.fetchone()[0] == 0:
         cur.execute(
             "INSERT INTO Wishlist (wishlist_id, user_id, product_id) "
             "VALUES (wishlist_seq.NEXTVAL, :1, :2)",
-            [session['user_id'], product_id],
+            [current_user_id(), product_id],
         )
         get_db().commit()
         flash('Added to wishlist.', 'success')
@@ -422,7 +423,7 @@ def remove_from_wishlist(wishlist_id):
     cur = get_db().cursor()
     cur.execute(
         "DELETE FROM Wishlist WHERE wishlist_id = :1 AND user_id = :2",
-        [wishlist_id, session['user_id']],
+        [wishlist_id, current_user_id()],
     )
     get_db().commit()
     return redirect(url_for('customer.view_wishlist'))
@@ -433,7 +434,7 @@ def remove_from_wishlist(wishlist_id):
 @login_required
 def checkout():
     cur = get_db().cursor()
-    cur.execute("SELECT loyalty_points_balance FROM Users WHERE user_id = :1", [session['user_id']])
+    cur.execute("SELECT loyalty_points_balance FROM Users WHERE user_id = :1", [current_user_id()])
     points_balance = cur.fetchone()[0]
 
     if request.method == 'POST':
@@ -477,7 +478,7 @@ def checkout():
         if address_notes:
             address += f' -- {address_notes}'
 
-        cur.execute("SELECT COUNT(*) FROM Cart WHERE user_id = :1", [session['user_id']])
+        cur.execute("SELECT COUNT(*) FROM Cart WHERE user_id = :1", [current_user_id()])
         if cur.fetchone()[0] == 0:
             flash('Your cart is empty.', 'error')
             return redirect(url_for('customer.view_cart'))
@@ -487,7 +488,7 @@ def checkout():
         cur.execute(
             "SELECT p.name, c.quantity, p.stock FROM Cart c "
             "JOIN Products p ON c.product_id = p.product_id WHERE c.user_id = :1",
-            [session['user_id']],
+            [current_user_id()],
         )
         for item_name, item_qty, item_stock in cur.fetchall():
             if item_qty > item_stock:
@@ -513,7 +514,7 @@ def checkout():
         save_upload(proof_file, current_app.config['PAYMENT_PROOF_UPLOAD_FOLDER'], safe_name)
         proof_path = f'uploads/payment_proofs/{safe_name}'
 
-        log_activity(cur, session['user_id'], 'payment_uploaded')
+        log_activity(cur, current_user_id(), 'payment_uploaded')
         get_db().commit()
 
         order_id_var = cur.var(int)
@@ -528,7 +529,7 @@ def checkout():
 
         try:
             cur.callproc('place_order', [
-                session['user_id'], payment_method, address, phone, proof_path,
+                current_user_id(), payment_method, address, phone, proof_path,
                 points_to_redeem, coupon_code, cod_advance_amount,
                 order_id_var, final_total_var, coupon_disc_var, loyalty_disc_var,
                 points_redeemed_var, advance_var,
@@ -543,7 +544,7 @@ def checkout():
                 {'c': city, 'a': area, 'h': house_no, 'b': block_sector or None,
                  'l': landmark, 'n': address_notes or None, 'oid': new_order_id},
             )
-            log_activity(cur, session['user_id'], 'order_placed', order_id=new_order_id)
+            log_activity(cur, current_user_id(), 'order_placed', order_id=new_order_id)
             get_db().commit()
 
             final_total = final_total_var.getvalue()
@@ -591,13 +592,13 @@ def checkout():
             return redirect(url_for('customer.view_cart'))
 
     # GET
-    log_activity(cur, session['user_id'], 'checkout_start')
+    log_activity(cur, current_user_id(), 'checkout_start')
     get_db().commit()
 
     cur.execute(
         "SELECT p.name, c.quantity, p.price FROM Cart c JOIN Products p ON c.product_id = p.product_id "
         "WHERE c.user_id = :1",
-        [session['user_id']],
+        [current_user_id()],
     )
     cart_items = cur.fetchall()
     subtotal = sum(row[1] * row[2] for row in cart_items)
@@ -617,7 +618,7 @@ def order_history():
     cur.execute(
         "SELECT order_id, order_date, total_amount, status, payment_status "
         "FROM Orders WHERE user_id = :1 ORDER BY order_date DESC",
-        [session['user_id']],
+        [current_user_id()],
     )
     orders = cur.fetchall()
     return render_template('customer/orders.html', orders=orders)
@@ -635,7 +636,7 @@ def order_detail(order_id):
                cashback_points_awarded, payment_rejection_reason
         FROM Orders WHERE order_id = :1 AND user_id = :2
         """,
-        [order_id, session['user_id']],
+        [order_id, current_user_id()],
     )
     order = cur.fetchone()
     if not order:
@@ -671,14 +672,14 @@ def profile():
     cur = get_db().cursor()
     cur.execute(
         "SELECT name, email, role, created_at, loyalty_points_balance FROM Users WHERE user_id = :1",
-        [session['user_id']],
+        [current_user_id()],
     )
     user = cur.fetchone()
 
-    cur.execute("SELECT COUNT(*) FROM Orders WHERE user_id = :1", [session['user_id']])
+    cur.execute("SELECT COUNT(*) FROM Orders WHERE user_id = :1", [current_user_id()])
     order_count = cur.fetchone()[0]
 
-    cur.execute("SELECT COUNT(*) FROM Wishlist WHERE user_id = :1", [session['user_id']])
+    cur.execute("SELECT COUNT(*) FROM Wishlist WHERE user_id = :1", [current_user_id()])
     wishlist_count = cur.fetchone()[0]
 
     # Oracle 11.2 doesn't support FETCH FIRST N ROWS ONLY, so use a ROWNUM subquery.
@@ -689,7 +690,7 @@ def profile():
             FROM LoyaltyLedger WHERE user_id = :1 ORDER BY created_at DESC
         ) WHERE ROWNUM <= 5
         """,
-        [session['user_id']],
+        [current_user_id()],
     )
     recent_ledger = cur.fetchall()
 
@@ -704,14 +705,14 @@ def profile():
 @login_required
 def loyalty_history():
     cur = get_db().cursor()
-    cur.execute("SELECT loyalty_points_balance FROM Users WHERE user_id = :1", [session['user_id']])
+    cur.execute("SELECT loyalty_points_balance FROM Users WHERE user_id = :1", [current_user_id()])
     balance = cur.fetchone()[0]
     cur.execute(
         """
         SELECT ledger_id, order_id, entry_type, points, rupee_value, balance_after, created_at
         FROM LoyaltyLedger WHERE user_id = :1 ORDER BY created_at DESC
         """,
-        [session['user_id']],
+        [current_user_id()],
     )
     ledger = cur.fetchall()
     return render_template('customer/loyalty_history.html', balance=balance, ledger=ledger)

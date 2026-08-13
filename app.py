@@ -3,6 +3,7 @@ import traceback
 
 from flask import Flask, jsonify, render_template
 
+import auth_tokens
 import db
 import security
 from config import get_config
@@ -34,6 +35,13 @@ def create_app():
     csrf.init_app(app)
     limiter.init_app(app)
     security.register_security_headers(app)
+
+    # Identity comes from a signed cookie, decoded once per request.
+    app.before_request(auth_tokens.load_current_user)
+
+    @app.context_processor
+    def inject_current_user():
+        return {'current_user': auth_tokens.current_user()}
 
     from slugs import slugify as _slugify
 

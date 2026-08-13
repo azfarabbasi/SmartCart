@@ -28,12 +28,12 @@
 
                 <div class="col-auto">
                     <div class="header-actions">
-                        {% if session.get('user_id') %}
+                        {% if current_user %}
                             <div class="dropdown user-dropdown">
                                 <a href="#" class="header-action" data-bs-toggle="dropdown">
                                     <i class="bi bi-person"></i>
                                     <div class="action-text">
-                                        <small>Hello, {{ session['name'] }}</small>
+                                        <small>Hello, {{ current_user.name }}</small>
                                         <span>Account & Lists <i class="bi bi-caret-down-fill"></i></span>
                                     </div>
                                 </a>
@@ -43,7 +43,7 @@
                                     <li><a class="dropdown-item" href="{{ url_for('customer.order_history') }}"><i class="bi bi-box me-2"></i>Your Orders</a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('customer.view_wishlist') }}"><i class="bi bi-heart me-2"></i>Your Wishlist</a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('customer.loyalty_history') }}"><i class="bi bi-gift me-2"></i>Loyalty Points</a></li>
-                                    {% if session.get('role') == 'admin' %}
+                                    {% if current_user and current_user.role == 'admin' %}
                                         <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</a></li>
                                     {% endif %}
                                     <li><hr class="dropdown-divider"></li>

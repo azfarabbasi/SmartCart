@@ -102,7 +102,7 @@
                             {% endif %}
                         </div>
 
-                        {% if session.get('user_id') %}
+                        {% if current_user %}
                             {% if product[3] > 0 %}
                                 <form action="{{ url_for('customer.add_to_cart') }}" method="POST" class="buy-box-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

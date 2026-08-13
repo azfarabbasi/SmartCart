@@ -4,7 +4,10 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from flask import (Blueprint, current_app, flash, make_response, redirect,
+                    render_template, request, session, url_for)
+
+from auth_tokens import clear_auth_cookie, issue_token, set_auth_cookie
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import get_db
@@ -122,17 +125,15 @@ def login():
             return redirect(url_for('auth.verify_email'))
 
         if ok:
-            session.clear()
-            session['user_id'] = user[0]
-            session['name'] = user[1]
-            session['role'] = user[3]
-            session.permanent = True
-
+            session.pop('pending_verification_user_id', None)
             if next_url:
-                return redirect(next_url)
-            if user[3] == 'admin':
-                return redirect(url_for('admin.dashboard'))
-            return redirect(url_for('customer.index'))
+                destination = next_url
+            elif user[3] == 'admin':
+                destination = url_for('admin.dashboard')
+            else:
+                destination = url_for('customer.index')
+            response = make_response(redirect(destination))
+            return set_auth_cookie(response, issue_token(user[0], user[1], user[3]))
 
         flash('Invalid email or password.', 'error')
 
@@ -221,14 +222,11 @@ def verify_email():
             send_welcome_email(email, name)
 
             session.pop('pending_verification_user_id', None)
-            session.clear()
-            session['user_id'] = user_id
-            session['name'] = name
-            session['role'] = role
-            session.permanent = True
 
             flash('Email verified! Welcome to SmartCart.', 'success')
-            return redirect(url_for('admin.dashboard') if role == 'admin' else url_for('customer.index'))
+            destination = url_for('admin.dashboard') if role == 'admin' else url_for('customer.index')
+            response = make_response(redirect(destination))
+            return set_auth_cookie(response, issue_token(user_id, name, role))
 
     return render_template('verify_email.html', email=email)
 
@@ -253,4 +251,4 @@ def resend_code():
 @auth_bp.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('auth.login'))
+    return clear_auth_cookie(make_response(redirect(url_for('auth.login'))))

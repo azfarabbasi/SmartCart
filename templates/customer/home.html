@@ -49,7 +49,7 @@
                                     </p>
                                 {% endif %}
                                 <div class="product-actions">
-                                    {% if session.get('user_id') %}
+                                    {% if current_user %}
                                         <form action="{{ url_for('customer.add_to_cart') }}" method="POST" class="d-inline">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="product_id" value="{{ product[0] }}">
@@ -86,7 +86,7 @@
 
             <div class="suggest-product-prompt">
                 <p>Couldn't find what you were looking for?</p>
-                {% if session.get('user_id') %}
+                {% if current_user %}
                     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#suggestProductModal">
                         <i class="bi bi-lightbulb"></i> Suggest a Product
                     </button>
@@ -99,7 +99,7 @@
         </div>
     </section>
 
-    {% if session.get('user_id') %}
+    {% if current_user %}
         <div class="modal fade" id="suggestProductModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">

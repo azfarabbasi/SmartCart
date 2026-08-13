@@ -73,7 +73,7 @@
                     <div class="info-card">
                         <h5><i class="bi bi-geo-alt me-2"></i>Shipping Address</h5>
                         <div class="info-content">
-                            <strong>{{ session['name'] }}</strong>
+                            <strong>{{ current_user.name }}</strong>
                             <p>
                                 {{ order[5] if order[5] else 'Address not provided' }}<br>
                                 <strong>Phone:</strong> {{ order[4] if order[4] else 'N/A' }}

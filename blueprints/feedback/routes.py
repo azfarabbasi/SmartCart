@@ -1,6 +1,7 @@
-from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 
 from blueprints.auth.decorators import admin_required, login_required
+from auth_tokens import current_user_id
 from db import get_db
 from security import log_admin_action
 from uploads import save_upload, validate_upload
@@ -42,7 +43,7 @@ def submit_feedback(product_id):
                                       media_path, media_type, created_at)
         VALUES (productfeedback_seq.NEXTVAL, :pid, :p_uid, :r, :c, :mp, :mt, SYSDATE)
         """,
-        {'pid': product_id, 'p_uid': session['user_id'], 'r': rating, 'c': comment or None,
+        {'pid': product_id, 'p_uid': current_user_id(), 'r': rating, 'c': comment or None,
          'mp': media_path, 'mt': media_type},
     )
     get_db().commit()
@@ -82,7 +83,7 @@ def submit_product_suggestion():
         INSERT INTO ProductSuggestions (suggestion_id, user_id, description, media_path, media_type, created_at)
         VALUES (productsuggestions_seq.NEXTVAL, :v_uid, :d, :mp, :mt, SYSDATE)
         """,
-        {'v_uid': session['user_id'], 'd': description or None, 'mp': media_path, 'mt': media_type},
+        {'v_uid': current_user_id(), 'd': description or None, 'mp': media_path, 'mt': media_type},
     )
     get_db().commit()
     flash("Thanks! We've received your suggestion and will look into it.", 'success')
@@ -117,7 +118,7 @@ def update_suggestion_status(suggestion_id):
         "UPDATE ProductSuggestions SET status = :s WHERE suggestion_id = :sid",
         {'s': status, 'sid': suggestion_id},
     )
-    log_admin_action(cur, session['user_id'], 'suggestion.status_update', 'ProductSuggestion', suggestion_id, status)
+    log_admin_action(cur, current_user_id(), 'suggestion.status_update', 'ProductSuggestion', suggestion_id, status)
     get_db().commit()
     flash('Status updated.', 'success')
     return redirect(url_for('feedback.admin_product_suggestions'))
@@ -184,9 +185,9 @@ def admin_reply_feedback(feedback_id):
                                       media_type, created_at)
         VALUES (feedbackreplies_seq.NEXTVAL, :fid, :aid, :rt, :mp, :mt, SYSDATE)
         """,
-        {'fid': feedback_id, 'aid': session['user_id'], 'rt': reply_text, 'mp': media_path, 'mt': media_type},
+        {'fid': feedback_id, 'aid': current_user_id(), 'rt': reply_text, 'mp': media_path, 'mt': media_type},
     )
-    log_admin_action(cur, session['user_id'], 'feedback.reply', 'ProductFeedback', feedback_id)
+    log_admin_action(cur, current_user_id(), 'feedback.reply', 'ProductFeedback', feedback_id)
     get_db().commit()
     flash('Reply posted.', 'success')
     return redirect(url_for('feedback.admin_feedback_list'))
