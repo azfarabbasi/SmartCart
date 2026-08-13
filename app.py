@@ -1,6 +1,7 @@
 import os
+import traceback
 
-from flask import Flask
+from flask import Flask, jsonify
 
 import db
 import security
@@ -12,11 +13,22 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(get_config())
 
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['FEEDBACK_UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['PAYMENT_PROOF_UPLOAD_FOLDER'], exist_ok=True)
+    for folder in (
+        app.config['UPLOAD_FOLDER'],
+        app.config['FEEDBACK_UPLOAD_FOLDER'],
+        app.config['PAYMENT_PROOF_UPLOAD_FOLDER'],
+    ):
+        try:
+            os.makedirs(folder, exist_ok=True)
+        except OSError:
+            pass  # Read-only filesystem (Vercel)
 
-    db.init_pool(app)
+    try:
+        db.init_pool(app)
+    except Exception as e:
+        app.logger.error(f'DB pool init failed: {e}')
+        app._db_init_error = str(e)
+
     app.teardown_appcontext(db.close_db)
 
     csrf.init_app(app)
@@ -61,6 +73,15 @@ def create_app():
                 g.nav_categories = []
         return {'nav_categories': g.nav_categories}
 
+    @app.errorhandler(500)
+    def internal_error(e):
+        db_err = getattr(app, '_db_init_error', None)
+        return jsonify({
+            'error': str(e),
+            'db_init_error': db_err,
+            'traceback': traceback.format_exc(),
+        }), 500
+
     from blueprints.admin import admin_bp
     from blueprints.analytics import analytics_bp
     from blueprints.auth import auth_bp
@@ -80,3 +101,4 @@ app = create_app()
 
 if __name__ == '__main__':
     app.run(debug=app.config['DEBUG'])
+

@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
+_ON_VERCEL = bool(os.environ.get('VERCEL'))
+
 
 class Config:
     SECRET_KEY = os.environ['SECRET_KEY']
@@ -15,7 +17,7 @@ class Config:
     DB_DSN = os.environ['DB_DSN']
     ORACLE_CLIENT_LIB_DIR = os.environ.get('ORACLE_CLIENT_LIB_DIR')
 
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
+    UPLOAD_FOLDER = os.path.join('/tmp', 'uploads') if _ON_VERCEL else os.path.join(BASE_DIR, 'static', 'uploads')
     FEEDBACK_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'feedback')
     PAYMENT_PROOF_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'payment_proofs')
     MAX_CONTENT_LENGTH = 60 * 1024 * 1024  # 60MB hard cap (largest allowed is a single video)
@@ -27,8 +29,8 @@ class Config:
 
     EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-    EMAIL_USER = os.environ['EMAIL_USER']
-    EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD']
+    EMAIL_USER = os.environ.get('EMAIL_USER', '')
+    EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD', '')
 
     CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '')
     CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', '')
