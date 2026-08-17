@@ -564,6 +564,7 @@ def checkout():
 
         except oracledb.DatabaseError as e:
             error_msg = str(e)
+            current_app.logger.error(f'Order placement DatabaseError: {error_msg}')
             if 'ORA-20001' in error_msg:
                 # A rare race: stock changed between our pre-check above and the
                 # actual insert (e.g. another customer bought it in that window).
@@ -588,7 +589,12 @@ def checkout():
             elif 'ORA-20004' in error_msg:
                 flash('You have already used this coupon code on a previous order.', 'error')
             else:
-                flash('Order could not be placed. Please try again.', 'error')
+                first_line = error_msg.split('\n')[0].strip()
+                flash(f'Order placement error: {first_line}', 'error')
+            return redirect(url_for('customer.view_cart'))
+        except Exception as e:
+            current_app.logger.exception(f'Unexpected error during checkout: {e}')
+            flash(f'Order could not be placed: {str(e)}', 'error')
             return redirect(url_for('customer.view_cart'))
 
     # GET
