@@ -10,7 +10,7 @@ CREATE OR REPLACE PROCEDURE place_order(
     p_pay_method        IN  VARCHAR2,
     p_address           IN  VARCHAR2,
     p_phone             IN  VARCHAR2,
-    p_payment_proof_path IN VARCHAR2,
+    p_payment_proof_path IN CLOB,
     p_points_to_redeem  IN  NUMBER,
     p_coupon_code       IN  VARCHAR2,
     p_cod_advance_amount IN NUMBER,
@@ -29,47 +29,54 @@ CREATE OR REPLACE PROCEDURE place_order(
     v_remaining_discount_cap NUMBER(10,2) := 0;
     v_margin_floor  NUMBER(10,2) := NVL(p_min_margin_floor, 300);
     v_unit_price    NUMBER(10,2);
+    v_cost_price    NUMBER(10,2);
     v_count         NUMBER;
     v_balance       NUMBER;
     v_max_redeem    NUMBER;
     v_redeem_points NUMBER := NVL(p_points_to_redeem, 0);
     v_loyalty_disc  NUMBER(10,2) := 0;
-    v_coupon_id     NUMBER;
-    v_coupon_pct    NUMBER;
+    v_coupon_pct    NUMBER := 0;
     v_coupon_disc   NUMBER(10,2) := 0;
-    v_already_used  NUMBER;
+    v_coupon_id     NUMBER;
     v_discounted    NUMBER(10,2);
     v_final_total   NUMBER(10,2);
     v_advance       NUMBER(10,2);
-
-    CURSOR cart_cursor IS
-        SELECT c.cart_id, c.product_id, c.quantity, p.price, p.stock, p.name, NVL(p.cost_price, 0) AS cost_price
-        FROM Cart c JOIN Products p ON c.product_id = p.product_id
-        WHERE c.user_id = p_user_id;
+    v_already_used  NUMBER;
 BEGIN
     SELECT COUNT(*) INTO v_count FROM Cart WHERE user_id = p_user_id;
     IF v_count = 0 THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Cart is empty. Cannot place order.');
+        RAISE_APPLICATION_ERROR(-20002, 'Cart is empty');
     END IF;
 
-    -- Calculate regular Subtotal and Minimum Protected Floor Price (Cost Price + Margin Floor per unit)
-    SELECT NVL(SUM(c.quantity * p.price), 0),
-           NVL(SUM(c.quantity * (NVL(p.cost_price, 0) + v_margin_floor)), 0)
-    INTO v_subtotal, v_min_floor_price
-    FROM Cart c JOIN Products p ON c.product_id = p.product_id
-    WHERE c.user_id = p_user_id;
+    -- Stock check with row locking
+    FOR item IN (
+        SELECT c.product_id, c.quantity, p.stock, p.name, p.price, NVL(p.cost_price, 0) AS cost_price
+        FROM Cart c
+        JOIN Products p ON c.product_id = p.product_id
+        WHERE c.user_id = p_user_id
+        FOR UPDATE OF p.stock
+    ) LOOP
+        IF item.stock < item.quantity THEN
+            RAISE_APPLICATION_ERROR(
+                -20001,
+                'Insufficient stock for product "' || item.name || '". Requested: ' || item.quantity || ', Available: ' || item.stock
+            );
+        END IF;
+        v_subtotal := v_subtotal + (item.price * item.quantity);
+        v_min_floor_price := v_min_floor_price + (item.quantity * (item.cost_price + v_margin_floor));
+    END LOOP;
 
-    -- Maximum total discount allowed across this order
+    -- Maximum total allowable discount across both coupon & loyalty points
     v_max_total_discount := GREATEST(0, v_subtotal - v_min_floor_price);
 
-    -- Coupon: validated and applied up to the maximum allowable discount floor
-    IF p_coupon_code IS NOT NULL THEN
+    -- Process coupon if provided
+    IF p_coupon_code IS NOT NULL AND TRIM(p_coupon_code) IS NOT NULL THEN
         BEGIN
             SELECT coupon_id, discount_percent INTO v_coupon_id, v_coupon_pct
             FROM Coupons
-            WHERE code = UPPER(p_coupon_code)
+            WHERE UPPER(code) = UPPER(TRIM(p_coupon_code))
               AND active = 1
-              AND SYSDATE BETWEEN valid_from AND NVL(valid_to, SYSDATE + 9999)
+              AND (valid_to IS NULL OR valid_to >= SYSDATE)
               AND (max_uses IS NULL OR used_count < max_uses);
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
@@ -77,7 +84,7 @@ BEGIN
         END;
 
         SELECT COUNT(*) INTO v_already_used FROM Orders
-        WHERE user_id = p_user_id AND UPPER(coupon_code) = UPPER(p_coupon_code) AND status != 'cancelled';
+        WHERE user_id = p_user_id AND UPPER(coupon_code) = UPPER(TRIM(p_coupon_code)) AND status != 'cancelled';
         IF v_already_used > 0 THEN
             RAISE_APPLICATION_ERROR(-20004, 'You have already used this coupon code.');
         END IF;
@@ -118,17 +125,29 @@ BEGIN
             p_pay_method, p_payment_proof_path, 'pending_verification', v_advance,
             CASE WHEN v_coupon_id IS NOT NULL THEN UPPER(p_coupon_code) ELSE NULL END, v_coupon_disc);
 
-    FOR rec IN cart_cursor LOOP
-        v_unit_price := rec.price;
+    -- Move cart items to OrderItems and deduct stock
+    FOR item IN (
+        SELECT c.product_id, c.quantity, p.price
+        FROM Cart c
+        JOIN Products p ON c.product_id = p.product_id
+        WHERE c.user_id = p_user_id
+    ) LOOP
         INSERT INTO OrderItems (item_id, order_id, product_id, quantity, unit_price)
-        VALUES (orderitems_seq.NEXTVAL, v_order_id, rec.product_id, rec.quantity, v_unit_price);
+        VALUES (orderitems_seq.NEXTVAL, v_order_id, item.product_id, item.quantity, item.price);
+
+        UPDATE Products SET stock = stock - item.quantity WHERE product_id = item.product_id;
     END LOOP;
 
     INSERT INTO Payments (payment_id, order_id, amount, payment_date, method)
     VALUES (payments_seq.NEXTVAL, v_order_id, v_final_total, SYSDATE, p_pay_method);
 
+    -- Clear cart
+    DELETE FROM Cart WHERE user_id = p_user_id;
+
+    -- Deduct loyalty points from balance
     IF v_redeem_points > 0 THEN
-        UPDATE Users SET loyalty_points_balance = loyalty_points_balance - v_redeem_points
+        UPDATE Users
+        SET loyalty_points_balance = loyalty_points_balance - v_redeem_points
         WHERE user_id = p_user_id;
 
         INSERT INTO LoyaltyLedger (ledger_id, user_id, order_id, entry_type, points, rupee_value, balance_after, created_at)
