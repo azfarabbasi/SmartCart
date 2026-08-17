@@ -37,6 +37,11 @@ class Config:
     EMAIL_USER = os.environ.get('EMAIL_USER', '')
     EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD', '')
 
+    # Brevo (Sendinblue) API - preferred for Vercel (no SMTP port restrictions)
+    BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
+    BREVO_SENDER_EMAIL = os.environ.get('BREVO_SENDER_EMAIL', os.environ.get('EMAIL_USER', ''))
+    BREVO_SENDER_NAME = os.environ.get('BREVO_SENDER_NAME', 'SmartCart')
+
     CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '')
     CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', '')
     WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '')

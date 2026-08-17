@@ -1,5 +1,6 @@
 import random
 import smtplib
+import requests as _requests
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -26,45 +27,111 @@ def _safe_next(next_url):
     return None
 
 
-def _send_email(to_email, subject, body_html):
+def _send_via_brevo(to_email, subject, body_html, to_name='Customer'):
+    """Send email via Brevo API (works on Vercel - no SMTP ports needed)."""
+    api_key = current_app.config.get('BREVO_API_KEY', '').strip()
+    if not api_key:
+        return False
+    sender_email = current_app.config.get('BREVO_SENDER_EMAIL') or current_app.config.get('EMAIL_USER', '')
+    sender_name = current_app.config.get('BREVO_SENDER_NAME', 'SmartCart')
+    try:
+        resp = _requests.post(
+            'https://api.brevo.com/v3/smtp/email',
+            headers={
+                'api-key': api_key,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            json={
+                'sender': {'name': sender_name, 'email': sender_email},
+                'to': [{'email': to_email, 'name': to_name or 'Customer'}],
+                'subject': subject,
+                'htmlContent': body_html,
+            },
+            timeout=15,
+        )
+        if resp.status_code in (200, 201):
+            current_app.logger.info(f'Brevo email sent successfully to {to_email}')
+            return True
+        current_app.logger.warning(f'Brevo send failed {resp.status_code}: {resp.text[:200]}')
+        return False
+    except Exception as e:
+        current_app.logger.warning(f'Brevo request error: {e}')
+        return False
+
+
+def _send_via_smtp(to_email, subject, body_html):
+    """Send email via raw SMTP (works locally, blocked on Vercel)."""
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = current_app.config['EMAIL_USER']
         msg['To'] = to_email
         msg.attach(MIMEText(body_html, 'html'))
-        server = smtplib.SMTP(current_app.config['EMAIL_HOST'], current_app.config['EMAIL_PORT'])
+        server = smtplib.SMTP(current_app.config['EMAIL_HOST'], current_app.config['EMAIL_PORT'], timeout=10)
         server.starttls()
         server.login(current_app.config['EMAIL_USER'], current_app.config['EMAIL_PASSWORD'])
         server.sendmail(current_app.config['EMAIL_USER'], to_email, msg.as_string())
         server.quit()
+        current_app.logger.info(f'SMTP email sent successfully to {to_email}')
         return True
     except Exception as e:
-        current_app.logger.warning(f'Email send failed ({subject}): {e}')
+        current_app.logger.warning(f'SMTP send failed: {e}')
         return False
 
 
+def _send_email(to_email, subject, body_html, to_name='Customer'):
+    """Send email using Brevo API first, fall back to SMTP."""
+    # Try Brevo first (works on Vercel serverless)
+    if current_app.config.get('BREVO_API_KEY'):
+        ok = _send_via_brevo(to_email, subject, body_html, to_name=to_name)
+        if ok:
+            return True
+        current_app.logger.warning(f'Brevo failed, falling back to SMTP for: {subject}')
+    # Fall back to SMTP (works locally)
+    return _send_via_smtp(to_email, subject, body_html)
+
+
 def send_welcome_email(to_email, name):
-    _send_email(to_email, 'Welcome to SmartCart!', f"""
-        <html><body>
-        <h2>Welcome, {name}!</h2>
-        <p>Your email is verified and your <strong>SmartCart</strong> account is ready to go.</p>
-        <p>You can now log in and start shopping.</p>
-        <br><p>&mdash; The SmartCart Team</p>
-        </body></html>
-    """)
+    body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="font-family: Arial, sans-serif; background-color: #f4f4f5; padding: 20px; color: #333;">
+        <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 30px;">
+            <h2 style="color: #f59e0b; margin-top: 0;">Welcome to SmartCart!</h2>
+            <p>Hi <strong>{name}</strong>,</p>
+            <p>Your email is verified and your <strong>SmartCart</strong> account is ready to go.</p>
+            <p>You can now log in and explore our collection of premium electronics.</p>
+            <br>
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">&mdash; The SmartCart Team</p>
+        </div>
+    </body>
+    </html>
+    """
+    _send_email(to_email, 'Welcome to SmartCart!', body, to_name=name)
 
 
 def send_verification_email(to_email, name, code):
-    return _send_email(to_email, 'Verify your SmartCart account', f"""
-        <html><body>
-        <h2>Hi {name},</h2>
-        <p>Your SmartCart verification code is:</p>
-        <p style="font-size:32px; font-weight:bold; letter-spacing:6px;">{code}</p>
-        <p>This code expires in {CODE_VALID_MINUTES} minutes. If you didn't request this, you can ignore this email.</p>
-        <br><p>&mdash; The SmartCart Team</p>
-        </body></html>
-    """)
+    body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="font-family: Arial, sans-serif; background-color: #f4f4f5; padding: 20px; color: #333;">
+        <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 30px; text-align: center;">
+            <h2 style="color: #f59e0b; margin-top: 0;">Verify Your SmartCart Account</h2>
+            <p style="color: #4b5563;">Hi <strong>{name}</strong>, please use the following 6-digit verification code to complete your registration:</p>
+            <div style="margin: 25px 0; background: #fef3c7; border: 2px dashed #f59e0b; border-radius: 8px; padding: 15px;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #b45309; font-family: monospace;">{code}</span>
+            </div>
+            <p style="color: #6b7280; font-size: 13px;">This code expires in {CODE_VALID_MINUTES} minutes. If you did not sign up for SmartCart, please ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            <p style="color: #9ca3af; font-size: 12px; margin-bottom: 0;">&mdash; The SmartCart Team</p>
+        </div>
+    </body>
+    </html>
+    """
+    return _send_email(to_email, 'Verify your SmartCart account', body, to_name=name)
 
 
 def _issue_verification_code(cur, user_id, email, name):
