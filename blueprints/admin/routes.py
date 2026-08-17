@@ -290,7 +290,11 @@ def delete_product(product_id):
 @admin_required
 def categories():
     cur = get_db().cursor()
-    cur.execute("SELECT category_id, category_name FROM Categories ORDER BY category_name")
+    cur.execute(
+        "SELECT c.category_id, c.category_name, "
+        "       (SELECT COUNT(*) FROM Products p WHERE p.category_id = c.category_id) AS product_count "
+        "FROM Categories c ORDER BY c.category_name"
+    )
     return render_template('admin/categories.html', categories=cur.fetchall())
 
 
@@ -354,7 +358,6 @@ def delete_category(category_id):
                 ph = ', '.join(f':p{i}' for i in range(len(product_ids)))
 
                 # Delete from every child table that references product_id
-                # FeedbackReplies → ProductFeedback → others → Products
                 cur.execute(
                     f"DELETE FROM FeedbackReplies WHERE feedback_id IN "
                     f"(SELECT feedback_id FROM ProductFeedback WHERE product_id IN ({ph}))", bind)
@@ -380,10 +383,11 @@ def delete_category(category_id):
 
     except oracledb.IntegrityError:
         get_db().rollback()
-        flash('Cannot delete category \u2014 products are still assigned to it.', 'error')
-    except Exception:
+        flash('Cannot delete category — products are still assigned to it.', 'error')
+    except Exception as exc:
         get_db().rollback()
-        flash('An error occurred while deleting the category.', 'error')
+        current_app.logger.exception('Error deleting category %s: %s', category_id, exc)
+        flash(f'An error occurred while deleting the category: {exc}', 'error')
     return redirect(url_for('admin.categories'))
 
 

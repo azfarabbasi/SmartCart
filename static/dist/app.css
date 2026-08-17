@@ -38,6 +38,7 @@
 .bi-arrow-left::before { content: "\f12f"; }
 .bi-arrow-repeat::before { content: "\f130"; }
 .bi-arrow-return-left::before { content: "\f131"; }
+.bi-arrow-right-circle::before { content: "\f134"; }
 .bi-arrow-right::before { content: "\f138"; }
 .bi-box-arrow-in-right::before { content: "\f1be"; }
 .bi-box-arrow-left::before { content: "\f1c2"; }
@@ -82,6 +83,7 @@
 .bi-list::before { content: "\f479"; }
 .bi-lock-fill::before { content: "\f47a"; }
 .bi-megaphone-fill::before { content: "\f483"; }
+.bi-pencil-square::before { content: "\f4ca"; }
 .bi-pencil::before { content: "\f4cb"; }
 .bi-people::before { content: "\f4d0"; }
 .bi-person-check::before { content: "\f4d6"; }
@@ -114,6 +116,7 @@
 .bi-graph-up-arrow::before { content: "\f673"; }
 .bi-send::before { content: "\f6c0"; }
 .bi-ticket-perforated::before { content: "\f6ca"; }
+.bi-trash3::before { content: "\f78b"; }
 /* SmartCart styles */
 /* ═══════════════════════════════════════════════════════════
    SMARTCART - Amazon-Style E-commerce CSS

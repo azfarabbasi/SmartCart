@@ -30,11 +30,12 @@
                     <span class="badge bg-primary">{{ categories|length }} categories</span>
                 </div>
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table class="table admin-table align-middle">
                         <thead>
                             <tr>
                                 <th>ID</th>
                                 <th>Category Name</th>
+                                <th>Products</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -45,8 +46,14 @@
                                         <td><strong>#{{ cat[0] }}</strong></td>
                                         <td><span class="category-badge"><i class="bi bi-tag me-2"></i>{{ cat[1] }}</span></td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                    onclick="confirmDeleteCategory({{ cat[0] }}, '{{ cat[1]|e }}')">
+                                            {% if cat[2] > 0 %}
+                                                <span class="badge bg-info text-dark">{{ cat[2] }} product{{ 's' if cat[2] != 1 else '' }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">0 products</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCategoryModal{{ cat[0] }}">
                                                 <i class="bi bi-trash"></i> Delete
                                             </button>
                                         </td>
@@ -54,7 +61,7 @@
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="3" class="text-center text-muted py-4">
+                                    <td colspan="4" class="text-center text-muted py-4">
                                         <i class="bi bi-tags fs-1 d-block mb-2"></i>
                                         No categories found. Add your first category.
                                     </td>
@@ -67,136 +74,100 @@
         </div>
     </div>
 
-    <!-- Delete Category Modal -->
-    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background: var(--admin-card-bg, #1e1e2f); border: 1px solid rgba(255,255,255,0.1);">
-                <div class="modal-header border-bottom" style="border-color: rgba(255,255,255,0.1) !important;">
-                    <h5 class="modal-title" id="deleteCategoryModalLabel">
-                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>Delete Category
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Loading state -->
-                    <div id="deleteModalLoading" class="text-center py-4">
-                        <div class="spinner-border text-warning" role="status">
-                            <span class="visually-hidden">Checking...</span>
+    <!-- Modals for Category Delete -->
+    {% if categories %}
+        {% for cat in categories %}
+            <div class="modal fade" id="deleteCategoryModal{{ cat[0] }}" tabindex="-1" aria-labelledby="delModalLabel{{ cat[0] }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="delModalLabel{{ cat[0] }}">
+                                <i class="bi bi-exclamation-triangle text-warning me-2"></i>Delete Category: {{ cat[1] }}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <p class="mt-2 mb-0">Checking category...</p>
-                    </div>
+                        
+                        <div class="modal-body text-start">
+                            {% if cat[2] == 0 %}
+                                <p>Are you sure you want to delete the category <strong>{{ cat[1] }}</strong>?</p>
+                                <p class="text-muted small mb-0">This category has no products assigned and can be safely deleted.</p>
+                                
+                                <div class="mt-4 text-end">
+                                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                                    <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="delete">
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="bi bi-trash me-1"></i>Delete Category
+                                        </button>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning py-2 mb-3">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>{{ cat[1] }}</strong> currently has <strong>{{ cat[2] }} product(s)</strong> assigned to it.
+                                </div>
+                                <p class="mb-3">Choose how you want to handle these products:</p>
 
-                    <!-- No products - simple confirm -->
-                    <div id="deleteModalSimple" class="d-none">
-                        <p>Are you sure you want to delete <strong id="simpleDeleteName"></strong>?</p>
-                        <p class="text-muted mb-0">This category has no products and can be safely deleted.</p>
-                    </div>
+                                <div class="d-grid gap-2">
+                                    <!-- Option 1: Move to Uncategorized -->
+                                    <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="move">
+                                        <button type="submit" class="btn btn-outline-warning w-100 text-start p-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-arrow-right-circle fs-4 me-3 text-warning"></i>
+                                                <div>
+                                                    <div class="fw-bold">1. Move Products to "Uncategorized"</div>
+                                                    <small class="text-muted d-block">Moves all {{ cat[2] }} product(s) to the Uncategorized category and removes this category.</small>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </form>
 
-                    <!-- Has products - show options -->
-                    <div id="deleteModalOptions" class="d-none">
-                        <div class="alert alert-warning py-2 mb-3">
-                            <i class="bi bi-info-circle me-1"></i>
-                            <strong id="optionsDeleteName"></strong> has
-                            <strong id="productCount"></strong> product(s) assigned to it.
+                                    <!-- Option 2: Cascade Delete -->
+                                    <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}"
+                                          onsubmit="return confirm('⚠️ Are you sure you want to permanently delete {{ cat[1] }} and ALL its {{ cat[2] }} product(s)?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="cascade">
+                                        <button type="submit" class="btn btn-outline-danger w-100 text-start p-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-trash3 fs-4 me-3 text-danger"></i>
+                                                <div>
+                                                    <div class="fw-bold">2. Delete Category AND All Products</div>
+                                                    <small class="text-muted d-block">Permanently removes the category and its products.</small>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </form>
+
+                                    <!-- Option 3: Manual Reassign -->
+                                    <a href="{{ url_for('admin.products') }}" class="btn btn-outline-info w-100 text-start p-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-pencil-square fs-4 me-3 text-info"></i>
+                                            <div>
+                                                <div class="fw-bold">3. Reassign Products Manually</div>
+                                                <small class="text-muted d-block">Go to Products page to change their categories manually.</small>
+                                            </div>
+                                        </div>
+                                    </a>
+
+                                    <!-- Option 4: Cancel -->
+                                    <button type="button" class="btn btn-outline-secondary w-100 text-start p-3" data-bs-dismiss="modal">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-x-circle fs-4 me-3 text-secondary"></i>
+                                            <div>
+                                                <div class="fw-bold">4. Cancel</div>
+                                                <small class="text-muted d-block">Keep this category unchanged.</small>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            {% endif %}
                         </div>
-                        <p class="mb-3">Choose how to handle the products:</p>
-
-                        <div class="d-grid gap-2">
-                            <!-- Option 1: Move to Uncategorized -->
-                            <form method="POST" id="moveForm" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="move">
-                                <button type="submit" class="btn btn-outline-warning w-100 text-start py-2">
-                                    <i class="bi bi-arrow-right-circle me-2"></i>
-                                    <strong>Move to Uncategorized</strong>
-                                    <br><small class="text-muted ms-4">Products will be moved to an "Uncategorized" category</small>
-                                </button>
-                            </form>
-
-                            <!-- Option 2: Cascade delete -->
-                            <form method="POST" id="cascadeForm" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="cascade">
-                                <button type="submit" class="btn btn-outline-danger w-100 text-start py-2"
-                                        onclick="return confirm('⚠️ This will permanently delete ALL products in this category and their related data (reviews, cart items, etc.). This cannot be undone. Are you absolutely sure?')">
-                                    <i class="bi bi-trash3 me-2"></i>
-                                    <strong>Delete Everything</strong>
-                                    <br><small class="text-muted ms-4">Permanently delete category and ALL its products</small>
-                                </button>
-                            </form>
-
-                            <!-- Option 3: Cancel and reassign manually -->
-                            <button type="button" class="btn btn-outline-secondary w-100 text-start py-2" data-bs-dismiss="modal">
-                                <i class="bi bi-pencil-square me-2"></i>
-                                <strong>Cancel &amp; Reassign Manually</strong>
-                                <br><small class="text-muted ms-4">Go to Products and reassign them to another category first</small>
-                            </button>
-                        </div>
                     </div>
-                </div>
-
-                <!-- Footer for simple delete -->
-                <div class="modal-footer border-top d-none" id="deleteModalFooter" style="border-color: rgba(255,255,255,0.1) !important;">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form method="POST" id="simpleDeleteForm" class="d-inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="action" value="delete">
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash me-1"></i>Delete
-                        </button>
-                    </form>
                 </div>
             </div>
-        </div>
-    </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-function confirmDeleteCategory(categoryId, categoryName) {
-    var modal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
-    var deleteUrl = '/admin/categories/delete/' + categoryId;
-    var checkUrl = '/admin/categories/' + categoryId + '/check';
-
-    // Reset modal state
-    document.getElementById('deleteModalLoading').classList.remove('d-none');
-    document.getElementById('deleteModalSimple').classList.add('d-none');
-    document.getElementById('deleteModalOptions').classList.add('d-none');
-    document.getElementById('deleteModalFooter').classList.add('d-none');
-
-    modal.show();
-
-    // Fetch product count
-    fetch(checkUrl, {
-        headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        document.getElementById('deleteModalLoading').classList.add('d-none');
-
-        if (data.count === 0) {
-            // No products — simple confirm
-            document.getElementById('simpleDeleteName').textContent = categoryName;
-            document.getElementById('deleteModalSimple').classList.remove('d-none');
-            document.getElementById('deleteModalFooter').classList.remove('d-none');
-            document.getElementById('simpleDeleteForm').action = deleteUrl;
-        } else {
-            // Has products — show options
-            document.getElementById('optionsDeleteName').textContent = categoryName;
-            document.getElementById('productCount').textContent = data.count;
-            document.getElementById('deleteModalOptions').classList.remove('d-none');
-            document.getElementById('moveForm').action = deleteUrl;
-            document.getElementById('cascadeForm').action = deleteUrl;
-        }
-    })
-    .catch(function() {
-        document.getElementById('deleteModalLoading').classList.add('d-none');
-        // Fallback: show simple confirm
-        document.getElementById('simpleDeleteName').textContent = categoryName;
-        document.getElementById('deleteModalSimple').classList.remove('d-none');
-        document.getElementById('deleteModalFooter').classList.remove('d-none');
-        document.getElementById('simpleDeleteForm').action = deleteUrl;
-    });
-}
-</script>
+        {% endfor %}
+    {% endif %}
 {% endblock %}
