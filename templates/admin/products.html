@@ -14,14 +14,16 @@
             <span class="badge bg-primary">{{ products|length }} items</span>
         </div>
         <div class="table-responsive">
-            <table class="table admin-table">
+            <table class="table admin-table align-middle">
                 <thead>
                     <tr>
                         <th>Image</th>
                         <th>ID</th>
-                        <th>Name</th>
+                        <th>Product</th>
                         <th>Category</th>
-                        <th>Price</th>
+                        <th>Cost Price <small class="text-muted d-block">(Admin)</small></th>
+                        <th>Sale Price <small class="text-muted d-block">(Customer)</small></th>
+                        <th>Profit / Margin</th>
                         <th>Stock</th>
                         <th>Actions</th>
                     </tr>
@@ -32,25 +34,42 @@
                             <tr>
                                 <td>
                                     <div class="table-image">
-                                        {% if product[5] and not product[6] %}
-                                            <img src="{{ url_for('static', filename=product[5]) }}" alt="{{ product[1] }}">
+                                        {% if product[6] and not product[7] %}
+                                            <img src="{{ url_for('static', filename=product[6]) }}" alt="{{ product[1] }}">
                                         {% else %}
                                             <div class="no-image-small"><i class="bi bi-image"></i></div>
                                         {% endif %}
                                     </div>
-                                    {% if product[6] %}
-                                        <span class="badge bg-danger mt-1">Image missing on disk</span>
+                                    {% if product[7] %}
+                                        <span class="badge bg-danger mt-1">Image missing</span>
                                     {% endif %}
                                 </td>
                                 <td><strong>#{{ product[0] }}</strong></td>
-                                <td>{{ product[1] }}</td>
-                                <td><span class="badge bg-secondary">{{ product[2] }}</span></td>
-                                <td>Rs{{ "{:,.2f}".format(product[3]) }}</td>
                                 <td>
-                                    {% if product[4] > 10 %}
-                                        <span class="stock-badge in-stock">{{ product[4] }}</span>
-                                    {% elif product[4] > 0 %}
-                                        <span class="stock-badge low-stock">{{ product[4] }}</span>
+                                    <div class="fw-semibold">{{ product[1] }}</div>
+                                </td>
+                                <td><span class="badge bg-secondary">{{ product[2] }}</span></td>
+                                <td>
+                                    <span class="text-muted">Rs {{ "{:,.2f}".format(product[4]) }}</span>
+                                </td>
+                                <td>
+                                    <strong class="text-warning">Rs {{ "{:,.2f}".format(product[3]) }}</strong>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="{{ 'text-success' if product[8] >= 0 else 'text-danger' }} fw-semibold">
+                                            +Rs {{ "{:,.2f}".format(product[8]) }}
+                                        </span>
+                                        <span class="badge {{ 'bg-success' if product[8] >= 0 else 'bg-danger' }} mt-1" style="font-size: 0.75rem;">
+                                            {{ "{:.1f}%".format(product[9]) }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if product[5] > 10 %}
+                                        <span class="stock-badge in-stock">{{ product[5] }}</span>
+                                    {% elif product[5] > 0 %}
+                                        <span class="stock-badge low-stock">{{ product[5] }}</span>
                                     {% else %}
                                         <span class="stock-badge out-of-stock">0</span>
                                     {% endif %}
@@ -72,7 +91,7 @@
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
+                            <td colspan="9" class="text-center text-muted py-4">
                                 <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
                                 No products found. <a href="{{ url_for('admin.add_product') }}">Add your first product</a>
                             </td>

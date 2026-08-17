@@ -27,6 +27,7 @@ CREATE TABLE Products (
     category_id NUMBER REFERENCES Categories(category_id),
     name        VARCHAR2(150) NOT NULL,
     price       NUMBER(10,2) NOT NULL,
+    cost_price  NUMBER(10,2) DEFAULT 0 NOT NULL,
     stock       NUMBER DEFAULT 0,
     description VARCHAR2(500),
     image_path VARCHAR2(255)
@@ -79,7 +80,7 @@ FROM Users u JOIN Orders o ON u.user_id = o.user_id;
 
 CREATE OR REPLACE VIEW AdminInventoryView AS
 SELECT p.product_id, p.name, c.category_name,
-       p.price, p.stock, p.description
+       p.price, p.cost_price, p.stock, p.description
 FROM Products p JOIN Categories c ON p.category_id = c.category_id;
 
 -- TRIGGER (auto deducts stock when order item is inserted)

@@ -19,6 +19,9 @@
             <li class="{{ 'active' if request.endpoint in ('admin.orders', 'admin.order_detail') }}">
                 <a href="{{ url_for('admin.orders') }}"><i class="bi bi-clipboard-check"></i><span>Orders</span></a>
             </li>
+            <li class="{{ 'active' if request.endpoint == 'admin.revenue_dashboard' }}">
+                <a href="{{ url_for('admin.revenue_dashboard') }}"><i class="bi bi-calculator"></i><span>Revenue &amp; Profit</span></a>
+            </li>
             <li class="{{ 'active' if request.endpoint == 'admin.payment_verification' }}">
                 <a href="{{ url_for('admin.payment_verification') }}"><i class="bi bi-credit-card"></i><span>Payment Verification</span></a>
             </li>

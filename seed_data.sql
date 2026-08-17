@@ -31,34 +31,34 @@ COMMIT;
 -- Sample Products (across different categories)
 -- ============================================================
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 1, 'Wireless Bluetooth Earbuds', 2499.00, 50, 'Premium TWS earbuds with active noise cancellation and 24hr battery life');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 1, 'Wireless Bluetooth Earbuds', 2499.00, 1400.00, 50, 'Premium TWS earbuds with active noise cancellation and 24hr battery life');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 1, 'USB-C Fast Charger 65W', 1299.00, 80, 'GaN fast charger compatible with laptops, phones and tablets');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 1, 'USB-C Fast Charger 65W', 1299.00, 650.00, 80, 'GaN fast charger compatible with laptops, phones and tablets');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 2, 'Premium Cotton T-Shirt', 899.00, 100, 'Soft 100% cotton crew neck t-shirt available in multiple colors');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 2, 'Premium Cotton T-Shirt', 899.00, 450.00, 100, 'Soft 100% cotton crew neck t-shirt available in multiple colors');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 2, 'Slim Fit Jeans', 1799.00, 60, 'Stretchable slim fit denim jeans with modern wash');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 2, 'Slim Fit Jeans', 1799.00, 950.00, 60, 'Stretchable slim fit denim jeans with modern wash');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 3, 'Python Programming Guide', 599.00, 40, 'Comprehensive guide to Python programming for beginners and intermediates');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 3, 'Python Programming Guide', 599.00, 250.00, 40, 'Comprehensive guide to Python programming for beginners and intermediates');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 7, 'Stainless Steel Water Bottle', 499.00, 120, 'Double-wall insulated bottle keeps drinks cold 24hrs or hot 12hrs');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 7, 'Stainless Steel Water Bottle', 499.00, 200.00, 120, 'Double-wall insulated bottle keeps drinks cold 24hrs or hot 12hrs');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 8, 'Cricket Bat - English Willow', 4999.00, 25, 'Grade A English willow cricket bat with premium grip');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 8, 'Cricket Bat - English Willow', 4999.00, 2800.00, 25, 'Grade A English willow cricket bat with premium grip');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 9, 'Moisturizing Face Cream', 349.00, 90, 'Daily moisturizer with SPF 30 protection for all skin types');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 9, 'Moisturizing Face Cream', 349.00, 150.00, 90, 'Daily moisturizer with SPF 30 protection for all skin types');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 14, 'Smartphone Pro Max 256GB', 89999.00, 15, 'Flagship smartphone with 6.7" AMOLED display, 108MP camera');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 14, 'Smartphone Pro Max 256GB', 89999.00, 72000.00, 15, 'Flagship smartphone with 6.7" AMOLED display, 108MP camera');
 
-INSERT INTO Products (product_id, category_id, name, price, stock, description)
-VALUES (products_seq.NEXTVAL, 15, 'Gaming Laptop 16GB RAM', 159999.00, 10, 'RTX 4060 graphics, 15.6" 144Hz display, 512GB SSD');
+INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description)
+VALUES (products_seq.NEXTVAL, 15, 'Gaming Laptop 16GB RAM', 159999.00, 128000.00, 10, 'RTX 4060 graphics, 15.6" 144Hz display, 512GB SSD');
 
 COMMIT;

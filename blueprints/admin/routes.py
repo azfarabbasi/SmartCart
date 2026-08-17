@@ -15,8 +15,8 @@ from db import get_db
 from extensions import limiter
 from security import log_admin_action
 from uploads import save_upload, validate_upload
-from validators import (validate_discount_percent, validate_price,
-                         validate_required_text, validate_stock)
+from validators import (validate_cost_price, validate_discount_percent,
+                         validate_price, validate_required_text, validate_stock)
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 limiter.limit('60 per minute')(admin_bp)
@@ -69,7 +69,20 @@ def dashboard():
     cur.execute("SELECT COUNT(*) FROM Users WHERE role = 'customer'")
     total_customers = cur.fetchone()[0]
     cur.execute("SELECT NVL(SUM(total_amount), 0) FROM Orders WHERE status != 'cancelled'")
-    total_revenue = cur.fetchone()[0]
+    total_revenue = float(cur.fetchone()[0])
+    cur.execute(
+        """
+        SELECT NVL(SUM(oi.quantity * NVL(p.cost_price, 0)), 0)
+        FROM OrderItems oi
+        JOIN Products p ON oi.product_id = p.product_id
+        JOIN Orders o ON oi.order_id = o.order_id
+        WHERE o.status != 'cancelled'
+        """
+    )
+    total_cost = float(cur.fetchone()[0])
+    net_profit = total_revenue - total_cost
+    profit_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
+
     cur.execute("SELECT COUNT(*) FROM Orders WHERE payment_status = 'pending_verification'")
     pending_payments = cur.fetchone()[0]
     cur.execute(
@@ -82,7 +95,8 @@ def dashboard():
     recent_orders = cur.fetchall()
     return render_template(
         'admin/dashboard.html', total_products=total_products, total_orders=total_orders,
-        total_customers=total_customers, total_revenue=total_revenue,
+        total_customers=total_customers, total_revenue=total_revenue, total_cost=total_cost,
+        net_profit=net_profit, profit_margin=profit_margin,
         pending_payments=pending_payments, recent_orders=recent_orders,
     )
 
@@ -93,7 +107,7 @@ def dashboard():
 def products():
     cur = get_db().cursor()
     cur.execute(
-        "SELECT p.product_id, p.name, c.category_name, p.price, p.stock, p.image_path "
+        "SELECT p.product_id, p.name, c.category_name, p.price, NVL(p.cost_price, 0), p.stock, p.image_path "
         "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
         "ORDER BY p.product_id"
     )
@@ -101,8 +115,11 @@ def products():
     upload_dir = current_app.config['UPLOAD_FOLDER']
     product_rows = []
     for r in rows:
-        image_missing = bool(r[5]) and not os.path.exists(os.path.join(upload_dir, os.path.basename(r[5])))
-        product_rows.append(r + (image_missing,))
+        pid, name, cat_name, price, cost_price, stock, img_path = r
+        image_missing = bool(img_path) and not os.path.exists(os.path.join(upload_dir, os.path.basename(img_path)))
+        unit_profit = float(price) - float(cost_price)
+        margin_pct = (unit_profit / float(price) * 100) if float(price) > 0 else 0.0
+        product_rows.append((pid, name, cat_name, price, cost_price, stock, img_path, image_missing, unit_profit, margin_pct))
     return render_template('admin/products.html', products=product_rows)
 
 
@@ -142,9 +159,11 @@ def add_product():
         free_delivery = 1 if request.form.get('free_delivery') else 0
 
         ok, err = validate_required_text(name, 'Product name', min_len=2, max_len=150)
-        price = stock = None
+        price = stock = cost_price = None
         if ok:
             ok, err, price = validate_price(request.form.get('price'))
+        if ok:
+            ok, err, cost_price = validate_cost_price(request.form.get('cost_price'))
         if ok:
             ok, err, stock = validate_stock(request.form.get('stock'))
         if not ok:
@@ -162,10 +181,10 @@ def add_product():
             image_path = f'uploads/{safe_name}'
 
         cur.execute(
-            "INSERT INTO Products (product_id, category_id, name, price, stock, description, image_path, "
+            "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path, "
             "delivery_time_text, free_delivery) "
-            "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :s, :d, :img, :dt, :fd)",
-            {'cid': category_id, 'n': name, 'p': price, 's': stock, 'd': description, 'img': image_path,
+            "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :cp, :s, :d, :img, :dt, :fd)",
+            {'cid': category_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description, 'img': image_path,
              'dt': delivery_time_text or None, 'fd': free_delivery},
         )
         cur.execute("SELECT products_seq.CURRVAL FROM dual")
@@ -196,9 +215,11 @@ def edit_product(product_id):
         free_delivery = 1 if request.form.get('free_delivery') else 0
 
         ok, err = validate_required_text(name, 'Product name', min_len=2, max_len=150)
-        price = stock = None
+        price = stock = cost_price = None
         if ok:
             ok, err, price = validate_price(request.form.get('price'))
+        if ok:
+            ok, err, cost_price = validate_cost_price(request.form.get('cost_price'))
         if ok:
             ok, err, stock = validate_stock(request.form.get('stock'))
         if not ok:
@@ -219,9 +240,9 @@ def edit_product(product_id):
             image_path = f'uploads/{safe_name}'
 
         cur.execute(
-            "UPDATE Products SET name=:n, category_id=:cid, price=:p, stock=:s, description=:d, image_path=:img, "
+            "UPDATE Products SET name=:n, category_id=:cid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img, "
             "delivery_time_text=:dt, free_delivery=:fd WHERE product_id=:pid",
-            {'n': name, 'cid': category_id, 'p': price, 's': stock, 'd': description,
+            {'n': name, 'cid': category_id, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
              'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery, 'pid': product_id},
         )
 
@@ -234,7 +255,11 @@ def edit_product(product_id):
         flash('Product updated.', 'success')
         return redirect(url_for('admin.products'))
 
-    cur.execute("SELECT * FROM Products WHERE product_id = :pid", {'pid': product_id})
+    cur.execute(
+        "SELECT product_id, category_id, name, price, NVL(cost_price, 0), stock, description, image_path, "
+        "       delivery_time_text, free_delivery FROM Products WHERE product_id = :pid",
+        {'pid': product_id},
+    )
     product = cur.fetchone()
     if not product:
         flash('Product not found.', 'error')
@@ -435,16 +460,196 @@ def order_detail(order_id):
         return redirect(url_for('admin.orders'))
 
     cur.execute(
-        "SELECT p.name, oi.quantity, oi.unit_price "
+        "SELECT p.name, oi.quantity, oi.unit_price, NVL(p.cost_price, 0) "
         "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
         [order_id],
     )
-    items = cur.fetchall()
+    raw_items = cur.fetchall()
+    items = []
+    total_order_cost = 0.0
+    items_subtotal = 0.0
+    for name, qty, unit_price, cost_price in raw_items:
+        item_total = qty * float(unit_price)
+        item_cost = qty * float(cost_price)
+        item_profit = item_total - item_cost
+        items_subtotal += item_total
+        total_order_cost += item_cost
+        items.append((name, qty, unit_price, cost_price, item_total, item_cost, item_profit))
+
+    realized_revenue = float(order[4]) if order[4] else 0.0
+    coupon_discount = float(order[13]) if order[13] else 0.0
+    loyalty_discount = float(order[15]) if order[15] else 0.0
+    total_discounts = coupon_discount + loyalty_discount
+    net_order_profit = realized_revenue - total_order_cost
+    margin_pct = (net_order_profit / realized_revenue * 100) if realized_revenue > 0 else 0.0
+    financials = {
+        'items_subtotal': items_subtotal,
+        'total_cost': total_order_cost,
+        'coupon_discount': coupon_discount,
+        'loyalty_discount': loyalty_discount,
+        'total_discounts': total_discounts,
+        'realized_revenue': realized_revenue,
+        'net_profit': net_order_profit,
+        'margin_pct': margin_pct,
+    }
+
     cur.execute("SELECT amount, payment_date, method FROM Payments WHERE order_id = :1", [order_id])
     payment = cur.fetchone()
     whatsapp_link = _whatsapp_link(order[6], f'Hi {order[1]}, this is SmartCart regarding your order #{order_id}.')
     return render_template(
-        'admin/order_detail.html', order=order, items=items, payment=payment, whatsapp_link=whatsapp_link,
+        'admin/order_detail.html', order=order, items=items, payment=payment,
+        financials=financials, whatsapp_link=whatsapp_link,
+    )
+
+
+# ── REVENUE & PROFIT MARGIN CALCULATOR ───────────────────────────
+@admin_bp.route('/revenue')
+@admin_required
+def revenue_dashboard():
+    cur = get_db().cursor()
+    status_filter = request.args.get('status', 'all').strip().lower()
+
+    # Base order filter (exclude cancelled orders unless explicitly selected)
+    params = {}
+    if status_filter and status_filter != 'all':
+        status_clause = "o.status = :st"
+        params['st'] = status_filter
+    else:
+        status_clause = "o.status != 'cancelled'"
+
+    # 1. High-level financial KPIs
+    cur.execute(
+        f"""
+        SELECT 
+            NVL(SUM(o.total_amount), 0) AS total_revenue,
+            NVL(SUM(o.coupon_discount_amount), 0) AS total_coupon_disc,
+            NVL(SUM(o.loyalty_discount_amount), 0) AS total_loyalty_disc,
+            COUNT(*) AS order_count
+        FROM Orders o 
+        WHERE {status_clause}
+        """,
+        params,
+    )
+    rev_row = cur.fetchone()
+    total_revenue = float(rev_row[0])
+    total_coupon_disc = float(rev_row[1])
+    total_loyalty_disc = float(rev_row[2])
+    total_discounts = total_coupon_disc + total_loyalty_disc
+    order_count = rev_row[3]
+    gross_sales = total_revenue + total_discounts
+
+    # Calculate Total Cost of Goods Sold (COGS) for these orders
+    cur.execute(
+        f"""
+        SELECT NVL(SUM(oi.quantity * NVL(p.cost_price, 0)), 0)
+        FROM OrderItems oi
+        JOIN Products p ON oi.product_id = p.product_id
+        JOIN Orders o ON oi.order_id = o.order_id
+        WHERE {status_clause}
+        """,
+        params,
+    )
+    total_cogs = float(cur.fetchone()[0])
+    net_profit = total_revenue - total_cogs
+    margin_pct = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
+
+    # 2. Product-by-product profitability breakdown
+    cur.execute(
+        f"""
+        SELECT 
+            p.product_id,
+            p.name,
+            c.category_name,
+            p.price AS sale_price,
+            NVL(p.cost_price, 0) AS cost_price,
+            (p.price - NVL(p.cost_price, 0)) AS unit_profit,
+            CASE WHEN p.price > 0 THEN ((p.price - NVL(p.cost_price, 0)) / p.price * 100) ELSE 0 END AS unit_margin_pct,
+            NVL(sales.units_sold, 0) AS units_sold,
+            NVL(sales.total_revenue, 0) AS total_product_revenue,
+            NVL(sales.total_cost, 0) AS total_product_cost,
+            (NVL(sales.total_revenue, 0) - NVL(sales.total_cost, 0)) AS total_product_profit
+        FROM Products p
+        JOIN Categories c ON p.category_id = c.category_id
+        LEFT JOIN (
+            SELECT 
+                oi.product_id,
+                SUM(oi.quantity) AS units_sold,
+                SUM(oi.quantity * oi.unit_price) AS total_revenue,
+                SUM(oi.quantity * NVL(p2.cost_price, 0)) AS total_cost
+            FROM OrderItems oi
+            JOIN Products p2 ON oi.product_id = p2.product_id
+            JOIN Orders o ON oi.order_id = o.order_id
+            WHERE {status_clause}
+            GROUP BY oi.product_id
+        ) sales ON p.product_id = sales.product_id
+        ORDER BY total_product_profit DESC, units_sold DESC, p.product_id
+        """,
+        params,
+    )
+    product_stats = cur.fetchall()
+
+    # 3. Order-by-order financial list (up to 50 latest)
+    cur.execute(
+        f"""
+        SELECT * FROM (
+            SELECT 
+                o.order_id,
+                u.name AS customer_name,
+                o.order_date,
+                o.total_amount AS realized_total,
+                (NVL(o.coupon_discount_amount, 0) + NVL(o.loyalty_discount_amount, 0)) AS total_discount,
+                NVL((
+                    SELECT SUM(oi.quantity * NVL(p.cost_price, 0))
+                    FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id
+                    WHERE oi.order_id = o.order_id
+                ), 0) AS order_cost,
+                o.status
+            FROM Orders o
+            JOIN Users u ON o.user_id = u.user_id
+            WHERE {status_clause}
+            ORDER BY o.order_date DESC
+        ) WHERE ROWNUM <= 50
+        """,
+        params,
+    )
+    order_rows = cur.fetchall()
+    orders_financial = []
+    for r in order_rows:
+        oid, cname, odate, realized, disc, cost, ost = r
+        realized_f = float(realized)
+        cost_f = float(cost)
+        prof_f = realized_f - cost_f
+        m_pct = (prof_f / realized_f * 100) if realized_f > 0 else 0.0
+        orders_financial.append({
+            'order_id': oid,
+            'customer_name': cname,
+            'order_date': odate,
+            'realized_total': realized_f,
+            'total_discount': float(disc),
+            'order_cost': cost_f,
+            'net_profit': prof_f,
+            'margin_pct': m_pct,
+            'status': ost,
+        })
+
+    summary = {
+        'total_revenue': total_revenue,
+        'gross_sales': gross_sales,
+        'total_cogs': total_cogs,
+        'total_coupon_disc': total_coupon_disc,
+        'total_loyalty_disc': total_loyalty_disc,
+        'total_discounts': total_discounts,
+        'net_profit': net_profit,
+        'margin_pct': margin_pct,
+        'order_count': order_count,
+    }
+
+    return render_template(
+        'admin/revenue.html',
+        summary=summary,
+        product_stats=product_stats,
+        orders_financial=orders_financial,
+        status_filter=status_filter,
     )
 
 

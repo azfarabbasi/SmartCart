@@ -2,7 +2,7 @@
 {% block title %}Admin Dashboard - SmartCart{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
-    <div class="stats-grid">
+    <div class="stats-grid mb-4">
         <div class="stat-card stat-products">
             <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
             <div class="stat-info"><h3>{{ total_products }}</h3><p>Total Products</p></div>
@@ -11,28 +11,34 @@
             <div class="stat-icon"><i class="bi bi-clipboard-check"></i></div>
             <div class="stat-info"><h3>{{ total_orders }}</h3><p>Total Orders</p></div>
         </div>
-        <div class="stat-card stat-customers">
-            <div class="stat-icon"><i class="bi bi-people"></i></div>
-            <div class="stat-info"><h3>{{ total_customers }}</h3><p>Total Customers</p></div>
-        </div>
         <div class="stat-card stat-revenue">
             <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
-            <div class="stat-info"><h3>Rs{{ "{:,.2f}".format(total_revenue) }}</h3><p>Total Revenue</p></div>
+            <div class="stat-info"><h3>Rs {{ "{:,.2f}".format(total_revenue) }}</h3><p>Realized Revenue</p></div>
+        </div>
+        <div class="stat-card stat-orders">
+            <div class="stat-icon" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="stat-info">
+                <h3 class="{{ 'text-success' if net_profit >= 0 else 'text-danger' }}">Rs {{ "{:,.2f}".format(net_profit) }}</h3>
+                <p>Net Profit ({{ "{:.1f}%".format(profit_margin) }})</p>
+            </div>
         </div>
     </div>
 
     {% if pending_payments %}
-        <div class="alert alert-warning d-flex justify-content-between align-items-center">
+        <div class="alert alert-warning d-flex justify-content-between align-items-center mb-4">
             <span><i class="bi bi-hourglass-split"></i> {{ pending_payments }} payment(s) awaiting verification.</span>
             <a href="{{ url_for('admin.payment_verification') }}" class="btn btn-sm btn-warning">Review Now</a>
         </div>
     {% endif %}
 
-    <div class="quick-actions">
+    <div class="quick-actions mb-4">
         <h2>Quick Actions</h2>
         <div class="actions-grid">
             <a href="{{ url_for('admin.add_product') }}" class="action-card">
                 <i class="bi bi-plus-circle"></i><span>Add Product</span>
+            </a>
+            <a href="{{ url_for('admin.revenue_dashboard') }}" class="action-card">
+                <i class="bi bi-calculator"></i><span>Revenue &amp; Profit</span>
             </a>
             <a href="{{ url_for('admin.orders') }}" class="action-card">
                 <i class="bi bi-eye"></i><span>View Orders</span>

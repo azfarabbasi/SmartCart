@@ -38,6 +38,18 @@ def validate_price(value):
     return True, None, price
 
 
+def validate_cost_price(value):
+    if value in (None, ''):
+        return True, None, 0.0
+    try:
+        cost = float(value)
+    except (TypeError, ValueError):
+        return False, 'Cost price must be a number.', None
+    if cost < 0:
+        return False, 'Cost price cannot be negative.', None
+    return True, None, cost
+
+
 def validate_stock(value):
     try:
         stock = int(value)

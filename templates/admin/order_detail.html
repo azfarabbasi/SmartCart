@@ -49,35 +49,75 @@
             </div>
 
             <div class="admin-card mb-4">
-                <div class="card-header"><h5><i class="bi bi-box-seam me-2"></i>Order Items</h5></div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="bi bi-box-seam me-2"></i>Order Items &amp; Profit Analysis</h5>
+                    <span class="badge bg-secondary"><i class="bi bi-shield-lock me-1"></i>Admin Financials</span>
+                </div>
                 <div class="table-responsive">
-                    <table class="table admin-table">
+                    <table class="table admin-table align-middle">
                         <thead>
-                            <tr><th>Product</th><th>Quantity</th><th>Unit Price</th><th>Total</th></tr>
+                            <tr>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Cost Price <small class="text-muted d-block">(Admin)</small></th>
+                                <th>Sale Price <small class="text-muted d-block">(Customer)</small></th>
+                                <th>Total Cost</th>
+                                <th>Total Sale</th>
+                                <th>Item Profit</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {% for item in items %}
                                 <tr>
-                                    <td>{{ item[0] }}</td>
-                                    <td>{{ item[1] }}</td>
-                                    <td>Rs{{ "{:,.2f}".format(item[2]) }}</td>
-                                    <td><strong>Rs{{ "{:,.2f}".format(item[1] * item[2]) }}</strong></td>
+                                    <td><strong>{{ item[0] }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ item[1] }}</span></td>
+                                    <td><span class="text-muted">Rs {{ "{:,.2f}".format(item[3]) }}</span></td>
+                                    <td><strong class="text-warning">Rs {{ "{:,.2f}".format(item[2]) }}</strong></td>
+                                    <td><span class="text-muted">Rs {{ "{:,.2f}".format(item[5]) }}</span></td>
+                                    <td><strong>Rs {{ "{:,.2f}".format(item[4]) }}</strong></td>
+                                    <td>
+                                        <span class="{{ 'text-success' if item[6] >= 0 else 'text-danger' }} fw-semibold">
+                                            +Rs {{ "{:,.2f}".format(item[6]) }}
+                                        </span>
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
-                        <tfoot>
-                            {% if order[13] %}
-                                <tr><td colspan="3" class="text-end">Coupon ({{ order[12] }}):</td><td class="text-success">-Rs{{ "{:,.2f}".format(order[13]) }}</td></tr>
-                            {% endif %}
-                            {% if order[14] %}
-                                <tr><td colspan="3" class="text-end">Loyalty redeemed ({{ order[14] }} pts):</td><td class="text-success">-Rs{{ "{:,.2f}".format(order[15]) }}</td></tr>
-                            {% endif %}
-                            <tr>
-                                <td colspan="3" class="text-end"><strong>Order Total:</strong></td>
-                                <td><strong class="text-danger">Rs{{ "{:,.2f}".format(order[4]) }}</strong></td>
-                            </tr>
-                        </tfoot>
                     </table>
+                </div>
+
+                <!-- Admin Financial Summary Breakdown -->
+                <div class="p-3 border-top" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1) !important;">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="small text-muted mb-1">Gross Subtotal: <strong>Rs {{ "{:,.2f}".format(financials.items_subtotal) }}</strong></div>
+                            {% if financials.coupon_discount > 0 %}
+                                <div class="small text-success mb-1">
+                                    <i class="bi bi-ticket-perforated me-1"></i>Coupon Discount ({{ order[12] }}): &minus;Rs {{ "{:,.2f}".format(financials.coupon_discount) }}
+                                </div>
+                            {% endif %}
+                            {% if financials.loyalty_discount > 0 %}
+                                <div class="small text-success mb-1">
+                                    <i class="bi bi-star me-1"></i>Loyalty Points ({{ order[14] }} pts): &minus;Rs {{ "{:,.2f}".format(financials.loyalty_discount) }}
+                                </div>
+                            {% endif %}
+                            <div class="fw-bold text-warning mt-2">
+                                Realized Sale Total: Rs {{ "{:,.2f}".format(financials.realized_revenue) }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <div class="small text-muted mb-1">Total Cost of Goods (COGS): <strong>Rs {{ "{:,.2f}".format(financials.total_cost) }}</strong></div>
+                            <div class="mt-2">
+                                <span class="small text-muted">Net Order Profit:</span>
+                                <h4 class="{{ 'text-success' if financials.net_profit >= 0 else 'text-danger' }} mb-0 fw-bold">
+                                    Rs {{ "{:,.2f}".format(financials.net_profit) }}
+                                    <span class="badge {{ 'bg-success' if financials.margin_pct >= 20 else 'bg-warning text-dark' if financials.margin_pct >= 0 else 'bg-danger' }} ms-1" style="font-size: 0.8rem; vertical-align: middle;">
+                                        {{ "{:.1f}% Margin".format(financials.margin_pct) }}
+                                    </span>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -1,0 +1,210 @@
+{% extends "admin/base.html" %}
+{% block title %}Revenue &amp; Profit Calculator - Admin | SmartCart{% endblock %}
+{% block page_title %}Revenue &amp; Profit Calculator{% endblock %}
+{% block content %}
+    <!-- Filter Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-calculator text-warning me-2"></i>Profit Margin &amp; Revenue Overview</h4>
+            <p class="text-muted mb-0">Calculated by the difference of <strong>Realized Sale Price &minus; Cost Price</strong> across all orders.</p>
+        </div>
+        <form method="GET" action="{{ url_for('admin.revenue_dashboard') }}" class="d-flex align-items-center gap-2">
+            <label for="statusFilter" class="text-muted small mb-0">Status:</label>
+            <select name="status" id="statusFilter" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 160px;">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Non-Cancelled</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="shipped" {% if status_filter == 'shipped' %}selected{% endif %}>Shipped</option>
+                <option value="delivered" {% if status_filter == 'delivered' %}selected{% endif %}>Delivered</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- KPI Summary Grid -->
+    <div class="stats-grid mb-4">
+        <div class="stat-card stat-revenue">
+            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-info">
+                <h3>Rs {{ "{:,.2f}".format(summary.total_revenue) }}</h3>
+                <p>Realized Revenue (Net Sales)</p>
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    From {{ summary.order_count }} order(s) after discounts
+                </small>
+            </div>
+        </div>
+
+        <div class="stat-card stat-products">
+            <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;"><i class="bi bi-receipt-cutoff"></i></div>
+            <div class="stat-info">
+                <h3>Rs {{ "{:,.2f}".format(summary.total_cogs) }}</h3>
+                <p>Total Cost of Goods (COGS)</p>
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    Combined item cost prices
+                </small>
+            </div>
+        </div>
+
+        <div class="stat-card stat-orders">
+            <div class="stat-icon" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="stat-info">
+                <h3 class="{{ 'text-success' if summary.net_profit >= 0 else 'text-danger' }}">
+                    Rs {{ "{:,.2f}".format(summary.net_profit) }}
+                </h3>
+                <p>Net Profit (Revenue &minus; Cost)</p>
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    Net Margin: <strong>{{ "{:.1f}%".format(summary.margin_pct) }}</strong>
+                </small>
+            </div>
+        </div>
+
+        <div class="stat-card stat-customers">
+            <div class="stat-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;"><i class="bi bi-tags"></i></div>
+            <div class="stat-info">
+                <h3>Rs {{ "{:,.2f}".format(summary.total_discounts) }}</h3>
+                <p>Discounts Applied</p>
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    Coupons: Rs {{ "{:,.0f}".format(summary.total_coupon_disc) }} &bull; Loyalty: Rs {{ "{:,.0f}".format(summary.total_loyalty_disc) }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Profitability Table -->
+    <div class="admin-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5><i class="bi bi-box-seam me-2"></i>Product Profitability &amp; Margin Breakdown</h5>
+            <span class="badge bg-primary">{{ product_stats|length }} Products Tracked</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table admin-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Cost Price <small class="text-muted d-block">(Admin)</small></th>
+                        <th>Sale Price <small class="text-muted d-block">(Customer)</small></th>
+                        <th>Unit Profit</th>
+                        <th>Units Sold</th>
+                        <th>Total Revenue</th>
+                        <th>Total Cost</th>
+                        <th>Total Net Profit</th>
+                        <th>Margin %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if product_stats %}
+                        {% for p in product_stats %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ p[1] }}</div>
+                                    <small class="text-muted">#{{ p[0] }}</small>
+                                </td>
+                                <td><span class="badge bg-secondary">{{ p[2] }}</span></td>
+                                <td>Rs {{ "{:,.2f}".format(p[4]) }}</td>
+                                <td><strong class="text-warning">Rs {{ "{:,.2f}".format(p[3]) }}</strong></td>
+                                <td>
+                                    <span class="{{ 'text-success' if p[5] >= 0 else 'text-danger' }} fw-semibold">
+                                        Rs {{ "{:,.2f}".format(p[5]) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if p[7] > 0 %}
+                                        <span class="badge bg-info text-dark">{{ p[7] }} sold</span>
+                                    {% else %}
+                                        <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>Rs {{ "{:,.2f}".format(p[8]) }}</td>
+                                <td>Rs {{ "{:,.2f}".format(p[9]) }}</td>
+                                <td>
+                                    <strong class="{{ 'text-success' if p[10] >= 0 else 'text-danger' }}">
+                                        Rs {{ "{:,.2f}".format(p[10]) }}
+                                    </strong>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2" style="min-width: 100px;">
+                                        <span class="badge {{ 'bg-success' if p[6] >= 20 else 'bg-warning text-dark' if p[6] >= 0 else 'bg-danger' }}">
+                                            {{ "{:.1f}%".format(p[6]) }}
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">No products found.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Orders Financial Breakdown -->
+    <div class="admin-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5><i class="bi bi-clipboard-check me-2"></i>Order Financials (Cost vs. Realized Sale Price)</h5>
+            <span class="badge bg-secondary">Latest {{ orders_financial|length }} Orders</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table admin-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Discounts</th>
+                        <th>Realized Sale Total</th>
+                        <th>Total Cost (COGS)</th>
+                        <th>Net Order Profit</th>
+                        <th>Margin %</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if orders_financial %}
+                        {% for o in orders_financial %}
+                            <tr>
+                                <td><strong>#{{ o.order_id }}</strong></td>
+                                <td>{{ o.customer_name }}</td>
+                                <td>{{ o.order_date.strftime('%d %b %Y') if o.order_date else 'N/A' }}</td>
+                                <td>
+                                    {% if o.total_discount > 0 %}
+                                        <span class="text-danger">&minus;Rs {{ "{:,.2f}".format(o.total_discount) }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Rs 0.00</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong class="text-warning">Rs {{ "{:,.2f}".format(o.realized_total) }}</strong></td>
+                                <td><span class="text-muted">Rs {{ "{:,.2f}".format(o.order_cost) }}</span></td>
+                                <td>
+                                    <strong class="{{ 'text-success' if o.net_profit >= 0 else 'text-danger' }}">
+                                        Rs {{ "{:,.2f}".format(o.net_profit) }}
+                                    </strong>
+                                </td>
+                                <td>
+                                    <span class="badge {{ 'bg-success' if o.margin_pct >= 20 else 'bg-warning text-dark' if o.margin_pct >= 0 else 'bg-danger' }}">
+                                        {{ "{:.1f}%".format(o.margin_pct) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ o.status }}">{{ o.status|capitalize }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('admin.order_detail', order_id=o.order_id) }}" class="btn btn-sm btn-outline-primary" title="View Order Profit Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">No orders matching criteria.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
