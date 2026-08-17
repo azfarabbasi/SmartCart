@@ -27,6 +27,37 @@ def _safe_next(next_url):
     return None
 
 
+def _send_via_resend(to_email, subject, body_html, to_name='Customer'):
+    """Send email via Resend API (100% free, 3000 emails/mo, works on Vercel)."""
+    api_key = current_app.config.get('RESEND_API_KEY', '').strip()
+    if not api_key:
+        return False
+    from_email = current_app.config.get('RESEND_FROM_EMAIL', 'SmartCart <onboarding@resend.dev>')
+    try:
+        resp = _requests.post(
+            'https://api.resend.com/emails',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'from': from_email,
+                'to': [to_email],
+                'subject': subject,
+                'html': body_html,
+            },
+            timeout=15,
+        )
+        if resp.status_code in (200, 201):
+            current_app.logger.info(f'Resend email sent successfully to {to_email}')
+            return True
+        current_app.logger.warning(f'Resend send failed {resp.status_code}: {resp.text[:200]}')
+        return False
+    except Exception as e:
+        current_app.logger.warning(f'Resend request error: {e}')
+        return False
+
+
 def _send_via_brevo(to_email, subject, body_html, to_name='Customer'):
     """Send email via Brevo API (works on Vercel - no SMTP ports needed)."""
     api_key = current_app.config.get('BREVO_API_KEY', '').strip()
@@ -81,14 +112,20 @@ def _send_via_smtp(to_email, subject, body_html):
 
 
 def _send_email(to_email, subject, body_html, to_name='Customer'):
-    """Send email using Brevo API first, fall back to SMTP."""
-    # Try Brevo first (works on Vercel serverless)
+    """Send email trying Resend -> Brevo -> SMTP."""
+    # 1. Try Resend (100% Free, 3,000 emails/mo)
+    if current_app.config.get('RESEND_API_KEY'):
+        ok = _send_via_resend(to_email, subject, body_html, to_name=to_name)
+        if ok:
+            return True
+        current_app.logger.warning(f'Resend failed, trying other providers for: {subject}')
+    # 2. Try Brevo
     if current_app.config.get('BREVO_API_KEY'):
         ok = _send_via_brevo(to_email, subject, body_html, to_name=to_name)
         if ok:
             return True
         current_app.logger.warning(f'Brevo failed, falling back to SMTP for: {subject}')
-    # Fall back to SMTP (works locally)
+    # 3. Fall back to SMTP (works locally)
     return _send_via_smtp(to_email, subject, body_html)
 
 
