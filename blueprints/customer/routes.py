@@ -526,11 +526,12 @@ def checkout():
 
         settings = sitesettings.get_settings(cur)
         cod_advance_amount = sitesettings.get_setting_number(settings, 'cod_advance_amount', 300)
+        floor_margin = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
 
         try:
             cur.callproc('place_order', [
                 current_user_id(), payment_method, address, phone, proof_path,
-                points_to_redeem, coupon_code, cod_advance_amount,
+                points_to_redeem, coupon_code, cod_advance_amount, floor_margin,
                 order_id_var, final_total_var, coupon_disc_var, loyalty_disc_var,
                 points_redeemed_var, advance_var,
             ])
@@ -596,14 +597,18 @@ def checkout():
     get_db().commit()
 
     cur.execute(
-        "SELECT p.name, c.quantity, p.price FROM Cart c JOIN Products p ON c.product_id = p.product_id "
+        "SELECT p.name, c.quantity, p.price, NVL(p.cost_price, 0) FROM Cart c JOIN Products p ON c.product_id = p.product_id "
         "WHERE c.user_id = :1",
         [current_user_id()],
     )
-    cart_items = cur.fetchall()
-    subtotal = sum(row[1] * row[2] for row in cart_items)
-    max_redeemable_points = int(min(points_balance, subtotal * 0.5 * 2))
+    cart_rows = cur.fetchall()
+    cart_items = [(r[0], r[1], r[2]) for r in cart_rows]
+    subtotal = sum(row[1] * row[2] for row in cart_rows)
     settings = sitesettings.get_settings(cur)
+    floor_margin = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
+    min_floor_price = sum(row[1] * (float(row[3]) + floor_margin) for row in cart_rows)
+    max_total_discount = max(0.0, subtotal - min_floor_price)
+    max_redeemable_points = int(min(points_balance, subtotal * 0.5 * 2, max_total_discount * 2))
     return render_template(
         'customer/checkout.html', cart_items=cart_items, subtotal=subtotal,
         points_balance=points_balance, max_redeemable_points=max_redeemable_points,

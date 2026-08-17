@@ -13,6 +13,7 @@ DEFAULTS = {
     'bank_iban': '',
     'cod_advance_amount': '300',
     'cashback_points': '400',
+    'min_profit_margin_floor': '300',
 }
 
 # Keys grouped for the admin settings form.
@@ -21,6 +22,9 @@ FIELD_GROUPS = [
         ('contact_phone', 'Contact Phone', 'text'),
         ('contact_email', 'Contact Email', 'text'),
         ('whatsapp_number', 'WhatsApp Number (digits only, country code first, e.g. 923001234567)', 'text'),
+    ]),
+    ('Pricing & Discount Protection Floor', [
+        ('min_profit_margin_floor', 'Minimum Profit Margin Floor (Rs per item) — Discounts & Loyalty points cannot reduce selling price below (Cost Price + this floor)', 'number'),
     ]),
     ('Bank Transfer Details', [
         ('bank_name', 'Bank Name (e.g. NayaPay, HBL, Meezan Bank)', 'text'),

@@ -1,3 +1,10 @@
+-- Insert default setting for minimum profit margin floor if not already present
+MERGE INTO SiteSettings s
+USING (SELECT 'min_profit_margin_floor' AS setting_key FROM dual) d
+ON (s.setting_key = d.setting_key)
+WHEN NOT MATCHED THEN INSERT (setting_key, setting_value) VALUES ('min_profit_margin_floor', '300');
+
+-- Recompile place_order with price floor protection: sale price after discounts cannot fall below (cost price + floor)
 CREATE OR REPLACE PROCEDURE place_order(
     p_user_id           IN  NUMBER,
     p_pay_method        IN  VARCHAR2,
@@ -149,88 +156,4 @@ EXCEPTION
         ROLLBACK;
         RAISE;
 END place_order;
-/
-
-CREATE OR REPLACE PROCEDURE complete_order_loyalty(
-    p_order_id      IN  NUMBER,
-    p_points_earned OUT NUMBER
-) AS
-    v_user_id NUMBER;
-    v_total   NUMBER(10,2);
-    v_already NUMBER;
-BEGIN
-    SELECT COUNT(*) INTO v_already FROM LoyaltyLedger
-    WHERE order_id = p_order_id AND entry_type = 'earn';
-    IF v_already > 0 THEN
-        p_points_earned := 0;
-        RETURN;
-    END IF;
-
-    SELECT user_id, total_amount INTO v_user_id, v_total FROM Orders WHERE order_id = p_order_id;
-
-    IF v_total >= 5000 THEN
-        p_points_earned := 100 + FLOOR((v_total - 5000) / 1000) * 20;
-    ELSE
-        p_points_earned := 0;
-    END IF;
-
-    IF p_points_earned > 0 THEN
-        UPDATE Users SET loyalty_points_balance = loyalty_points_balance + p_points_earned
-        WHERE user_id = v_user_id;
-
-        UPDATE Orders SET loyalty_points_earned = p_points_earned WHERE order_id = p_order_id;
-
-        INSERT INTO LoyaltyLedger (ledger_id, user_id, order_id, entry_type, points, rupee_value, balance_after, created_at)
-        SELECT loyaltyledger_seq.NEXTVAL, v_user_id, p_order_id, 'earn', p_points_earned, NULL,
-               loyalty_points_balance, SYSDATE
-        FROM Users WHERE user_id = v_user_id;
-    END IF;
-
-    COMMIT;
-EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK;
-        RAISE;
-END complete_order_loyalty;
-/
-
-CREATE OR REPLACE PROCEDURE verify_bank_transfer_cashback(
-    p_order_id       IN  NUMBER,
-    p_cashback_points IN NUMBER,
-    p_points_awarded OUT NUMBER
-) AS
-    v_user_id NUMBER;
-    v_method  VARCHAR2(20);
-    v_already NUMBER;
-BEGIN
-    SELECT COUNT(*) INTO v_already FROM LoyaltyLedger
-    WHERE order_id = p_order_id AND entry_type = 'cashback';
-    IF v_already > 0 THEN
-        p_points_awarded := 0;
-        RETURN;
-    END IF;
-
-    SELECT user_id, payment_method INTO v_user_id, v_method FROM Orders WHERE order_id = p_order_id;
-
-    IF v_method = 'bank_transfer' THEN
-        p_points_awarded := NVL(p_cashback_points, 400);
-        UPDATE Users SET loyalty_points_balance = loyalty_points_balance + p_points_awarded
-        WHERE user_id = v_user_id;
-
-        UPDATE Orders SET cashback_points_awarded = p_points_awarded WHERE order_id = p_order_id;
-
-        INSERT INTO LoyaltyLedger (ledger_id, user_id, order_id, entry_type, points, rupee_value, balance_after, created_at)
-        SELECT loyaltyledger_seq.NEXTVAL, v_user_id, p_order_id, 'cashback', p_points_awarded, NULL,
-               loyalty_points_balance, SYSDATE
-        FROM Users WHERE user_id = v_user_id;
-    ELSE
-        p_points_awarded := 0;
-    END IF;
-
-    COMMIT;
-EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK;
-        RAISE;
-END verify_bank_transfer_cashback;
 /

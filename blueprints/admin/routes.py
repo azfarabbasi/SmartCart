@@ -632,6 +632,9 @@ def revenue_dashboard():
             'status': ost,
         })
 
+    settings = sitesettings.get_settings(cur)
+    min_margin_floor = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
+
     summary = {
         'total_revenue': total_revenue,
         'gross_sales': gross_sales,
@@ -642,6 +645,7 @@ def revenue_dashboard():
         'net_profit': net_profit,
         'margin_pct': margin_pct,
         'order_count': order_count,
+        'min_margin_floor': min_margin_floor,
     }
 
     return render_template(
