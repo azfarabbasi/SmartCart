@@ -6,7 +6,7 @@
 -- Admin User
 INSERT INTO Users (user_id, name, email, password, role, created_at, email_verified)
 VALUES (users_seq.NEXTVAL, 'Admin User', 'admin@smartcart.com',
-        'scrypt:32768:8:1$Oh5ZtdnmetbRIvvS$90940bb1f9874de9620ab3ee9c6634e09442c848b1e374b12aa2f29ce6248e660f02890a606c10a851ad50b0b9750f1b0d13c15abb972282dcfe4ea74174de07',
+        'scrypt:32768:8:1$MbFl1bjXww40uEmT$c5df37c9cafe563b49fd6d60c54fb2206fc1f4a9c301b36256433af10d96e5984571536521dc56d0335852c4c34134045bedfb25aaa29c9389033caef45da917',
         'admin', SYSDATE, 1);
 
 -- Customer Users
