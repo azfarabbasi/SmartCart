@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDropdowns();
     initializeQuantitySelectors();
     initializeImageZoom();
+    initializeProductGallerySlider();
     initializeFormValidation();
     initializeSearchEnhancements();
     initializeTooltips();
@@ -273,6 +274,91 @@ function initializeImageZoom() {
             mainImage.style.transform = 'scale(1)';
         });
     }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Product Gallery Slider & Thumbnail Controller
+// ═══════════════════════════════════════════════════════════
+function initializeProductGallerySlider() {
+    const carouselEl = document.getElementById('productGalleryCarousel');
+    if (!carouselEl) return;
+
+    const counterSpan = document.getElementById('galleryCurrentIndex');
+    const thumbButtons = document.querySelectorAll('.gallery-thumb-btn');
+
+    // Bootstrap Carousel instance
+    const carousel = (typeof bootstrap !== 'undefined' && bootstrap.Carousel)
+        ? bootstrap.Carousel.getOrCreateInstance(carouselEl, { interval: false, ride: false, wrap: true })
+        : null;
+
+    // Function to update active thumbnail and counter
+    function updateActiveState(index) {
+        if (counterSpan) {
+            counterSpan.textContent = index + 1;
+        }
+
+        thumbButtons.forEach(function(btn, i) {
+            if (i === index) {
+                btn.classList.add('active');
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    // Listen to Bootstrap carousel slide events
+    carouselEl.addEventListener('slide.bs.carousel', function(e) {
+        updateActiveState(e.to);
+    });
+
+    // Thumbnail click & hover interactions
+    thumbButtons.forEach(function(btn, index) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (carousel) {
+                carousel.to(index);
+            }
+            updateActiveState(index);
+        });
+
+        // Instant preview switch on mouse enter (Amazon / Daraz style)
+        btn.addEventListener('mouseenter', function() {
+            if (carousel) {
+                carousel.to(index);
+            }
+            updateActiveState(index);
+        });
+    });
+
+    // Touch Swipe Support for Mobile & Tablets
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    carouselEl.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    carouselEl.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        const diffX = touchStartX - touchEndX;
+        if (Math.abs(diffX) > 40) {
+            if (diffX > 0 && carousel) {
+                carousel.next();
+            } else if (diffX < 0 && carousel) {
+                carousel.prev();
+            }
+        }
+    }, { passive: true });
+
+    // Keyboard Arrow Keys (Left / Right) when focused
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft' && carousel && document.activeElement.tagName !== 'INPUT') {
+            carousel.prev();
+        } else if (e.key === 'ArrowRight' && carousel && document.activeElement.tagName !== 'INPUT') {
+            carousel.next();
+        }
+    });
 }
 
 // ═══════════════════════════════════════════════════════════

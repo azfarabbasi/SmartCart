@@ -190,6 +190,18 @@ def product_detail(product_id):
     )
     gallery = cur.fetchall()
 
+    # Build unified media_list with cover image first, followed by gallery images/videos
+    media_list = []
+    seen = set()
+    if product[5] and str(product[5]).strip():
+        media_list.append({'id': 'cover', 'path': product[5], 'type': 'image'})
+        seen.add(str(product[5]).strip())
+    for item in gallery:
+        m_id, m_path, m_type = item
+        if m_path and str(m_path).strip() and str(m_path).strip() not in seen:
+            media_list.append({'id': m_id, 'path': m_path, 'type': m_type or 'image'})
+            seen.add(str(m_path).strip())
+
     cur.execute(
         """
         SELECT f.feedback_id, u.name, f.rating, f.comment_text, f.media_path, f.media_type, f.created_at
@@ -217,7 +229,7 @@ def product_detail(product_id):
         get_db().commit()
 
     return render_template(
-        'customer/product_detail.html', product=product, gallery=gallery, feedback_list=feedback_list,
+        'customer/product_detail.html', product=product, media_list=media_list, gallery=gallery, feedback_list=feedback_list,
     )
 
 

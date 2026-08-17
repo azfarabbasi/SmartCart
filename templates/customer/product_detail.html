@@ -13,31 +13,61 @@
         <div class="product-detail-container">
             <div class="row">
                 <div class="col-lg-5 mb-4">
-                    <div class="product-detail-image">
-                        {% if gallery %}
-                            <div id="productGallery" class="carousel slide" data-bs-ride="false">
+                    <div class="product-gallery-card">
+                        {% if media_list and media_list|length > 0 %}
+                            <div id="productGalleryCarousel" class="carousel slide product-gallery-slider" data-bs-ride="false" data-bs-interval="false">
+                                {% if media_list|length > 1 %}
+                                    <div class="gallery-counter-badge">
+                                        <span id="galleryCurrentIndex">1</span> / {{ media_list|length }}
+                                    </div>
+                                {% endif %}
+
                                 <div class="carousel-inner">
-                                    {% for item in gallery %}
-                                        <div class="carousel-item {% if loop.first %}active{% endif %}">
-                                            {% if item[2] == 'video' %}
-                                                <video src="{{ media_url(item[1]) }}" class="main-image" controls></video>
-                                            {% else %}
-                                                <img src="{{ media_url(item[1]) }}" alt="{{ product[1] }}" class="main-image">
-                                            {% endif %}
+                                    {% for item in media_list %}
+                                        <div class="carousel-item {% if loop.first %}active{% endif %}" data-slide-index="{{ loop.index0 }}">
+                                            <div class="gallery-main-viewport">
+                                                {% if item.type == 'video' %}
+                                                    <video src="{{ media_url(item.path) }}" class="gallery-media-item" controls playsinline></video>
+                                                {% else %}
+                                                    <img src="{{ media_url(item.path) }}" alt="{{ product[1] }} - View {{ loop.index }}" class="gallery-media-item" loading="{% if loop.first %}eager{% else %}lazy{% endif %}">
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     {% endfor %}
                                 </div>
-                                {% if gallery|length > 1 %}
-                                    <button class="carousel-control-prev" type="button" data-bs-target="#productGallery" data-bs-slide="prev">
-                                        <span class="carousel-control-prev-icon"></span>
+
+                                {% if media_list|length > 1 %}
+                                    <button class="carousel-control-prev gallery-arrow-btn prev-btn" type="button" data-bs-target="#productGalleryCarousel" data-bs-slide="prev" aria-label="Previous Image">
+                                        <i class="bi bi-chevron-left"></i>
                                     </button>
-                                    <button class="carousel-control-next" type="button" data-bs-target="#productGallery" data-bs-slide="next">
-                                        <span class="carousel-control-next-icon"></span>
+                                    <button class="carousel-control-next gallery-arrow-btn next-btn" type="button" data-bs-target="#productGalleryCarousel" data-bs-slide="next" aria-label="Next Image">
+                                        <i class="bi bi-chevron-right"></i>
                                     </button>
                                 {% endif %}
                             </div>
+
+                            {% if media_list|length > 1 %}
+                                <div class="gallery-thumbnails-strip mt-3" id="galleryThumbnails">
+                                    {% for item in media_list %}
+                                        <button type="button" 
+                                                class="gallery-thumb-btn {% if loop.first %}active{% endif %}" 
+                                                data-bs-target="#productGalleryCarousel" 
+                                                data-bs-slide-to="{{ loop.index0 }}"
+                                                aria-label="View photo {{ loop.index }}">
+                                            {% if item.type == 'video' %}
+                                                <div class="thumb-video-icon"><i class="bi bi-play-circle-fill"></i></div>
+                                                <video src="{{ media_url(item.path) }}#t=0.5" class="gallery-thumb-img"></video>
+                                            {% else %}
+                                                <img src="{{ media_url(item.path) }}" alt="Thumbnail {{ loop.index }}" class="gallery-thumb-img">
+                                            {% endif %}
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         {% elif product[5] %}
-                            <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" class="main-image">
+                            <div class="gallery-main-viewport single-image">
+                                <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" class="gallery-media-item">
+                            </div>
                         {% else %}
                             <div class="no-image-large">
                                 <i class="bi bi-image"></i>
