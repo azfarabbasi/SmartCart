@@ -34,10 +34,45 @@ def init_pool(app):
     )
 
 
+_migrated = False
+
+
+def _auto_migrate(conn):
+    try:
+        cur = conn.cursor()
+        # 1. Ensure cost_price column exists on Products
+        try:
+            cur.execute("SELECT cost_price FROM Products WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Products ADD (cost_price NUMBER(10,2) DEFAULT 0 NOT NULL)")
+                conn.commit()
+            except Exception:
+                pass
+
+        # 2. Ensure min_profit_margin_floor in SiteSettings
+        try:
+            cur.execute("""
+            MERGE INTO SiteSettings s
+            USING (SELECT 'min_profit_margin_floor' AS setting_key FROM dual) d
+            ON (s.setting_key = d.setting_key)
+            WHEN NOT MATCHED THEN INSERT (setting_key, setting_value) VALUES ('min_profit_margin_floor', '300')
+            """)
+            conn.commit()
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
 def get_db():
+    global _migrated
     if 'db_conn' not in g:
         conn = _pool.acquire()
         conn.outputtypehandler = _output_type_handler
+        if not _migrated:
+            _migrated = True
+            _auto_migrate(conn)
         g.db_conn = conn
     return g.db_conn
 

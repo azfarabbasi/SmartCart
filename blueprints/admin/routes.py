@@ -70,16 +70,23 @@ def dashboard():
     total_customers = cur.fetchone()[0]
     cur.execute("SELECT NVL(SUM(total_amount), 0) FROM Orders WHERE status != 'cancelled'")
     total_revenue = float(cur.fetchone()[0])
-    cur.execute(
-        """
-        SELECT NVL(SUM(oi.quantity * NVL(p.cost_price, 0)), 0)
-        FROM OrderItems oi
-        JOIN Products p ON oi.product_id = p.product_id
-        JOIN Orders o ON oi.order_id = o.order_id
-        WHERE o.status != 'cancelled'
-        """
-    )
-    total_cost = float(cur.fetchone()[0])
+
+    total_cost = 0.0
+    try:
+        cur.execute(
+            """
+            SELECT NVL(SUM(oi.quantity * NVL(p.cost_price, 0)), 0)
+            FROM OrderItems oi
+            JOIN Products p ON oi.product_id = p.product_id
+            JOIN Orders o ON oi.order_id = o.order_id
+            WHERE o.status != 'cancelled'
+            """
+        )
+        total_cost = float(cur.fetchone()[0])
+    except Exception as e:
+        current_app.logger.warning(f"Error computing COGS in dashboard: {e}")
+        total_cost = 0.0
+
     net_profit = total_revenue - total_cost
     profit_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
 
@@ -106,12 +113,22 @@ def dashboard():
 @admin_required
 def products():
     cur = get_db().cursor()
-    cur.execute(
-        "SELECT p.product_id, p.name, c.category_name, p.price, NVL(p.cost_price, 0), p.stock, p.image_path "
-        "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
-        "ORDER BY p.product_id"
-    )
-    rows = cur.fetchall()
+    try:
+        cur.execute(
+            "SELECT p.product_id, p.name, c.category_name, p.price, NVL(p.cost_price, 0), p.stock, p.image_path "
+            "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
+            "ORDER BY p.product_id"
+        )
+        rows = cur.fetchall()
+    except Exception as e:
+        current_app.logger.warning(f"Fallback products query: {e}")
+        cur.execute(
+            "SELECT p.product_id, p.name, c.category_name, p.price, 0, p.stock, p.image_path "
+            "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
+            "ORDER BY p.product_id"
+        )
+        rows = cur.fetchall()
+
     upload_dir = current_app.config['UPLOAD_FOLDER']
     product_rows = []
     for r in rows:
@@ -459,12 +476,21 @@ def order_detail(order_id):
         flash('Order not found.', 'error')
         return redirect(url_for('admin.orders'))
 
-    cur.execute(
-        "SELECT p.name, oi.quantity, oi.unit_price, NVL(p.cost_price, 0) "
-        "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
-        [order_id],
-    )
-    raw_items = cur.fetchall()
+    try:
+        cur.execute(
+            "SELECT p.name, oi.quantity, oi.unit_price, NVL(p.cost_price, 0) "
+            "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
+            [order_id],
+        )
+        raw_items = cur.fetchall()
+    except Exception:
+        cur.execute(
+            "SELECT p.name, oi.quantity, oi.unit_price, 0 "
+            "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
+            [order_id],
+        )
+        raw_items = cur.fetchall()
+
     items = []
     total_order_cost = 0.0
     items_subtotal = 0.0
@@ -539,98 +565,115 @@ def revenue_dashboard():
     gross_sales = total_revenue + total_discounts
 
     # Calculate Total Cost of Goods Sold (COGS) for these orders
-    cur.execute(
-        f"""
-        SELECT NVL(SUM(oi.quantity * NVL(p.cost_price, 0)), 0)
-        FROM OrderItems oi
-        JOIN Products p ON oi.product_id = p.product_id
-        JOIN Orders o ON oi.order_id = o.order_id
-        WHERE {status_clause}
-        """,
-        params,
-    )
-    total_cogs = float(cur.fetchone()[0])
+    total_cogs = 0.0
+    try:
+        cur.execute(
+            f"""
+            SELECT NVL(SUM(oi.quantity * NVL(p.cost_price, 0)), 0)
+            FROM OrderItems oi
+            JOIN Products p ON oi.product_id = p.product_id
+            JOIN Orders o ON oi.order_id = o.order_id
+            WHERE {status_clause}
+            """,
+            params,
+        )
+        total_cogs = float(cur.fetchone()[0])
+    except Exception:
+        total_cogs = 0.0
+
     net_profit = total_revenue - total_cogs
     margin_pct = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
 
     # 2. Product-by-product profitability breakdown
-    cur.execute(
-        f"""
-        SELECT 
-            p.product_id,
-            p.name,
-            c.category_name,
-            p.price AS sale_price,
-            NVL(p.cost_price, 0) AS cost_price,
-            (p.price - NVL(p.cost_price, 0)) AS unit_profit,
-            CASE WHEN p.price > 0 THEN ((p.price - NVL(p.cost_price, 0)) / p.price * 100) ELSE 0 END AS unit_margin_pct,
-            NVL(sales.units_sold, 0) AS units_sold,
-            NVL(sales.total_revenue, 0) AS total_product_revenue,
-            NVL(sales.total_cost, 0) AS total_product_cost,
-            (NVL(sales.total_revenue, 0) - NVL(sales.total_cost, 0)) AS total_product_profit
-        FROM Products p
-        JOIN Categories c ON p.category_id = c.category_id
-        LEFT JOIN (
+    product_stats = []
+    try:
+        cur.execute(
+            f"""
             SELECT 
-                oi.product_id,
-                SUM(oi.quantity) AS units_sold,
-                SUM(oi.quantity * oi.unit_price) AS total_revenue,
-                SUM(oi.quantity * NVL(p2.cost_price, 0)) AS total_cost
-            FROM OrderItems oi
-            JOIN Products p2 ON oi.product_id = p2.product_id
-            JOIN Orders o ON oi.order_id = o.order_id
-            WHERE {status_clause}
-            GROUP BY oi.product_id
-        ) sales ON p.product_id = sales.product_id
-        ORDER BY total_product_profit DESC, units_sold DESC, p.product_id
-        """,
-        params,
-    )
-    product_stats = cur.fetchall()
+                p.product_id,
+                p.name,
+                c.category_name,
+                p.price AS sale_price,
+                NVL(p.cost_price, 0) AS cost_price,
+                (p.price - NVL(p.cost_price, 0)) AS unit_profit,
+                CASE WHEN p.price > 0 THEN ((p.price - NVL(p.cost_price, 0)) / p.price * 100) ELSE 0 END AS unit_margin_pct,
+                NVL(sales.units_sold, 0) AS units_sold,
+                NVL(sales.total_revenue, 0) AS total_product_revenue,
+                NVL(sales.total_cost, 0) AS total_product_cost,
+                (NVL(sales.total_revenue, 0) - NVL(sales.total_cost, 0)) AS total_product_profit
+            FROM Products p
+            JOIN Categories c ON p.category_id = c.category_id
+            LEFT JOIN (
+                SELECT 
+                    oi.product_id,
+                    SUM(oi.quantity) AS units_sold,
+                    SUM(oi.quantity * oi.unit_price) AS total_revenue,
+                    SUM(oi.quantity * NVL(p2.cost_price, 0)) AS total_cost
+                FROM OrderItems oi
+                JOIN Products p2 ON oi.product_id = p2.product_id
+                JOIN Orders o ON oi.order_id = o.order_id
+                WHERE {status_clause}
+                GROUP BY oi.product_id
+            ) sales ON p.product_id = sales.product_id
+            ORDER BY total_product_profit DESC, units_sold DESC, p.product_id
+            """,
+            params,
+        )
+        product_stats = cur.fetchall()
+    except Exception as e:
+        current_app.logger.warning(f"Fallback product_stats query: {e}")
+        cur.execute(
+            "SELECT p.product_id, p.name, c.category_name, p.price, 0, p.price, 100, 0, 0, 0, 0 "
+            "FROM Products p JOIN Categories c ON p.category_id = c.category_id ORDER BY p.product_id"
+        )
+        product_stats = cur.fetchall()
 
     # 3. Order-by-order financial list (up to 50 latest)
-    cur.execute(
-        f"""
-        SELECT * FROM (
-            SELECT 
-                o.order_id,
-                u.name AS customer_name,
-                o.order_date,
-                o.total_amount AS realized_total,
-                (NVL(o.coupon_discount_amount, 0) + NVL(o.loyalty_discount_amount, 0)) AS total_discount,
-                NVL((
-                    SELECT SUM(oi.quantity * NVL(p.cost_price, 0))
-                    FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id
-                    WHERE oi.order_id = o.order_id
-                ), 0) AS order_cost,
-                o.status
-            FROM Orders o
-            JOIN Users u ON o.user_id = u.user_id
-            WHERE {status_clause}
-            ORDER BY o.order_date DESC
-        ) WHERE ROWNUM <= 50
-        """,
-        params,
-    )
-    order_rows = cur.fetchall()
     orders_financial = []
-    for r in order_rows:
-        oid, cname, odate, realized, disc, cost, ost = r
-        realized_f = float(realized)
-        cost_f = float(cost)
-        prof_f = realized_f - cost_f
-        m_pct = (prof_f / realized_f * 100) if realized_f > 0 else 0.0
-        orders_financial.append({
-            'order_id': oid,
-            'customer_name': cname,
-            'order_date': odate,
-            'realized_total': realized_f,
-            'total_discount': float(disc),
-            'order_cost': cost_f,
-            'net_profit': prof_f,
-            'margin_pct': m_pct,
-            'status': ost,
-        })
+    try:
+        cur.execute(
+            f"""
+            SELECT * FROM (
+                SELECT 
+                    o.order_id,
+                    u.name AS customer_name,
+                    o.order_date,
+                    o.total_amount AS realized_total,
+                    (NVL(o.coupon_discount_amount, 0) + NVL(o.loyalty_discount_amount, 0)) AS total_discount,
+                    NVL((
+                        SELECT SUM(oi.quantity * NVL(p.cost_price, 0))
+                        FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id
+                        WHERE oi.order_id = o.order_id
+                    ), 0) AS order_cost,
+                    o.status
+                FROM Orders o
+                JOIN Users u ON o.user_id = u.user_id
+                WHERE {status_clause}
+                ORDER BY o.order_date DESC
+            ) WHERE ROWNUM <= 50
+            """,
+            params,
+        )
+        order_rows = cur.fetchall()
+        for r in order_rows:
+            oid, cname, odate, realized, disc, cost, ost = r
+            realized_f = float(realized)
+            cost_f = float(cost)
+            prof_f = realized_f - cost_f
+            m_pct = (prof_f / realized_f * 100) if realized_f > 0 else 0.0
+            orders_financial.append({
+                'order_id': oid,
+                'customer_name': cname,
+                'order_date': odate,
+                'realized_total': realized_f,
+                'total_discount': float(disc),
+                'order_cost': cost_f,
+                'net_profit': prof_f,
+                'margin_pct': m_pct,
+                'status': ost,
+            })
+    except Exception as e:
+        current_app.logger.warning(f"Fallback order financials query: {e}")
 
     settings = sitesettings.get_settings(cur)
     min_margin_floor = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
