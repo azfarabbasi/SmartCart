@@ -1,12 +1,12 @@
 -- ============================================================
 -- Sample Users for SmartCart
--- Admin password: admin123  |  All other users password: user123
+-- Admin password: mission_654321  |  All other users password: user123
 -- ============================================================
 
 -- Admin User
 INSERT INTO Users (user_id, name, email, password, role, created_at, email_verified)
 VALUES (users_seq.NEXTVAL, 'Admin User', 'admin@smartcart.com',
-        'scrypt:32768:8:1$TKCJzbeCXmvl25s6$bc9ec3623195d3e066375dc081a8860b8f4fad22741d167c81dcb38eacfd9578286b3c056d0fedfa06e13b88d2e960dce3eaad9a61229fad681ec1d30b67838d',
+        'scrypt:32768:8:1$Oh5ZtdnmetbRIvvS$90940bb1f9874de9620ab3ee9c6634e09442c848b1e374b12aa2f29ce6248e660f02890a606c10a851ad50b0b9750f1b0d13c15abb972282dcfe4ea74174de07',
         'admin', SYSDATE, 1);
 
 -- Customer Users

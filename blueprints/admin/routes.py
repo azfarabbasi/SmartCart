@@ -316,16 +316,86 @@ def add_category():
 @admin_bp.route('/categories/delete/<int:category_id>', methods=['POST'])
 @admin_required
 def delete_category(category_id):
+    action = request.form.get('action', 'delete')
     cur = get_db().cursor()
     try:
-        cur.execute("DELETE FROM Categories WHERE category_id = :cid", {'cid': category_id})
-        log_admin_action(cur, current_user_id(), 'category.delete', 'Category', category_id)
-        get_db().commit()
-        flash('Category deleted.', 'success')
+        if action == 'move':
+            # Ensure an "Uncategorized" category exists
+            cur.execute("SELECT category_id FROM Categories WHERE LOWER(category_name) = 'uncategorized'")
+            row = cur.fetchone()
+            if row:
+                uncat_id = row[0]
+            else:
+                cur.execute(
+                    "INSERT INTO Categories (category_id, category_name) "
+                    "VALUES (categories_seq.NEXTVAL, 'Uncategorized')"
+                )
+                cur.execute("SELECT categories_seq.CURRVAL FROM dual")
+                uncat_id = cur.fetchone()[0]
+            # Move products to Uncategorized
+            cur.execute(
+                "UPDATE Products SET category_id = :ucid WHERE category_id = :cid",
+                {'ucid': uncat_id, 'cid': category_id},
+            )
+            moved = cur.rowcount
+            cur.execute("DELETE FROM Categories WHERE category_id = :cid", {'cid': category_id})
+            log_admin_action(cur, current_user_id(), 'category.delete', 'Category', category_id,
+                             f'{moved} products moved to Uncategorized')
+            get_db().commit()
+            flash(f'Category deleted. {moved} product(s) moved to Uncategorized.', 'success')
+
+        elif action == 'cascade':
+            # Gather product IDs in this category
+            cur.execute("SELECT product_id FROM Products WHERE category_id = :cid", {'cid': category_id})
+            product_ids = [r[0] for r in cur.fetchall()]
+
+            if product_ids:
+                bind = {f'p{i}': pid for i, pid in enumerate(product_ids)}
+                ph = ', '.join(f':p{i}' for i in range(len(product_ids)))
+
+                # Delete from every child table that references product_id
+                # FeedbackReplies → ProductFeedback → others → Products
+                cur.execute(
+                    f"DELETE FROM FeedbackReplies WHERE feedback_id IN "
+                    f"(SELECT feedback_id FROM ProductFeedback WHERE product_id IN ({ph}))", bind)
+                for tbl in ('ProductFeedback', 'ProductMedia', 'CustomerActivityLog',
+                            'Cart', 'Wishlist', 'OrderItems'):
+                    try:
+                        cur.execute(f"DELETE FROM {tbl} WHERE product_id IN ({ph})", bind)
+                    except oracledb.DatabaseError:
+                        pass  # table may not exist yet
+                cur.execute("DELETE FROM Products WHERE category_id = :cid", {'cid': category_id})
+
+            cur.execute("DELETE FROM Categories WHERE category_id = :cid", {'cid': category_id})
+            log_admin_action(cur, current_user_id(), 'category.delete', 'Category', category_id,
+                             f'Cascade-deleted with {len(product_ids)} products')
+            get_db().commit()
+            flash(f'Category and {len(product_ids)} product(s) permanently deleted.', 'success')
+
+        else:  # simple delete
+            cur.execute("DELETE FROM Categories WHERE category_id = :cid", {'cid': category_id})
+            log_admin_action(cur, current_user_id(), 'category.delete', 'Category', category_id)
+            get_db().commit()
+            flash('Category deleted.', 'success')
+
     except oracledb.IntegrityError:
         get_db().rollback()
-        flash('Cannot delete category - products are assigned to it.', 'error')
+        flash('Cannot delete category \u2014 products are still assigned to it.', 'error')
+    except Exception:
+        get_db().rollback()
+        flash('An error occurred while deleting the category.', 'error')
     return redirect(url_for('admin.categories'))
+
+
+@admin_bp.route('/categories/<int:category_id>/check')
+@admin_required
+def category_product_count(category_id):
+    cur = get_db().cursor()
+    cur.execute("SELECT COUNT(*) FROM Products WHERE category_id = :cid", {'cid': category_id})
+    count = cur.fetchone()[0]
+    cur.execute("SELECT category_name FROM Categories WHERE category_id = :cid", {'cid': category_id})
+    row = cur.fetchone()
+    return {'count': count, 'name': row[0] if row else ''}
 
 
 # ── ORDERS ───────────────────────────────────────────────────────
