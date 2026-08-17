@@ -44,10 +44,23 @@ def create_app():
         return {'current_user': auth_tokens.current_user()}
 
     from slugs import slugify as _slugify
+    from flask import has_request_context, url_for
+
+    def media_url(path):
+        if not path:
+            return ''
+        path_str = str(path).strip()
+        if path_str.startswith('data:') or path_str.startswith('http://') or path_str.startswith('https://') or path_str.startswith('/'):
+            return path_str
+        if has_request_context():
+            return url_for('static', filename=path_str)
+        return f'/static/{path_str}'
 
     app.jinja_env.globals['min'] = min
     app.jinja_env.globals['max'] = max
     app.jinja_env.globals['slugify'] = _slugify
+    app.jinja_env.globals['media_url'] = media_url
+    app.jinja_env.filters['media_url'] = media_url
 
     # Stamp written by build_assets.py; appended to the bundle URLs so a new
     # deploy is never served from a stale browser cache.
@@ -138,6 +151,9 @@ def create_app():
 
 app = create_app()
 
+import logging
+logging.basicConfig(level=logging.INFO)
+app.logger.setLevel(logging.INFO)
+
 if __name__ == '__main__':
     app.run(debug=app.config['DEBUG'])
-

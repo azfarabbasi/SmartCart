@@ -7,8 +7,11 @@
             <h5><i class="bi bi-pencil me-2"></i>Edit Product #{{ product[0] }}</h5>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('admin.edit_product', product_id=product[0]) }}" enctype="multipart/form-data" class="product-form">
+            <form method="POST" action="{{ url_for('admin.edit_product', product_id=product[0]) }}" enctype="multipart/form-data" class="product-form" id="editProductForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="image_base64" id="imageBase64" value="">
+                <input type="hidden" name="remove_image" id="removeImage" value="0">
+
                 <div class="row">
                     <div class="col-lg-8">
                         <div class="mb-3">
@@ -91,27 +94,54 @@
                     </div>
 
                     <div class="col-lg-4">
-                        <div class="mb-3">
-                            <label for="image" class="form-label">Thumbnail Image</label>
-                            <div class="image-upload-area" id="imageUploadArea">
-                                <input type="file" class="form-control d-none" id="image" name="image" accept="image/*">
-                                <div class="upload-placeholder {% if product[7] %}d-none{% endif %}" id="uploadPlaceholder">
-                                    <i class="bi bi-cloud-upload"></i>
-                                    <p>Click to upload image</p>
-                                    <small class="text-muted">PNG, JPG, JPEG, GIF, WEBP</small>
-                                </div>
-                                {% if product[7] %}
-                                    <img src="{{ url_for('static', filename=product[7]) }}" alt="Current Image" class="image-preview" id="imagePreview">
-                                {% else %}
-                                    <img src="" alt="Preview" class="image-preview d-none" id="imagePreview">
-                                {% endif %}
+                        <!-- Thumbnail Image Upload Card -->
+                        <div class="card p-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0 fw-semibold"><i class="bi bi-image me-1"></i>Thumbnail Image</label>
+                                <span id="imageStatusBadge" class="badge bg-secondary">JPG / PNG / HEIC / WEBP</span>
                             </div>
-                            {% if product[7] %}<small class="text-muted">Click to change image</small>{% endif %}
+
+                            <div class="image-upload-area p-3 text-center border rounded mb-2" id="imageUploadArea" style="min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.15); border: 2px dashed rgba(255,255,255,0.2) !important; border-radius: 8px; cursor: pointer;">
+                                <div class="upload-placeholder {% if product[7] %}d-none{% endif %}" id="uploadPlaceholder">
+                                    <i class="bi bi-cloud-arrow-up fs-1 text-warning d-block mb-1"></i>
+                                    <p class="mb-1 fw-semibold">Click or Drag & Drop Image</p>
+                                    <small class="text-muted">JPG, JPEG, PNG, HEIC, WEBP, GIF</small>
+                                </div>
+
+                                <div id="previewContainer" class="{% if not product[7] %}d-none{% endif %} text-center w-100">
+                                    {% if product[7] %}
+                                        <img src="{{ media_url(product[7]) }}" alt="Thumbnail Preview" class="img-fluid rounded shadow-sm" id="imagePreview" style="max-height: 200px; max-width: 100%; object-fit: contain;" onerror="handleImageError(this)">
+                                    {% else %}
+                                        <img src="" alt="Thumbnail Preview" class="img-fluid rounded shadow-sm d-none" id="imagePreview" style="max-height: 200px; max-width: 100%; object-fit: contain;">
+                                    {% endif %}
+                                </div>
+
+                                <div id="brokenImageNotice" class="alert alert-warning py-2 small d-none text-start mt-2 mb-0 w-100">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Previous image file missing. Click <strong>Choose Image</strong> to upload a new one.
+                                </div>
+                            </div>
+
+                            <input type="file" class="form-control" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif,image/*">
+
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-warning" id="browseBtn">
+                                    <i class="bi bi-folder2-open me-1"></i>Choose Image
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger {% if not product[7] %}d-none{% endif %}" id="removeBtn">
+                                    <i class="bi bi-trash me-1"></i>Remove
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="media" class="form-label">Add to Gallery ({{ gallery|length }}/{{ max_media }} used)</label>
-                            <input type="file" class="form-control" id="media" name="media" accept="image/*,video/*" multiple {% if gallery|length >= max_media %}disabled{% endif %}>
+                        <!-- Gallery Media Card -->
+                        <div class="card p-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="media" class="form-label mb-0 fw-semibold"><i class="bi bi-images me-1"></i>Add to Gallery</label>
+                                <span class="badge bg-secondary">{{ gallery|length }}/{{ max_media }} used</span>
+                            </div>
+                            <input type="file" class="form-control" id="media" name="media" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif,image/*,video/*" multiple data-max-media="{{ max_media }}" {% if gallery|length >= max_media %}disabled{% endif %}>
+                            <small class="text-muted d-block mt-1">Images (JPG, PNG, HEIC) or videos up to 50MB.</small>
+                            <div id="galleryLivePreview" class="d-flex flex-wrap gap-2 mt-2"></div>
                         </div>
                     </div>
                 </div>
@@ -130,14 +160,14 @@
 
             {% if gallery %}
                 <hr>
-                <h6>Gallery</h6>
+                <h6>Current Gallery Media</h6>
                 <div class="product-gallery-admin">
                     {% for item in gallery %}
                         <div class="gallery-thumb">
                             {% if item[2] == 'video' %}
-                                <video src="{{ url_for('static', filename=item[1]) }}" muted></video>
+                                <video src="{{ media_url(item[1]) }}" muted></video>
                             {% else %}
-                                <img src="{{ url_for('static', filename=item[1]) }}" alt="gallery item">
+                                <img src="{{ media_url(item[1]) }}" alt="gallery item" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'><rect width=\'100%\' height=\'100%\' fill=\'%23333\'/><text x=\'50%\' y=\'50%\' fill=\'%23aaa\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-size=\'10\'>Missing</text></svg>'">
                             {% endif %}
                             <form action="{{ url_for('admin.delete_product_media', media_id=item[0]) }}" method="POST" data-confirm="Remove this media item?">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -153,7 +183,19 @@
 
 {% block extra_scripts %}
 <script>
+function handleImageError(img) {
+    img.classList.add('d-none');
+    var notice = document.getElementById('brokenImageNotice');
+    if (notice) notice.classList.remove('d-none');
+    var badge = document.getElementById('imageStatusBadge');
+    if (badge) {
+        badge.textContent = 'Missing / Re-upload';
+        badge.className = 'badge bg-warning text-dark';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Profit Calculation
     var costInput = document.getElementById('cost_price');
     var priceInput = document.getElementById('price');
     var profitDisplay = document.getElementById('unitProfitDisplay');
@@ -181,7 +223,143 @@ document.addEventListener('DOMContentLoaded', function() {
         priceInput.addEventListener('input', calculateProfit);
         calculateProfit();
     }
+
+    // Thumbnail Image Handling (Instant Base64 Converter & Preview)
+    var imageUploadArea = document.getElementById('imageUploadArea');
+    var imageField = document.getElementById('image');
+    var imagePreview = document.getElementById('imagePreview');
+    var previewContainer = document.getElementById('previewContainer');
+    var uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    var imageBase64 = document.getElementById('imageBase64');
+    var removeImage = document.getElementById('removeImage');
+    var removeBtn = document.getElementById('removeBtn');
+    var browseBtn = document.getElementById('browseBtn');
+    var imageStatusBadge = document.getElementById('imageStatusBadge');
+    var brokenImageNotice = document.getElementById('brokenImageNotice');
+
+    if (browseBtn && imageField) {
+        browseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            imageField.click();
+        });
+    }
+
+    if (imageUploadArea && imageField) {
+        imageUploadArea.addEventListener('click', function(e) {
+            if (e.target !== imageField) {
+                imageField.click();
+            }
+        });
+
+        // Drag & Drop
+        imageUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = '#ffc107';
+            imageUploadArea.style.background = 'rgba(255, 193, 7, 0.05)';
+        });
+        imageUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = 'rgba(255,255,255,0.2)';
+            imageUploadArea.style.background = 'rgba(0,0,0,0.15)';
+        });
+        imageUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = 'rgba(255,255,255,0.2)';
+            imageUploadArea.style.background = 'rgba(0,0,0,0.15)';
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                imageField.files = e.dataTransfer.files;
+                processSelectedFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        imageField.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                processSelectedFile(this.files[0]);
+            }
+        });
+    }
+
+    function processSelectedFile(file) {
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var b64 = e.target.result;
+            imageBase64.value = b64;
+            removeImage.value = "0";
+
+            if (imagePreview) {
+                imagePreview.src = b64;
+                imagePreview.classList.remove('d-none');
+            }
+            if (previewContainer) {
+                previewContainer.classList.remove('d-none');
+            }
+            if (uploadPlaceholder) {
+                uploadPlaceholder.classList.add('d-none');
+            }
+            if (brokenImageNotice) {
+                brokenImageNotice.classList.add('d-none');
+            }
+            if (removeBtn) {
+                removeBtn.classList.remove('d-none');
+            }
+            if (imageStatusBadge) {
+                imageStatusBadge.textContent = 'Base64 Ready (' + (file.size / 1024).toFixed(1) + ' KB)';
+                imageStatusBadge.className = 'badge bg-success';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (imageField) imageField.value = '';
+            if (imageBase64) imageBase64.value = '';
+            if (removeImage) removeImage.value = '1';
+            if (imagePreview) {
+                imagePreview.src = '';
+                imagePreview.classList.add('d-none');
+            }
+            if (previewContainer) {
+                previewContainer.classList.add('d-none');
+            }
+            if (uploadPlaceholder) {
+                uploadPlaceholder.classList.remove('d-none');
+            }
+            if (brokenImageNotice) {
+                brokenImageNotice.classList.add('d-none');
+            }
+            removeBtn.classList.add('d-none');
+            if (imageStatusBadge) {
+                imageStatusBadge.textContent = 'No Image';
+                imageStatusBadge.className = 'badge bg-secondary';
+            }
+        });
+    }
+
+    // Gallery Live Previews
+    var mediaField = document.getElementById('media');
+    var galleryLivePreview = document.getElementById('galleryLivePreview');
+    if (mediaField && galleryLivePreview) {
+        mediaField.addEventListener('change', function() {
+            galleryLivePreview.innerHTML = '';
+            if (this.files) {
+                Array.from(this.files).forEach(function(file) {
+                    if (file.type.startsWith('image/')) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            var thumb = document.createElement('div');
+                            thumb.style.cssText = 'width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);';
+                            thumb.innerHTML = '<img src="' + e.target.result + '" style="width:100%; height:100%; object-fit: cover;">';
+                            galleryLivePreview.appendChild(thumb);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
-

@@ -49,9 +49,9 @@
                     {% if fb[4] %}
                         <div class="feedback-media">
                             {% if fb[5] == 'video' %}
-                                <video src="{{ url_for('static', filename=fb[4]) }}" controls></video>
+                                <video src="{{ media_url(fb[4]) }}" controls></video>
                             {% else %}
-                                <img src="{{ url_for('static', filename=fb[4]) }}" alt="feedback media">
+                                <img src="{{ media_url(fb[4]) }}" alt="feedback media">
                             {% endif %}
                         </div>
                     {% endif %}
@@ -65,9 +65,9 @@
                             {% if reply[1] %}
                                 <div class="feedback-media">
                                     {% if reply[2] == 'video' %}
-                                        <video src="{{ url_for('static', filename=reply[1]) }}" controls></video>
+                                        <video src="{{ media_url(reply[1]) }}" controls></video>
                                     {% else %}
-                                        <img src="{{ url_for('static', filename=reply[1]) }}" alt="reply media">
+                                        <img src="{{ media_url(reply[1]) }}" alt="reply media">
                                     {% endif %}
                                 </div>
                             {% endif %}

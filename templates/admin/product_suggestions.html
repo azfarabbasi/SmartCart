@@ -18,9 +18,9 @@
                     {% if s[4] %}
                         <div class="feedback-media mb-2">
                             {% if s[5] == 'video' %}
-                                <video src="{{ url_for('static', filename=s[4]) }}" controls></video>
+                                <video src="{{ media_url(s[4]) }}" controls></video>
                             {% else %}
-                                <img src="{{ url_for('static', filename=s[4]) }}" alt="suggested product media">
+                                <img src="{{ media_url(s[4]) }}" alt="suggested product media">
                             {% endif %}
                         </div>
                     {% endif %}

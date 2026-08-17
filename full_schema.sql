@@ -30,7 +30,7 @@ CREATE TABLE Products (
     cost_price  NUMBER(10,2) DEFAULT 0 NOT NULL,
     stock       NUMBER DEFAULT 0,
     description VARCHAR2(500),
-    image_path VARCHAR2(255)
+    image_path CLOB
 );
 
 CREATE TABLE Orders (
@@ -292,7 +292,7 @@ CREATE TABLE ProductFeedback (
     user_id      NUMBER NOT NULL REFERENCES Users(user_id),
     rating       NUMBER(1),
     comment_text VARCHAR2(2000),
-    media_path   VARCHAR2(255),
+    media_path   CLOB,
     media_type   VARCHAR2(10),
     created_at   DATE DEFAULT SYSDATE,
     CONSTRAINT chk_feedback_rating CHECK (rating BETWEEN 1 AND 5)
@@ -305,7 +305,7 @@ CREATE TABLE FeedbackReplies (
     feedback_id   NUMBER NOT NULL REFERENCES ProductFeedback(feedback_id),
     admin_user_id NUMBER NOT NULL REFERENCES Users(user_id),
     reply_text    VARCHAR2(2000),
-    media_path    VARCHAR2(255),
+    media_path    CLOB,
     media_type    VARCHAR2(10),
     created_at    DATE DEFAULT SYSDATE
 );
@@ -335,7 +335,7 @@ CREATE SEQUENCE loginattempts_seq START WITH 1 INCREMENT BY 1;
 CREATE INDEX idx_loginattempts_email_time ON LoginAttempts(email, attempted_at);
 ALTER TABLE Orders ADD (
     payment_method           VARCHAR2(20) DEFAULT 'cod' NOT NULL,
-    payment_proof_path       VARCHAR2(255),
+    payment_proof_path       CLOB,
     payment_status           VARCHAR2(20) DEFAULT 'pending_verification' NOT NULL,
     advance_amount           NUMBER(10,2) DEFAULT 0 NOT NULL,
     cashback_points_awarded  NUMBER DEFAULT 0 NOT NULL,
@@ -365,7 +365,7 @@ CREATE SEQUENCE coupons_seq START WITH 1 INCREMENT BY 1;
 CREATE TABLE ProductMedia (
     media_id    NUMBER PRIMARY KEY,
     product_id  NUMBER NOT NULL REFERENCES Products(product_id),
-    media_path  VARCHAR2(255) NOT NULL,
+    media_path  CLOB NOT NULL,
     media_type  VARCHAR2(10) NOT NULL,
     sort_order  NUMBER DEFAULT 0,
     created_at  DATE DEFAULT SYSDATE,
@@ -409,7 +409,7 @@ CREATE OR REPLACE PROCEDURE place_order(
     p_pay_method        IN  VARCHAR2,
     p_address           IN  VARCHAR2,
     p_phone             IN  VARCHAR2,
-    p_payment_proof_path IN VARCHAR2,
+    p_payment_proof_path IN CLOB,
     p_points_to_redeem  IN  NUMBER,
     p_coupon_code       IN  VARCHAR2,
     p_cod_advance_amount IN NUMBER,
@@ -682,7 +682,7 @@ CREATE TABLE ProductSuggestions (
     suggestion_id NUMBER PRIMARY KEY,
     user_id       NUMBER NOT NULL REFERENCES Users(user_id),
     description   VARCHAR2(1000),
-    media_path    VARCHAR2(255),
+    media_path    CLOB,
     media_type    VARCHAR2(10),
     status        VARCHAR2(20) DEFAULT 'new' NOT NULL,
     created_at    DATE DEFAULT SYSDATE

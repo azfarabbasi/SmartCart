@@ -133,7 +133,7 @@
 
                     {% if order[10] %}
                         <p><strong>Payment Proof:</strong></p>
-                        <img src="{{ url_for('static', filename=order[10]) }}" alt="payment proof" class="payment-proof-preview">
+                        <img src="{{ media_url(order[10]) }}" alt="payment proof" class="payment-proof-preview">
                     {% endif %}
 
                     {% if order[9] == 'pending_verification' %}

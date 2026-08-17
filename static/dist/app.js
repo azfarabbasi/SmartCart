@@ -79,12 +79,31 @@ function initializeUnobtrusiveHandlers() {
         });
     });
 
-    // Admin product form: clicking the drop-zone opens the file picker
+    // Admin product form: clicking the drop-zone opens the file picker and previews image
     const uploadArea = document.getElementById('imageUploadArea');
     const imageField = document.getElementById('image');
+    const imagePreview = document.getElementById('imagePreview');
+    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
     if (uploadArea && imageField) {
-        uploadArea.addEventListener('click', function () {
-            imageField.click();
+        uploadArea.addEventListener('click', function (e) {
+            if (e.target !== imageField) {
+                imageField.click();
+            }
+        });
+        imageField.addEventListener('change', function () {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    if (imagePreview) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.classList.remove('d-none');
+                    }
+                    if (uploadPlaceholder) {
+                        uploadPlaceholder.classList.add('d-none');
+                    }
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
         });
     }
 

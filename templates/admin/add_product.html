@@ -7,8 +7,10 @@
             <h5><i class="bi bi-plus-circle me-2"></i>Add New Product</h5>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('admin.add_product') }}" enctype="multipart/form-data" class="product-form">
+            <form method="POST" action="{{ url_for('admin.add_product') }}" enctype="multipart/form-data" class="product-form" id="addProductForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="image_base64" id="imageBase64" value="">
+
                 <div class="row">
                     <div class="col-lg-8">
                         <div class="mb-3">
@@ -89,23 +91,46 @@
                     </div>
 
                     <div class="col-lg-4">
-                        <div class="mb-3">
-                            <label for="image" class="form-label">Thumbnail Image (shown in catalog)</label>
-                            <div class="image-upload-area" id="imageUploadArea">
-                                <input type="file" class="form-control d-none" id="image" name="image" accept="image/*">
+                        <!-- Thumbnail Image Card -->
+                        <div class="card p-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0 fw-semibold"><i class="bi bi-image me-1"></i>Thumbnail Image</label>
+                                <span id="imageStatusBadge" class="badge bg-secondary">JPG / PNG / HEIC / WEBP</span>
+                            </div>
+
+                            <div class="image-upload-area p-3 text-center border rounded mb-2" id="imageUploadArea" style="min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.15); border: 2px dashed rgba(255,255,255,0.2) !important; border-radius: 8px; cursor: pointer;">
                                 <div class="upload-placeholder" id="uploadPlaceholder">
-                                    <i class="bi bi-cloud-upload"></i>
-                                    <p>Click to upload image</p>
-                                    <small class="text-muted">PNG, JPG, JPEG, GIF, WEBP</small>
+                                    <i class="bi bi-cloud-arrow-up fs-1 text-warning d-block mb-1"></i>
+                                    <p class="mb-1 fw-semibold">Click or Drag & Drop Image</p>
+                                    <small class="text-muted">JPG, JPEG, PNG, HEIC, WEBP, GIF</small>
                                 </div>
-                                <img src="" alt="Preview" class="image-preview d-none" id="imagePreview">
+
+                                <div id="previewContainer" class="d-none text-center w-100">
+                                    <img src="" alt="Thumbnail Preview" class="img-fluid rounded shadow-sm d-none" id="imagePreview" style="max-height: 200px; max-width: 100%; object-fit: contain;">
+                                </div>
+                            </div>
+
+                            <input type="file" class="form-control" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif,image/*">
+
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-warning" id="browseBtn">
+                                    <i class="bi bi-folder2-open me-1"></i>Choose Image
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger d-none" id="removeBtn">
+                                    <i class="bi bi-trash me-1"></i>Remove
+                                </button>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="media" class="form-label">Product Gallery (up to {{ max_media }} images/videos)</label>
-                            <input type="file" class="form-control" id="media" name="media" accept="image/*,video/*" multiple data-max-media="{{ max_media }}">
-                            <small class="text-muted">Shown on the product page. Images up to 5MB, videos up to 50MB each.</small>
+                        <!-- Gallery Media Card -->
+                        <div class="card p-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="media" class="form-label mb-0 fw-semibold"><i class="bi bi-images me-1"></i>Product Gallery</label>
+                                <span class="badge bg-secondary">Max {{ max_media }}</span>
+                            </div>
+                            <input type="file" class="form-control" id="media" name="media" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif,image/*,video/*" multiple data-max-media="{{ max_media }}">
+                            <small class="text-muted d-block mt-1">Images (JPG, PNG, HEIC) or videos up to 50MB.</small>
+                            <div id="galleryLivePreview" class="d-flex flex-wrap gap-2 mt-2"></div>
                         </div>
                     </div>
                 </div>
@@ -128,6 +153,7 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Profit Calculation
     var costInput = document.getElementById('cost_price');
     var priceInput = document.getElementById('price');
     var profitDisplay = document.getElementById('unitProfitDisplay');
@@ -155,7 +181,133 @@ document.addEventListener('DOMContentLoaded', function() {
         priceInput.addEventListener('input', calculateProfit);
         calculateProfit();
     }
+
+    // Thumbnail Image Handling (Instant Base64 Converter & Preview)
+    var imageUploadArea = document.getElementById('imageUploadArea');
+    var imageField = document.getElementById('image');
+    var imagePreview = document.getElementById('imagePreview');
+    var previewContainer = document.getElementById('previewContainer');
+    var uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    var imageBase64 = document.getElementById('imageBase64');
+    var removeBtn = document.getElementById('removeBtn');
+    var browseBtn = document.getElementById('browseBtn');
+    var imageStatusBadge = document.getElementById('imageStatusBadge');
+
+    if (browseBtn && imageField) {
+        browseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            imageField.click();
+        });
+    }
+
+    if (imageUploadArea && imageField) {
+        imageUploadArea.addEventListener('click', function(e) {
+            if (e.target !== imageField) {
+                imageField.click();
+            }
+        });
+
+        // Drag & Drop
+        imageUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = '#ffc107';
+            imageUploadArea.style.background = 'rgba(255, 193, 7, 0.05)';
+        });
+        imageUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = 'rgba(255,255,255,0.2)';
+            imageUploadArea.style.background = 'rgba(0,0,0,0.15)';
+        });
+        imageUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = 'rgba(255,255,255,0.2)';
+            imageUploadArea.style.background = 'rgba(0,0,0,0.15)';
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                imageField.files = e.dataTransfer.files;
+                processSelectedFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        imageField.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                processSelectedFile(this.files[0]);
+            }
+        });
+    }
+
+    function processSelectedFile(file) {
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var b64 = e.target.result;
+            imageBase64.value = b64;
+
+            if (imagePreview) {
+                imagePreview.src = b64;
+                imagePreview.classList.remove('d-none');
+            }
+            if (previewContainer) {
+                previewContainer.classList.remove('d-none');
+            }
+            if (uploadPlaceholder) {
+                uploadPlaceholder.classList.add('d-none');
+            }
+            if (removeBtn) {
+                removeBtn.classList.remove('d-none');
+            }
+            if (imageStatusBadge) {
+                imageStatusBadge.textContent = 'Base64 Ready (' + (file.size / 1024).toFixed(1) + ' KB)';
+                imageStatusBadge.className = 'badge bg-success';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (imageField) imageField.value = '';
+            if (imageBase64) imageBase64.value = '';
+            if (imagePreview) {
+                imagePreview.src = '';
+                imagePreview.classList.add('d-none');
+            }
+            if (previewContainer) {
+                previewContainer.classList.add('d-none');
+            }
+            if (uploadPlaceholder) {
+                uploadPlaceholder.classList.remove('d-none');
+            }
+            removeBtn.classList.add('d-none');
+            if (imageStatusBadge) {
+                imageStatusBadge.textContent = 'JPG / PNG / HEIC / WEBP';
+                imageStatusBadge.className = 'badge bg-secondary';
+            }
+        });
+    }
+
+    // Gallery Live Previews
+    var mediaField = document.getElementById('media');
+    var galleryLivePreview = document.getElementById('galleryLivePreview');
+    if (mediaField && galleryLivePreview) {
+        mediaField.addEventListener('change', function() {
+            galleryLivePreview.innerHTML = '';
+            if (this.files) {
+                Array.from(this.files).forEach(function(file) {
+                    if (file.type.startsWith('image/')) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            var thumb = document.createElement('div');
+                            thumb.style.cssText = 'width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);';
+                            thumb.innerHTML = '<img src="' + e.target.result + '" style="width:100%; height:100%; object-fit: cover;">';
+                            galleryLivePreview.appendChild(thumb);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
-

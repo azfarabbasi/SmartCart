@@ -14,7 +14,7 @@ from auth_tokens import current_user_id
 from db import get_db
 from extensions import limiter
 from security import log_admin_action
-from uploads import save_upload, validate_upload
+from uploads import process_upload, save_upload, validate_upload
 from validators import (validate_cost_price, validate_discount_percent,
                          validate_price, validate_required_text, validate_stock)
 
@@ -133,33 +133,53 @@ def products():
     product_rows = []
     for r in rows:
         pid, name, cat_name, price, cost_price, stock, img_path = r
-        image_missing = bool(img_path) and not os.path.exists(os.path.join(upload_dir, os.path.basename(img_path)))
+        if not img_path:
+            image_missing = False
+        elif isinstance(img_path, str) and (img_path.startswith('data:') or img_path.startswith('http://') or img_path.startswith('https://')):
+            image_missing = False
+        else:
+            image_missing = not os.path.exists(os.path.join(upload_dir, os.path.basename(str(img_path))))
         unit_profit = float(price) - float(cost_price)
         margin_pct = (unit_profit / float(price) * 100) if float(price) > 0 else 0.0
         product_rows.append((pid, name, cat_name, price, cost_price, stock, img_path, image_missing, unit_profit, margin_pct))
     return render_template('admin/products.html', products=product_rows)
 
 
-def _save_gallery_media(cur, product_id, files, existing_count):
+def _save_gallery_media(cur, product_id, files, existing_count, base64_media_list=None):
     slots_left = MAX_PRODUCT_MEDIA - existing_count
     saved = 0
-    for f in files:
-        if not f or not f.filename:
-            continue
-        if saved >= slots_left:
-            flash(f'Only {MAX_PRODUCT_MEDIA} media items are allowed per product; some files were skipped.', 'error')
-            break
-        ok, err, safe_name, kind = validate_upload(f, allow_video=True)
-        if not ok:
-            flash(f'{f.filename}: {err}', 'error')
-            continue
-        save_upload(f, current_app.config['UPLOAD_FOLDER'], safe_name)
-        cur.execute(
-            "INSERT INTO ProductMedia (media_id, product_id, media_path, media_type, sort_order, created_at) "
-            "VALUES (productmedia_seq.NEXTVAL, :pid, :mp, :mt, :so, SYSDATE)",
-            {'pid': product_id, 'mp': f'uploads/{safe_name}', 'mt': kind, 'so': existing_count + saved},
-        )
-        saved += 1
+
+    if base64_media_list:
+        for b64 in base64_media_list:
+            if not b64 or not b64.startswith('data:'):
+                continue
+            if saved >= slots_left:
+                break
+            kind = 'video' if b64.startswith('data:video/') else 'image'
+            cur.execute(
+                "INSERT INTO ProductMedia (media_id, product_id, media_path, media_type, sort_order, created_at) "
+                "VALUES (productmedia_seq.NEXTVAL, :pid, :mp, :mt, :so, SYSDATE)",
+                {'pid': product_id, 'mp': b64, 'mt': kind, 'so': existing_count + saved},
+            )
+            saved += 1
+
+    if files:
+        for f in files:
+            if not f or not f.filename:
+                continue
+            if saved >= slots_left:
+                flash(f'Only {MAX_PRODUCT_MEDIA} media items are allowed per product; some files were skipped.', 'error')
+                break
+            ok, err, media_data, kind = process_upload(f, allow_video=True)
+            if not ok:
+                flash(f'{f.filename}: {err}', 'error')
+                continue
+            cur.execute(
+                "INSERT INTO ProductMedia (media_id, product_id, media_path, media_type, sort_order, created_at) "
+                "VALUES (productmedia_seq.NEXTVAL, :pid, :mp, :mt, :so, SYSDATE)",
+                {'pid': product_id, 'mp': media_data, 'mt': kind, 'so': existing_count + saved},
+            )
+            saved += 1
     return saved
 
 
@@ -188,14 +208,17 @@ def add_product():
             return redirect(url_for('admin.add_product'))
 
         image_path = None
-        file = request.files.get('image')
-        if file and file.filename:
-            img_ok, img_err, safe_name, _kind = validate_upload(file, allow_video=False)
-            if not img_ok:
-                flash(img_err, 'error')
-                return redirect(url_for('admin.add_product'))
-            save_upload(file, current_app.config['UPLOAD_FOLDER'], safe_name)
-            image_path = f'uploads/{safe_name}'
+        image_base64 = request.form.get('image_base64', '').strip()
+        if image_base64.startswith('data:image/'):
+            image_path = image_base64
+        else:
+            file = request.files.get('image')
+            if file and file.filename:
+                img_ok, img_err, data_url, _kind = process_upload(file, allow_video=False)
+                if not img_ok:
+                    flash(img_err, 'error')
+                    return redirect(url_for('admin.add_product'))
+                image_path = data_url
 
         cur.execute(
             "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path, "
@@ -207,7 +230,8 @@ def add_product():
         cur.execute("SELECT products_seq.CURRVAL FROM dual")
         new_product_id = cur.fetchone()[0]
 
-        _save_gallery_media(cur, new_product_id, request.files.getlist('media'), 0)
+        gallery_b64 = request.form.getlist('gallery_base64')
+        _save_gallery_media(cur, new_product_id, request.files.getlist('media'), 0, base64_media_list=gallery_b64)
 
         log_admin_action(cur, current_user_id(), 'product.create', 'Product', new_product_id, f'name={name}')
         get_db().commit()
@@ -231,6 +255,13 @@ def edit_product(product_id):
         delivery_time_text = request.form.get('delivery_time_text', '').strip()
         free_delivery = 1 if request.form.get('free_delivery') else 0
 
+        current_app.logger.info(
+            f'[edit_product #{product_id}] POST received: name={name!r} cat={category_id!r} '
+            f'has_image_file={bool(request.files.get("image") and request.files["image"].filename)} '
+            f'image_base64_len={len(request.form.get("image_base64", ""))} '
+            f'remove_image={request.form.get("remove_image")!r}'
+        )
+
         ok, err = validate_required_text(name, 'Product name', min_len=2, max_len=150)
         price = stock = cost_price = None
         if ok:
@@ -240,21 +271,38 @@ def edit_product(product_id):
         if ok:
             ok, err, stock = validate_stock(request.form.get('stock'))
         if not ok:
+            current_app.logger.warning(f'[edit_product #{product_id}] Validation failed: {err}')
             flash(err, 'error')
             return redirect(url_for('admin.edit_product', product_id=product_id))
 
         cur.execute("SELECT image_path FROM Products WHERE product_id = :pid", {'pid': product_id})
         row = cur.fetchone()
         image_path = row[0] if row else None
+        current_app.logger.info(f'[edit_product #{product_id}] Existing image_path type={type(image_path).__name__} len={len(image_path) if image_path else 0}')
 
-        file = request.files.get('image')
-        if file and file.filename:
-            img_ok, img_err, safe_name, _kind = validate_upload(file, allow_video=False)
-            if not img_ok:
-                flash(img_err, 'error')
-                return redirect(url_for('admin.edit_product', product_id=product_id))
-            save_upload(file, current_app.config['UPLOAD_FOLDER'], safe_name)
-            image_path = f'uploads/{safe_name}'
+        if request.form.get('remove_image') == '1':
+            image_path = None
+            current_app.logger.info(f'[edit_product #{product_id}] Image removed by user.')
+
+        image_base64 = request.form.get('image_base64', '').strip()
+        if image_base64.startswith('data:image/'):
+            image_path = image_base64
+            current_app.logger.info(f'[edit_product #{product_id}] Using client-side Base64 image (len={len(image_base64)})')
+        else:
+            file = request.files.get('image')
+            if file and file.filename:
+                current_app.logger.info(f'[edit_product #{product_id}] Processing server-side file: {file.filename}')
+                img_ok, img_err, data_url, _kind = process_upload(file, allow_video=False)
+                if not img_ok:
+                    current_app.logger.warning(f'[edit_product #{product_id}] Upload failed: {img_err}')
+                    flash(img_err, 'error')
+                    return redirect(url_for('admin.edit_product', product_id=product_id))
+                image_path = data_url
+                current_app.logger.info(f'[edit_product #{product_id}] Server-side Base64 ready (len={len(data_url)})')
+            else:
+                current_app.logger.info(f'[edit_product #{product_id}] No new image provided, keeping existing.')
+
+        current_app.logger.info(f'[edit_product #{product_id}] Final image_path: {(image_path[:40] + "...") if image_path else "NULL"}')
 
         cur.execute(
             "UPDATE Products SET name=:n, category_id=:cid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img, "
@@ -265,10 +313,12 @@ def edit_product(product_id):
 
         cur.execute("SELECT COUNT(*) FROM ProductMedia WHERE product_id = :pid", {'pid': product_id})
         existing_count = cur.fetchone()[0]
-        _save_gallery_media(cur, product_id, request.files.getlist('media'), existing_count)
+        gallery_b64 = request.form.getlist('gallery_base64')
+        _save_gallery_media(cur, product_id, request.files.getlist('media'), existing_count, base64_media_list=gallery_b64)
 
         log_admin_action(cur, current_user_id(), 'product.update', 'Product', product_id, f'name={name}')
         get_db().commit()
+        current_app.logger.info(f'[edit_product #{product_id}] Committed successfully.')
         flash('Product updated.', 'success')
         return redirect(url_for('admin.products'))
 

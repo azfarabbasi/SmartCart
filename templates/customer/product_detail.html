@@ -20,9 +20,9 @@
                                     {% for item in gallery %}
                                         <div class="carousel-item {% if loop.first %}active{% endif %}">
                                             {% if item[2] == 'video' %}
-                                                <video src="{{ url_for('static', filename=item[1]) }}" class="main-image" controls></video>
+                                                <video src="{{ media_url(item[1]) }}" class="main-image" controls></video>
                                             {% else %}
-                                                <img src="{{ url_for('static', filename=item[1]) }}" alt="{{ product[1] }}" class="main-image">
+                                                <img src="{{ media_url(item[1]) }}" alt="{{ product[1] }}" class="main-image">
                                             {% endif %}
                                         </div>
                                     {% endfor %}
@@ -37,7 +37,7 @@
                                 {% endif %}
                             </div>
                         {% elif product[5] %}
-                            <img src="{{ url_for('static', filename=product[5]) }}" alt="{{ product[1] }}" class="main-image">
+                            <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" class="main-image">
                         {% else %}
                             <div class="no-image-large">
                                 <i class="bi bi-image"></i>

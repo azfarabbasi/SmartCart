@@ -15,7 +15,7 @@ from blueprints.auth.decorators import login_required
 from auth_tokens import current_user_id
 from db import get_db
 from slugs import slugify
-from uploads import save_upload, validate_upload
+from uploads import process_upload, save_upload, validate_upload
 from validators import validate_phone_pk, validate_required_text
 
 customer_bp = Blueprint('customer', __name__)
@@ -507,12 +507,11 @@ def checkout():
         if not proof_file or not proof_file.filename:
             flash('Please upload a screenshot of your bank transfer as payment proof.', 'error')
             return redirect(url_for('customer.checkout'))
-        proof_ok, proof_err, safe_name, _kind = validate_upload(proof_file, allow_video=False)
+        proof_ok, proof_err, data_url, _kind = process_upload(proof_file, allow_video=False)
         if not proof_ok:
             flash(proof_err, 'error')
             return redirect(url_for('customer.checkout'))
-        save_upload(proof_file, current_app.config['PAYMENT_PROOF_UPLOAD_FOLDER'], safe_name)
-        proof_path = f'uploads/payment_proofs/{safe_name}'
+        proof_path = data_url
 
         log_activity(cur, current_user_id(), 'payment_uploaded')
         get_db().commit()

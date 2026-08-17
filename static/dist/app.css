@@ -61,7 +61,7 @@
 .bi-clipboard-check::before { content: "\f28b"; }
 .bi-clipboard-x::before { content: "\f28f"; }
 .bi-clock::before { content: "\f293"; }
-.bi-cloud-upload::before { content: "\f2c0"; }
+.bi-cloud-arrow-up::before { content: "\f297"; }
 .bi-credit-card::before { content: "\f2dc"; }
 .bi-envelope-fill::before { content: "\f32c"; }
 .bi-envelope::before { content: "\f32f"; }
@@ -70,6 +70,7 @@
 .bi-exclamation-triangle::before { content: "\f33b"; }
 .bi-eye-slash::before { content: "\f340"; }
 .bi-eye::before { content: "\f341"; }
+.bi-folder2-open::before { content: "\f3d8"; }
 .bi-gear::before { content: "\f3e5"; }
 .bi-geo-alt::before { content: "\f3e8"; }
 .bi-gift::before { content: "\f3ec"; }
@@ -77,6 +78,7 @@
 .bi-heart::before { content: "\f417"; }
 .bi-hourglass-split::before { content: "\f41f"; }
 .bi-image::before { content: "\f42a"; }
+.bi-images::before { content: "\f42b"; }
 .bi-info-circle-fill::before { content: "\f430"; }
 .bi-info-circle::before { content: "\f431"; }
 .bi-lightbulb::before { content: "\f46b"; }

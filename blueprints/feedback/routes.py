@@ -4,7 +4,7 @@ from blueprints.auth.decorators import admin_required, login_required
 from auth_tokens import current_user_id
 from db import get_db
 from security import log_admin_action
-from uploads import save_upload, validate_upload
+from uploads import process_upload, save_upload, validate_upload
 from validators import validate_rating, validate_required_text
 
 feedback_bp = Blueprint('feedback', __name__)
@@ -28,12 +28,11 @@ def submit_feedback(product_id):
     media_path, media_type = None, None
     file = request.files.get('media')
     if file and file.filename:
-        up_ok, up_err, safe_name, kind = validate_upload(file, allow_video=True)
+        up_ok, up_err, data_url, kind = process_upload(file, allow_video=True)
         if not up_ok:
             flash(up_err, 'error')
             return redirect(url_for('customer.product_detail', product_id=product_id))
-        save_upload(file, current_app.config['FEEDBACK_UPLOAD_FOLDER'], safe_name)
-        media_path = f'uploads/feedback/{safe_name}'
+        media_path = data_url
         media_type = kind
 
     cur = get_db().cursor()
@@ -69,12 +68,11 @@ def submit_product_suggestion():
 
     media_path, media_type = None, None
     if has_media:
-        up_ok, up_err, safe_name, kind = validate_upload(file, allow_video=True)
+        up_ok, up_err, data_url, kind = process_upload(file, allow_video=True)
         if not up_ok:
             flash(up_err, 'error')
             return redirect(request.referrer or url_for('customer.index'))
-        save_upload(file, current_app.config['FEEDBACK_UPLOAD_FOLDER'], safe_name)
-        media_path = f'uploads/feedback/{safe_name}'
+        media_path = data_url
         media_type = kind
 
     cur = get_db().cursor()
@@ -170,12 +168,11 @@ def admin_reply_feedback(feedback_id):
     media_path, media_type = None, None
     file = request.files.get('media')
     if file and file.filename:
-        up_ok, up_err, safe_name, kind = validate_upload(file, allow_video=True)
+        up_ok, up_err, data_url, kind = process_upload(file, allow_video=True)
         if not up_ok:
             flash(up_err, 'error')
             return redirect(url_for('feedback.admin_feedback_list'))
-        save_upload(file, current_app.config['FEEDBACK_UPLOAD_FOLDER'], safe_name)
-        media_path = f'uploads/feedback/{safe_name}'
+        media_path = data_url
         media_type = kind
 
     cur = get_db().cursor()

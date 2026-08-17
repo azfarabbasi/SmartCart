@@ -61,6 +61,32 @@ def _auto_migrate(conn):
             conn.commit()
         except Exception:
             pass
+
+        # 3. Ensure image and media columns are CLOB for Base64 storage
+        media_columns = (
+            ('PRODUCTS', 'IMAGE_PATH'),
+            ('PRODUCTMEDIA', 'MEDIA_PATH'),
+            ('PRODUCTFEEDBACK', 'MEDIA_PATH'),
+            ('FEEDBACKREPLIES', 'MEDIA_PATH'),
+            ('PRODUCTSUGGESTIONS', 'MEDIA_PATH'),
+            ('ORDERS', 'PAYMENT_PROOF_PATH'),
+        )
+        for table, col in media_columns:
+            try:
+                cur.execute(
+                    "SELECT data_type FROM user_tab_cols WHERE table_name = :t AND column_name = :c",
+                    {'t': table, 'c': col},
+                )
+                row = cur.fetchone()
+                if row and row[0] != 'CLOB':
+                    temp_col = f"{col.lower()}_clob"
+                    cur.execute(f"ALTER TABLE {table} ADD ({temp_col} CLOB)")
+                    cur.execute(f"UPDATE {table} SET {temp_col} = {col}")
+                    cur.execute(f"ALTER TABLE {table} DROP COLUMN {col}")
+                    cur.execute(f"ALTER TABLE {table} RENAME COLUMN {temp_col} TO {col}")
+                    conn.commit()
+            except Exception:
+                conn.rollback()
     except Exception:
         pass
 
@@ -78,6 +104,9 @@ def get_db():
 
 
 def close_db(_exc=None):
-    conn = g.pop('db_conn', None)
-    if conn is not None:
-        _pool.release(conn)
+    try:
+        conn = g.pop('db_conn', None)
+        if conn is not None:
+            _pool.release(conn)
+    except (RuntimeError, AttributeError):
+        pass

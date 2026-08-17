@@ -21,7 +21,7 @@
                         <div class="product-card">
                             <a href="{{ url_for('customer.product_detail', product_id=product[0]) }}" class="product-image">
                                 {% if product[5] %}
-                                    <img src="{{ url_for('static', filename=product[5]) }}" alt="{{ product[1] }}">
+                                    <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}">
                                 {% else %}
                                     <div class="no-image"><i class="bi bi-image"></i></div>
                                 {% endif %}

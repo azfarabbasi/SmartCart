@@ -27,8 +27,8 @@
                                 <td>Rs{{ "{:,.2f}".format(row[6]) }}</td>
                                 <td>
                                     {% if row[7] %}
-                                        <a href="{{ url_for('static', filename=row[7]) }}" target="_blank">
-                                            <img src="{{ url_for('static', filename=row[7]) }}" class="payment-proof-thumb">
+                                        <a href="{{ media_url(row[7]) }}" target="_blank">
+                                            <img src="{{ media_url(row[7]) }}" class="payment-proof-thumb">
                                         </a>
                                     {% else %}&mdash;{% endif %}
                                 </td>
