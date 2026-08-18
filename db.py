@@ -87,12 +87,9 @@ def _auto_migrate(conn):
                     conn.commit()
             except Exception:
                 pass
-        # 4. Ensure place_order procedure is VALID and supports CLOB payment_proof
+        # 4. Always keep place_order procedure up to date (recompile on every startup)
         try:
-            cur.execute("SELECT status FROM user_objects WHERE object_name = 'PLACE_ORDER' AND object_type = 'PROCEDURE'")
-            proc_status = cur.fetchone()
-            if not proc_status or proc_status[0] != 'VALID':
-                cur.execute("""
+            cur.execute("""
 CREATE OR REPLACE PROCEDURE place_order(
     p_user_id           IN  NUMBER,
     p_pay_method        IN  VARCHAR2,
@@ -139,7 +136,6 @@ BEGIN
         FROM Cart c
         JOIN Products p ON c.product_id = p.product_id
         WHERE c.user_id = p_user_id
-        FOR UPDATE OF p.stock
     ) LOOP
         IF item.stock < item.quantity THEN
             RAISE_APPLICATION_ERROR(
@@ -178,7 +174,7 @@ BEGIN
     v_discounted := v_subtotal - v_coupon_disc;
     v_remaining_discount_cap := GREATEST(0, v_max_total_discount - v_coupon_disc);
 
-    SELECT loyalty_points_balance INTO v_balance FROM Users WHERE user_id = p_user_id FOR UPDATE;
+    SELECT loyalty_points_balance INTO v_balance FROM Users WHERE user_id = p_user_id;
 
     IF v_redeem_points < 0 THEN
         v_redeem_points := 0;
@@ -205,7 +201,7 @@ BEGIN
             v_redeem_points, v_loyalty_disc, 0,
             p_pay_method,
             CASE WHEN p_pay_method = 'cod' THEN NULL ELSE p_payment_proof_path END,
-            CASE WHEN p_pay_method = 'cod' THEN 'cod' ELSE 'pending_verification' END,
+            CASE WHEN p_pay_method = 'cod' THEN 'verified' ELSE 'pending_verification' END,
             CASE WHEN p_pay_method = 'cod' THEN 0 ELSE v_final_total END,
             CASE WHEN v_coupon_id IS NOT NULL THEN UPPER(p_coupon_code) ELSE NULL END, v_coupon_disc);
 
@@ -241,7 +237,7 @@ BEGIN
     p_advance_required  := v_advance;
 END place_order;
 """)
-                conn.commit()
+            conn.commit()
         except Exception:
             pass
     except Exception:

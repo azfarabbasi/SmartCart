@@ -579,39 +579,50 @@ def checkout():
             return redirect(url_for('customer.order_detail', order_id=new_order_id))
 
         except oracledb.DatabaseError as e:
+            get_db().rollback()
             error_msg = str(e)
             current_app.logger.error(f'Order placement DatabaseError: {error_msg}')
             if 'ORA-20001' in error_msg:
-                # A rare race: stock changed between our pre-check above and the
-                # actual insert (e.g. another customer bought it in that window).
                 m = re.search(
-                    r'product "(?P<name>.+?)"\. Requested: (?P<req>\d+), Available: (?P<avail>\d+)',
+                    r'product "(?P<name>.+?)"\.? Requested: (?P<req>\d+),? Available: (?P<avail>\d+)',
                     error_msg,
                 )
                 if m:
                     name, req, avail = m.group('name'), int(m.group('req')), int(m.group('avail'))
-                    _record_stock_conflict(cur, name, req, avail)
-                    get_db().commit()
+                    try:
+                        _record_stock_conflict(cur, name, req, avail)
+                        get_db().commit()
+                    except Exception:
+                        pass
                     flash(
                         f'Sorry, "{name}" sold out just now (only {avail} left). '
                         'Please adjust the quantity in your cart to continue.', 'error',
                     )
                 else:
                     flash('Sorry, one of your items just sold out. Please check your cart and try again.', 'error')
+                return redirect(url_for('customer.view_cart'))
             elif 'ORA-20002' in error_msg:
                 flash('Your cart is empty.', 'error')
+                return redirect(url_for('customer.view_cart'))
             elif 'ORA-20003' in error_msg:
-                flash('Invalid or expired coupon code.', 'error')
+                flash('Invalid or expired coupon code. Please remove it and try again.', 'error')
+                return redirect(url_for('customer.checkout'))
             elif 'ORA-20004' in error_msg:
                 flash('You have already used this coupon code on a previous order.', 'error')
+                return redirect(url_for('customer.checkout'))
+            elif 'ORA-02290' in error_msg:
+                current_app.logger.error(f'CHECK CONSTRAINT VIOLATED: {error_msg}')
+                flash('Order could not be saved due to a database error. Please contact support.', 'error')
+                return redirect(url_for('customer.checkout'))
             else:
                 first_line = error_msg.split('\n')[0].strip()
-                flash(f'Order placement error: {first_line}', 'error')
-            return redirect(url_for('customer.view_cart'))
+                flash(f'Order could not be placed: {first_line}', 'error')
+                return redirect(url_for('customer.checkout'))
         except Exception as e:
+            get_db().rollback()
             current_app.logger.exception(f'Unexpected error during checkout: {e}')
-            flash(f'Order could not be placed: {str(e)}', 'error')
-            return redirect(url_for('customer.view_cart'))
+            flash(f'Order could not be placed. Please try again. ({type(e).__name__}: {str(e)[:200]})', 'error')
+            return redirect(url_for('customer.checkout'))
 
     # GET
     log_activity(cur, current_user_id(), 'checkout_start')
