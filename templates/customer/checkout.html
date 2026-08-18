@@ -92,8 +92,8 @@
                                         <div class="payment-card">
                                             <i class="bi bi-cash-stack"></i>
                                             <div>
-                                                <strong>Cash on Delivery</strong>
-                                                <small>Pay Rs. {{ "%.0f"|format(settings.get('cod_advance_amount', 300)|float) }} advance now via bank transfer; the rest on delivery.</small>
+                                                <strong>Cash on Delivery (COD)</strong>
+                                                <small>Pay full amount in cash at your doorstep upon delivery. No advance payment required!</small>
                                             </div>
                                         </div>
                                     </label>
@@ -102,31 +102,33 @@
                                         <div class="payment-card">
                                             <i class="bi bi-bank"></i>
                                             <div>
-                                                <strong>Full Bank Transfer</strong>
-                                                <small>Pay the full order now and get a Rs. {{ "%.0f"|format(settings.get('cashback_points', 400)|float / 2) }} cashback once verified.</small>
+                                                <strong>Online Bank Transfer</strong>
+                                                <small>Transfer online and upload payment receipt/screenshot for instant verification.</small>
                                             </div>
                                         </div>
                                     </label>
                                 </div>
 
-                                <div class="bank-details-box mt-3">
-                                    <h6><i class="bi bi-bank2"></i> Our Bank Account Details</h6>
-                                    <p class="mb-1">Bank: <strong>{{ settings.get('bank_name') or 'N/A' }}</strong></p>
-                                    <p class="mb-1">Account Title: <strong>{{ settings.get('bank_account_title') or 'N/A' }}</strong></p>
-                                    <p class="mb-1">Account Number: <strong>{{ settings.get('bank_account_number') or 'N/A' }}</strong></p>
-                                    <p class="mb-0">IBAN: <strong>{{ settings.get('bank_iban') or 'N/A' }}</strong></p>
-                                </div>
+                                <!-- Bank Transfer Details (Visible ONLY when Online Bank Transfer is selected) -->
+                                <div id="bankTransferDetails" class="bank-transfer-container mt-3" style="display: none;">
+                                    <div class="bank-details-box">
+                                        <h6><i class="bi bi-bank2"></i> Our Bank Account Details</h6>
+                                        <p class="mb-1">Bank: <strong>{{ settings.get('bank_name') or 'N/A' }}</strong></p>
+                                        <p class="mb-1">Account Title: <strong>{{ settings.get('bank_account_title') or 'N/A' }}</strong></p>
+                                        <p class="mb-1">Account Number: <strong>{{ settings.get('bank_account_number') or 'N/A' }}</strong></p>
+                                        <p class="mb-0">IBAN: <strong>{{ settings.get('bank_iban') or 'N/A' }}</strong></p>
+                                    </div>
 
-                                <div class="mb-2 mt-3">
-                                    <label class="sc-form-label" for="payment_proof">Upload payment screenshot (required)</label>
-                                    <input type="file" name="payment_proof" id="payment_proof" class="form-control" accept="image/*" required>
+                                    <div class="mb-2 mt-3">
+                                        <label class="sc-form-label" for="payment_proof">Upload Payment Screenshot / Receipt (Required for Online Payment)</label>
+                                        <input type="file" name="payment_proof" id="payment_proof" class="form-control" accept="image/*">
+                                        <small class="text-muted">Upload JPG, PNG, or WEBP screenshot of your bank/easypaisa/jazzcash transfer.</small>
+                                    </div>
                                 </div>
 
                                 <div class="alert alert-info mt-3 mb-0">
                                     <i class="bi bi-info-circle-fill"></i>
-                                    {{ settings.get('checkout_notice') }}
-                                    Advance payments (full bank transfer) receive a Rs. {{ "%.0f"|format(settings.get('cashback_points', 400)|float / 2) }} cashback for trusting us.
-                                    Cash on Delivery requires a Rs. {{ "%.0f"|format(settings.get('cod_advance_amount', 300)|float) }} advance via online transfer.
+                                    <strong>Payment Info:</strong> For <strong>Cash on Delivery</strong>, simply pay the delivery rider. For <strong>Online Bank Transfer</strong>, your order will be dispatched once our team verifies your payment receipt.
                                 </div>
                             </div>
                         </div>

@@ -515,18 +515,19 @@ def checkout():
                     )
                 return redirect(url_for('customer.view_cart'))
 
-        proof_file = request.files.get('payment_proof')
-        if not proof_file or not proof_file.filename:
-            flash('Please upload a screenshot of your bank transfer as payment proof.', 'error')
-            return redirect(url_for('customer.checkout'))
-        proof_ok, proof_err, data_url, _kind = process_upload(proof_file, allow_video=False)
-        if not proof_ok:
-            flash(proof_err, 'error')
-            return redirect(url_for('customer.checkout'))
-        proof_path = data_url
-
-        log_activity(cur, current_user_id(), 'payment_uploaded')
-        get_db().commit()
+        proof_path = None
+        if payment_method == 'bank_transfer':
+            proof_file = request.files.get('payment_proof')
+            if not proof_file or not proof_file.filename:
+                flash('Please upload a screenshot of your bank transfer as payment proof for online payment.', 'error')
+                return redirect(url_for('customer.checkout'))
+            proof_ok, proof_err, data_url, _kind = process_upload(proof_file, allow_video=False)
+            if not proof_ok:
+                flash(proof_err, 'error')
+                return redirect(url_for('customer.checkout'))
+            proof_path = data_url
+            log_activity(cur, current_user_id(), 'payment_uploaded')
+            get_db().commit()
 
         order_id_var = cur.var(int)
         final_total_var = cur.var(float)
@@ -536,7 +537,7 @@ def checkout():
         advance_var = cur.var(float)
 
         settings = sitesettings.get_settings(cur)
-        cod_advance_amount = sitesettings.get_setting_number(settings, 'cod_advance_amount', 300)
+        cod_advance_amount = 0 if payment_method == 'cod' else sitesettings.get_setting_number(settings, 'cod_advance_amount', 300)
         floor_margin = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
 
         try:
@@ -564,11 +565,14 @@ def checkout():
             if final_total >= 5000:
                 points_earned_estimate = 100 + int((final_total - 5000) // 1000) * 20
 
-            msg = f'Order #{new_order_id} placed! Advance required: Rs. {advance_var.getvalue():.2f}.'
+            if payment_method == 'cod':
+                msg = f'Order #{new_order_id} placed successfully! Please pay Rs. {final_total:,.2f} in cash on delivery.'
+            else:
+                msg = f'Order #{new_order_id} placed! Your payment verification is pending.'
             if points_redeemed_var.getvalue():
                 msg += f' {points_redeemed_var.getvalue()} loyalty points redeemed.'
             if coupon_disc_var.getvalue():
-                msg += f' Coupon saved you Rs. {coupon_disc_var.getvalue():.2f}.'
+                msg += f' Coupon saved you Rs. {coupon_disc_var.getvalue():,.2f}.'
             if points_earned_estimate:
                 msg += f" You'll earn {points_earned_estimate} loyalty points once this order is delivered."
             flash(msg, 'success')

@@ -193,7 +193,7 @@ BEGIN
     v_loyalty_disc := v_redeem_points / 2;
 
     v_final_total := v_discounted - v_loyalty_disc;
-    v_advance := CASE WHEN p_pay_method = 'cod' THEN NVL(p_cod_advance_amount, 300) ELSE v_final_total END;
+    v_advance := CASE WHEN p_pay_method = 'cod' THEN 0 ELSE v_final_total END;
 
     SELECT orders_seq.NEXTVAL INTO v_order_id FROM DUAL;
 
@@ -203,7 +203,10 @@ BEGIN
                          coupon_code, coupon_discount_amount)
     VALUES (v_order_id, p_user_id, SYSDATE, v_final_total, 'pending', p_address, p_phone,
             v_redeem_points, v_loyalty_disc, 0,
-            p_pay_method, p_payment_proof_path, 'pending_verification', v_advance,
+            p_pay_method,
+            CASE WHEN p_pay_method = 'cod' THEN NULL ELSE p_payment_proof_path END,
+            CASE WHEN p_pay_method = 'cod' THEN 'cod' ELSE 'pending_verification' END,
+            CASE WHEN p_pay_method = 'cod' THEN 0 ELSE v_final_total END,
             CASE WHEN v_coupon_id IS NOT NULL THEN UPPER(p_coupon_code) ELSE NULL END, v_coupon_disc);
 
     FOR item IN (

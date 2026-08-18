@@ -18,17 +18,23 @@
                 </div>
             </div>
 
-            {% if order[7] == 'rejected' %}
-                <div class="alert alert-danger">
-                    <i class="bi bi-x-circle-fill"></i> Your payment could not be verified: {{ order[15] or 'Please contact support.' }}
-                </div>
-            {% elif order[7] == 'pending_verification' %}
-                <div class="alert alert-warning">
-                    <i class="bi bi-hourglass-split"></i> Your payment is awaiting verification. Orders are dispatched once payment is verified &mdash; you'll get an email once confirmed.
-                </div>
-            {% elif order[7] == 'verified' %}
-                <div class="alert alert-success">
-                    <i class="bi bi-check-circle-fill"></i> Payment verified! Your order will be dispatched shortly.
+            {% if order[6] == 'bank_transfer' %}
+                {% if order[7] == 'rejected' %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle-fill"></i> <strong>Payment Rejected:</strong> {{ order[15] or 'Your uploaded payment proof could not be verified. Please contact support.' }}
+                    </div>
+                {% elif order[7] == 'pending_verification' %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-hourglass-split"></i> <strong>Payment Awaiting Verification:</strong> Our team is verifying your uploaded payment receipt. Your order will be dispatched as soon as verification completes.
+                    </div>
+                {% elif order[7] == 'verified' %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill"></i> <strong>Payment Verified!</strong> Your payment has been verified and your order is being prepared for dispatch.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-cash-stack"></i> <strong>Cash on Delivery:</strong> No advance payment required. Please pay <strong>Rs{{ "{:,.2f}".format(order[2]) }}</strong> in cash upon delivery.
                 </div>
             {% endif %}
 
@@ -86,16 +92,25 @@
                         <div class="info-content">
                             <div class="payment-detail">
                                 <span>Method:</span>
-                                <strong>{{ order[6]|replace('_', ' ')|capitalize }}</strong>
+                                <strong>{{ 'Cash on Delivery (COD)' if order[6] == 'cod' else 'Online Bank Transfer' }}</strong>
                             </div>
-                            <div class="payment-detail">
-                                <span>Status:</span>
-                                <strong>{{ order[7]|replace('_', ' ')|capitalize }}</strong>
-                            </div>
-                            <div class="payment-detail">
-                                <span>Advance Required:</span>
-                                <strong>Rs{{ "{:,.2f}".format(order[8]) }}</strong>
-                            </div>
+                            {% if order[6] == 'bank_transfer' %}
+                                <div class="payment-detail">
+                                    <span>Verification Status:</span>
+                                    <span class="badge {% if order[7] == 'verified' %}bg-success{% elif order[7] == 'rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                        {{ order[7]|replace('_', ' ')|capitalize }}
+                                    </span>
+                                </div>
+                            {% else %}
+                                <div class="payment-detail">
+                                    <span>Payment Type:</span>
+                                    <span class="badge bg-secondary">Pay on Delivery</span>
+                                </div>
+                                <div class="payment-detail">
+                                    <span>Amount to Pay on Delivery:</span>
+                                    <strong class="text-warning">Rs{{ "{:,.2f}".format(order[2]) }}</strong>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 

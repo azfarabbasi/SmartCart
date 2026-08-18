@@ -98,6 +98,34 @@ function initializeUnobtrusiveHandlers() {
         });
     }
 
+    // Checkout payment method selector toggle
+    const paymentRadios = document.querySelectorAll('.payment-method-radio');
+    const bankDetailsBox = document.getElementById('bankTransferDetails');
+    const paymentProofInput = document.getElementById('payment_proof');
+
+    function updatePaymentMethodView() {
+        const selected = document.querySelector('.payment-method-radio:checked');
+        if (!selected || !bankDetailsBox) return;
+
+        if (selected.value === 'bank_transfer') {
+            bankDetailsBox.style.display = 'block';
+            if (paymentProofInput) paymentProofInput.required = true;
+        } else {
+            bankDetailsBox.style.display = 'none';
+            if (paymentProofInput) {
+                paymentProofInput.required = false;
+                paymentProofInput.value = '';
+            }
+        }
+    }
+
+    if (paymentRadios.length > 0) {
+        paymentRadios.forEach(function(radio) {
+            radio.addEventListener('change', updatePaymentMethodView);
+        });
+        updatePaymentMethodView();
+    }
+
     // Admin product form: cap how many gallery files can be attached at once
     const mediaField = document.getElementById('media');
     if (mediaField && mediaField.dataset.maxMedia) {
