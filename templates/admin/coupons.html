@@ -7,38 +7,48 @@
             <div class="admin-card">
                 <div class="card-header"><h5><i class="bi bi-plus-circle me-2"></i>Create Coupon</h5></div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('admin.add_coupon') }}">
+                    <form method="POST" action="{{ url_for('admin.add_coupon') }}" id="createCouponForm">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="discount_type" id="discountTypeInput" value="percentage">
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold">Coupon Code</label>
-                            <input type="text" class="form-control text-uppercase font-monospace" name="code" required minlength="3" maxlength="30" placeholder="e.g. SAVE200 or SUMMER15">
+                            <input type="text" class="form-control text-uppercase font-monospace" name="code" required minlength="3" maxlength="30" placeholder="e.g. FLAT200 or SUMMER15">
                             <small class="text-muted">Unique identifier entered by the customer.</small>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Discount Type</label>
-                            <div class="btn-group w-100" role="group" aria-label="Coupon Discount Type">
-                                <input type="radio" class="btn-check" name="discount_type" id="typePercentage" value="percentage" checked autocomplete="off">
-                                <label class="btn btn-outline-primary" for="typePercentage">
+                            <label class="form-label fw-bold">Discount Option</label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-primary fw-bold" id="btnModePercentage" onclick="selectDiscountMode('percentage')">
                                     <i class="bi bi-percent me-1"></i>Percentage (%)
-                                </label>
-
-                                <input type="radio" class="btn-check" name="discount_type" id="typeFixed" value="fixed" autocomplete="off">
-                                <label class="btn btn-outline-primary" for="typeFixed">
+                                </button>
+                                <button type="button" class="btn btn-outline-primary fw-bold" id="btnModeFixed" onclick="selectDiscountMode('fixed')">
                                     <i class="bi bi-cash-stack me-1"></i>Fixed Cost (Rs.)
-                                </label>
+                                </button>
                             </div>
                         </div>
 
-                        <div class="mb-3" id="discountValueGroup">
-                            <label class="form-label fw-bold" id="discountValueLabel">Discount Percentage (%)</label>
+                        <!-- 1. Percentage Discount Input Block -->
+                        <div class="mb-3" id="sectionPercentage">
+                            <label class="form-label fw-bold">Discount Percentage (%)</label>
                             <div class="input-group">
-                                <span class="input-group-text d-none" id="valuePrefix">Rs.</span>
-                                <input type="number" class="form-control" name="discount_value" id="discountValueInput" required min="1" max="100" step="0.01" placeholder="e.g. 10">
-                                <span class="input-group-text" id="valueSuffix">%</span>
+                                <input type="number" class="form-control" name="discount_percent" id="inputPercent" required min="1" max="100" step="0.01" placeholder="e.g. 10 (for 10% off)">
+                                <span class="input-group-text fw-bold">%</span>
                             </div>
-                            <small class="text-muted" id="discountValueHint">Customer gets 1% to 100% off eligible subtotal.</small>
+                            <small class="text-muted">Customer gets 1% to 100% off initial sale price.</small>
+                        </div>
+
+                        <!-- 2. Fixed Cost Discount Input Block -->
+                        <div class="mb-3" id="sectionFixed" style="display: none;">
+                            <label class="form-label fw-bold">Discount Fixed Cost / Price (Rs.)</label>
+                            <div class="input-group">
+                                <span class="input-group-text fw-bold">Rs.</span>
+                                <input type="number" class="form-control" name="discount_amount" id="inputFixed" min="1" step="1" placeholder="e.g. 200 or 400">
+                            </div>
+                            <small class="text-muted">
+                                Direct rupee deduction: <strong>Initial Sale Price &minus; Fixed Discount</strong>.
+                            </small>
                         </div>
 
                         <div class="mb-3">
@@ -51,7 +61,15 @@
                             <input type="date" class="form-control" name="valid_to">
                         </div>
 
-                        <button type="submit" class="btn btn-warning w-100 fw-bold">
+                        <!-- Price Floor Protection Notice -->
+                        <div class="alert alert-info py-2 px-3 mb-3" style="font-size: 0.85rem; border-radius: 8px;">
+                            <i class="bi bi-shield-check text-primary me-1"></i>
+                            <strong>Price Floor Active:</strong> Selling price cannot drop below <strong>Cost Price + Rs. {{ "{:,.0f}".format(margin_floor) }}</strong>.
+                            <br>
+                            <small><a href="{{ url_for('admin.site_settings') }}" class="alert-link">Adjust this Rs. {{ "{:,.0f}".format(margin_floor) }} cap in Settings &rarr;</a></small>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 fw-bold py-2">
                             <i class="bi bi-plus-lg me-2"></i>Create Coupon
                         </button>
                     </form>
@@ -130,43 +148,40 @@
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const typePercentage = document.getElementById('typePercentage');
-        const typeFixed = document.getElementById('typeFixed');
-        const label = document.getElementById('discountValueLabel');
-        const input = document.getElementById('discountValueInput');
-        const prefix = document.getElementById('valuePrefix');
-        const suffix = document.getElementById('valueSuffix');
-        const hint = document.getElementById('discountValueHint');
+    function selectDiscountMode(mode) {
+        var hiddenInput = document.getElementById('discountTypeInput');
+        var btnPercent = document.getElementById('btnModePercentage');
+        var btnFixed = document.getElementById('btnModeFixed');
+        var sectionPercent = document.getElementById('sectionPercentage');
+        var sectionFixed = document.getElementById('sectionFixed');
+        var inputPercent = document.getElementById('inputPercent');
+        var inputFixed = document.getElementById('inputFixed');
 
-        function updateDiscountType() {
-            if (typeFixed && typeFixed.checked) {
-                label.textContent = 'Discount Price / Amount (Rs.)';
-                input.placeholder = 'e.g. 200 (for Rs. 200 off)';
-                input.min = '1';
-                input.removeAttribute('max');
-                input.step = '1';
-                prefix.classList.remove('d-none');
-                suffix.classList.add('d-none');
-                hint.textContent = 'Direct fixed rupee deduction (e.g. Rs. 200, Rs. 400 off total order).';
-            } else {
-                label.textContent = 'Discount Percentage (%)';
-                input.placeholder = 'e.g. 10 (for 10% off)';
-                input.min = '1';
-                input.max = '100';
-                input.step = '0.01';
-                prefix.classList.add('d-none');
-                suffix.classList.remove('d-none');
-                hint.textContent = 'Customer gets 1% to 100% off eligible subtotal.';
-            }
+        if (mode === 'fixed') {
+            hiddenInput.value = 'fixed';
+            btnFixed.className = 'btn btn-primary fw-bold';
+            btnPercent.className = 'btn btn-outline-primary fw-bold';
+            sectionFixed.style.display = 'block';
+            sectionPercent.style.display = 'none';
+            inputFixed.required = true;
+            inputFixed.disabled = false;
+            inputPercent.required = false;
+            inputPercent.disabled = true;
+        } else {
+            hiddenInput.value = 'percentage';
+            btnPercent.className = 'btn btn-primary fw-bold';
+            btnFixed.className = 'btn btn-outline-primary fw-bold';
+            sectionPercent.style.display = 'block';
+            sectionFixed.style.display = 'none';
+            inputPercent.required = true;
+            inputPercent.disabled = false;
+            inputFixed.required = false;
+            inputFixed.disabled = true;
         }
-
-        if (typePercentage && typeFixed) {
-            typePercentage.addEventListener('change', updateDiscountType);
-            typeFixed.addEventListener('change', updateDiscountType);
-            updateDiscountType();
-        }
-    });
+    }
+    // Initialize default mode
+    selectDiscountMode('percentage');
     </script>
 {% endblock %}
+
 

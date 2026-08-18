@@ -1100,7 +1100,10 @@ def coupons():
         "max_uses, used_count, valid_from, valid_to, active "
         "FROM Coupons ORDER BY created_at DESC"
     )
-    return render_template('admin/coupons.html', coupons=cur.fetchall())
+    coupons_list = cur.fetchall()
+    settings = sitesettings.get_settings(cur)
+    margin_floor = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
+    return render_template('admin/coupons.html', coupons=coupons_list, margin_floor=margin_floor)
 
 
 @admin_bp.route('/coupons/add', methods=['POST'])
@@ -1108,7 +1111,12 @@ def coupons():
 def add_coupon():
     code = request.form.get('code', '').strip().upper()
     discount_type = request.form.get('discount_type', 'percentage').strip().lower()
-    discount_value = request.form.get('discount_value')
+    
+    if discount_type == 'fixed':
+        discount_value = request.form.get('discount_amount') or request.form.get('discount_value')
+    else:
+        discount_type = 'percentage'
+        discount_value = request.form.get('discount_percent') or request.form.get('discount_value')
 
     ok, err = validate_required_text(code, 'Coupon code', min_len=3, max_len=30)
     val = None
@@ -1133,7 +1141,7 @@ def add_coupon():
         )
         log_admin_action(cur, current_user_id(), 'coupon.create', 'Coupon', None, f'code={code}, type={discount_type}, val={val}')
         get_db().commit()
-        flash('Coupon created.', 'success')
+        flash('Coupon created successfully.', 'success')
     except oracledb.IntegrityError:
         get_db().rollback()
         flash('That coupon code already exists.', 'error')
