@@ -48,13 +48,15 @@ def send_payment_verified_email(to_email, name, order_id, total_amount):
         current_app.logger.warning(f'Payment verified email failed: {e}')
 
 
+from whatsapp_utils import format_whatsapp_phone, get_whatsapp_order_link
+
+
 def _whatsapp_link(phone, message):
-    digits = ''.join(ch for ch in phone if ch.isdigit())
-    if digits.startswith('0'):
-        digits = '92' + digits[1:]
-    elif not digits.startswith('92'):
-        digits = '92' + digits
-    return f'https://wa.me/{digits}?text={quote(message)}'
+    phone_clean = format_whatsapp_phone(phone)
+    if not phone_clean:
+        return '#'
+    return f'https://api.whatsapp.com/send?phone={phone_clean}&text={quote(message)}'
+
 
 
 # ── DASHBOARD ────────────────────────────────────────────────────
@@ -554,7 +556,8 @@ def category_product_count(category_id):
 def orders():
     cur = get_db().cursor()
     cur.execute(
-        "SELECT o.order_id, u.name, o.order_date, o.total_amount, o.status, o.payment_status "
+        "SELECT o.order_id, u.name, o.order_date, o.total_amount, o.status, o.payment_status, "
+        "       o.phone_number, o.payment_method, o.delivery_address "
         "FROM Orders o JOIN Users u ON o.user_id = u.user_id ORDER BY o.order_date DESC"
     )
     return render_template('admin/orders.html', orders=cur.fetchall())
@@ -636,10 +639,45 @@ def order_detail(order_id):
 
     cur.execute("SELECT amount, payment_date, method FROM Payments WHERE order_id = :1", [order_id])
     payment = cur.fetchone()
-    whatsapp_link = _whatsapp_link(order[6], f'Hi {order[1]}, this is SmartCart regarding your order #{order_id}.')
+
+    # Generate custom context-aware WhatsApp links
+    customer_phone = order[6]
+    customer_name = order[1]
+    order_total = order[4]
+    order_status = order[5]
+    delivery_addr = order[7]
+
+    whatsapp_link = get_whatsapp_order_link(
+        customer_phone, order_id, customer_name, order_total,
+        status=order_status, payment_method=pay_method, address=delivery_addr, intent='status'
+    )
+    wa_links = {
+        'default': whatsapp_link,
+        'confirm': get_whatsapp_order_link(
+            customer_phone, order_id, customer_name, order_total,
+            status='pending', payment_method=pay_method, address=delivery_addr, intent='confirm'
+        ),
+        'shipped': get_whatsapp_order_link(
+            customer_phone, order_id, customer_name, order_total,
+            status='shipped', payment_method=pay_method, address=delivery_addr, intent='shipped'
+        ),
+        'delivered': get_whatsapp_order_link(
+            customer_phone, order_id, customer_name, order_total,
+            status='delivered', payment_method=pay_method, address=delivery_addr, intent='delivered'
+        ),
+        'verify_request': get_whatsapp_order_link(
+            customer_phone, order_id, customer_name, order_total,
+            status=order_status, payment_method=pay_method, address=delivery_addr, intent='verify_request'
+        ),
+        'payment_verified': get_whatsapp_order_link(
+            customer_phone, order_id, customer_name, order_total,
+            status=order_status, payment_method=pay_method, address=delivery_addr, intent='payment_verified'
+        ),
+    }
+
     return render_template(
         'admin/order_detail.html', order=order, items=items, payment=payment,
-        financials=financials, whatsapp_link=whatsapp_link,
+        financials=financials, whatsapp_link=whatsapp_link, wa_links=wa_links,
     )
 
 
@@ -896,16 +934,56 @@ def update_order_status():
 @admin_required
 def payment_verification():
     cur = get_db().cursor()
-    cur.execute(
-        """
+    status_filter = request.args.get('status', 'pending_verification').strip().lower()
+
+    # Query counts for tabs
+    cur.execute("SELECT COUNT(*) FROM Orders WHERE payment_method = 'bank_transfer' AND payment_status = 'pending_verification'")
+    pending_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM Orders WHERE payment_method = 'bank_transfer' AND payment_status = 'verified'")
+    verified_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM Orders WHERE payment_method = 'bank_transfer' AND payment_status = 'rejected'")
+    rejected_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM Orders WHERE payment_method = 'bank_transfer'")
+    all_count = cur.fetchone()[0]
+
+    # Query sum of pending amount
+    cur.execute("SELECT NVL(SUM(total_amount), 0) FROM Orders WHERE payment_method = 'bank_transfer' AND payment_status = 'pending_verification'")
+    pending_total_amount = float(cur.fetchone()[0])
+
+    base_query = """
         SELECT o.order_id, u.name, u.email, o.phone_number, o.total_amount, o.payment_method,
-               o.advance_amount, o.payment_proof_path, o.order_date
+               o.advance_amount, o.payment_proof_path, o.order_date, o.payment_status,
+               o.payment_verified_at, o.payment_rejection_reason, o.delivery_address, o.status
         FROM Orders o JOIN Users u ON o.user_id = u.user_id
-        WHERE o.payment_status = 'pending_verification'
-        ORDER BY o.order_date
-        """
+        WHERE o.payment_method = 'bank_transfer'
+    """
+
+    if status_filter == 'pending_verification':
+        base_query += " AND o.payment_status = 'pending_verification'"
+    elif status_filter == 'verified':
+        base_query += " AND o.payment_status = 'verified'"
+    elif status_filter == 'rejected':
+        base_query += " AND o.payment_status = 'rejected'"
+    elif status_filter == 'all':
+        pass
+    else:
+        status_filter = 'pending_verification'
+        base_query += " AND o.payment_status = 'pending_verification'"
+
+    base_query += " ORDER BY o.order_date DESC"
+    cur.execute(base_query)
+    rows = cur.fetchall()
+
+    return render_template(
+        'admin/payment_verification.html',
+        pending=rows,
+        status_filter=status_filter,
+        pending_count=pending_count,
+        verified_count=verified_count,
+        rejected_count=rejected_count,
+        all_count=all_count,
+        pending_total_amount=pending_total_amount,
     )
-    return render_template('admin/payment_verification.html', pending=cur.fetchall())
 
 
 @admin_bp.route('/payments/<int:order_id>/verify', methods=['POST'])
@@ -913,7 +991,7 @@ def payment_verification():
 def verify_payment(order_id):
     cur = get_db().cursor()
     cur.execute(
-        "SELECT u.user_id, u.name, u.email, o.total_amount, o.payment_method, o.phone_number "
+        "SELECT u.user_id, u.name, u.email, o.total_amount, o.payment_method, o.phone_number, o.delivery_address "
         "FROM Orders o JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1",
         [order_id],
     )
@@ -921,7 +999,7 @@ def verify_payment(order_id):
     if not row:
         flash('Order not found.', 'error')
         return redirect(url_for('admin.payment_verification'))
-    _user_id, name, email, total_amount, method, phone = row
+    _user_id, name, email, total_amount, method, phone, address = row
 
     cur.execute(
         "UPDATE Orders SET payment_status = 'verified', payment_verified_at = SYSDATE, "
@@ -939,12 +1017,15 @@ def verify_payment(order_id):
     get_db().commit()
 
     send_payment_verified_email(email, name, order_id, total_amount)
-    whatsapp_link = _whatsapp_link(
-        phone, f'Hi {name}, your SmartCart payment for order #{order_id} has been verified. '
-               f'Your order will be dispatched soon. Thank you!',
+    whatsapp_link = get_whatsapp_order_link(
+        phone, order_id, name, total_amount,
+        status='pending', payment_method=method, address=address, intent='payment_verified'
     )
-    flash('Payment verified. Confirmation email sent.', 'success')
-    return redirect(url_for('admin.order_detail', order_id=order_id) + f'?whatsapp={quote(whatsapp_link)}')
+    flash(f'Payment for Order #{order_id} verified successfully! Confirmation email sent.', 'success')
+
+    next_url = request.form.get('next') or url_for('admin.order_detail', order_id=order_id)
+    separator = '&' if '?' in next_url else '?'
+    return redirect(f"{next_url}{separator}whatsapp={quote(whatsapp_link)}")
 
 
 @admin_bp.route('/payments/<int:order_id>/reject', methods=['POST'])
@@ -958,8 +1039,9 @@ def reject_payment(order_id):
     )
     log_admin_action(cur, current_user_id(), 'payment.reject', 'Order', order_id, reason)
     get_db().commit()
-    flash('Payment rejected.', 'success')
-    return redirect(url_for('admin.order_detail', order_id=order_id))
+    flash(f'Payment for Order #{order_id} rejected.', 'success')
+    next_url = request.form.get('next') or url_for('admin.order_detail', order_id=order_id)
+    return redirect(next_url)
 
 
 @admin_bp.route('/orders/<int:order_id>/mark_payment_received', methods=['POST'])

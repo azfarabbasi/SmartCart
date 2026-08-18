@@ -29,9 +29,20 @@
                 <tbody>
                     {% if orders %}
                         {% for order in orders %}
+                            {% set wa_link = get_whatsapp_order_link(order[6], order[0], order[1], order[3], order[4], order[7], order[8], 'status') %}
                             <tr>
                                 <td><strong>#{{ order[0] }}</strong></td>
-                                <td><div class="customer-info"><i class="bi bi-person-circle me-2"></i>{{ order[1] }}</div></td>
+                                <td>
+                                    <div class="customer-info"><i class="bi bi-person-circle me-1"></i>{{ order[1] }}</div>
+                                    {% if order[6] %}
+                                        <div class="small text-muted d-flex align-items-center gap-1 mt-1">
+                                            <span>{{ order[6] }}</span>
+                                            <a href="{{ wa_link }}" target="_blank" rel="noopener" class="badge bg-success text-decoration-none" title="Chat on WhatsApp">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </td>
                                 <td>{{ order[2].strftime('%d %b %Y, %I:%M %p') if order[2] else 'N/A' }}</td>
                                 <td><strong>Rs{{ "{:,.2f}".format(order[3]) }}</strong></td>
                                 <td>
@@ -49,9 +60,16 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('admin.order_detail', order_id=order[0]) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye me-1"></i>View
-                                    </a>
+                                    <div class="d-flex gap-1">
+                                        <a href="{{ url_for('admin.order_detail', order_id=order[0]) }}" class="btn btn-sm btn-outline-primary" title="View Order">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if order[6] %}
+                                            <a href="{{ wa_link }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success" title="Message on WhatsApp">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}

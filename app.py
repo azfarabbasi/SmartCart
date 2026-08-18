@@ -56,11 +56,15 @@ def create_app():
             return url_for('static', filename=path_str)
         return f'/static/{path_str}'
 
+    from whatsapp_utils import format_whatsapp_phone, get_whatsapp_order_link
+
     app.jinja_env.globals['min'] = min
     app.jinja_env.globals['max'] = max
     app.jinja_env.globals['slugify'] = _slugify
     app.jinja_env.globals['media_url'] = media_url
     app.jinja_env.filters['media_url'] = media_url
+    app.jinja_env.globals['format_whatsapp_phone'] = format_whatsapp_phone
+    app.jinja_env.globals['get_whatsapp_order_link'] = get_whatsapp_order_link
 
     # Stamp written by build_assets.py; appended to the bundle URLs so a new
     # deploy is never served from a stale browser cache.

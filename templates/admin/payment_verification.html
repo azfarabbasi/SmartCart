@@ -1,50 +1,358 @@
 {% extends "admin/base.html" %}
 {% block title %}Payment Verification - Admin | SmartCart{% endblock %}
-{% block page_title %}Payment Verification{% endblock %}
+{% block page_title %}Payment Verification &amp; Receipts{% endblock %}
 {% block content %}
-    <div class="admin-card">
-        <div class="card-header">
-            <h5>Orders Awaiting Payment Verification</h5>
-            <span class="badge bg-warning text-dark">{{ pending|length }} pending</span>
+    {# ── SUMMARY STATS ── #}
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="admin-card p-3 h-100 border-start border-4 border-warning">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small">Pending Verification</div>
+                        <h3 class="mb-0 fw-bold text-warning">{{ pending_count }}</h3>
+                        <div class="small text-muted">Rs {{ "{:,.2f}".format(pending_total_amount) }} awaiting check</div>
+                    </div>
+                    <div class="stat-icon" style="background: rgba(234,179,8,0.15); color: #eab308; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-hourglass-split fs-4"></i>
+                    </div>
+                </div>
+            </div>
         </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="admin-card p-3 h-100 border-start border-4 border-success">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small">Verified Payments</div>
+                        <h3 class="mb-0 fw-bold text-success">{{ verified_count }}</h3>
+                        <div class="small text-muted">Approved online payments</div>
+                    </div>
+                    <div class="stat-icon" style="background: rgba(34,197,94,0.15); color: #22c55e; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-check2-circle fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="admin-card p-3 h-100 border-start border-4 border-danger">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small">Rejected Payments</div>
+                        <h3 class="mb-0 fw-bold text-danger">{{ rejected_count }}</h3>
+                        <div class="small text-muted">Declined / invalid proof</div>
+                    </div>
+                    <div class="stat-icon" style="background: rgba(239,68,68,0.15); color: #ef4444; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-x-circle fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="admin-card p-3 h-100 border-start border-4 border-primary">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small">Total Bank Transfers</div>
+                        <h3 class="mb-0 fw-bold text-primary">{{ all_count }}</h3>
+                        <div class="small text-muted">All online payment orders</div>
+                    </div>
+                    <div class="stat-icon" style="background: rgba(59,130,246,0.15); color: #3b82f6; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-bank fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── MAIN CARD & TABS ── #}
+    <div class="admin-card">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2 pb-0">
+            <div>
+                <h5 class="mb-1"><i class="bi bi-receipt-cutoff me-2"></i>Online Payment Receipts</h5>
+                <p class="text-muted small mb-3">Inspect customer-uploaded bank transfer screenshots and verify or reject payments.</p>
+            </div>
+            {# Status Filter Tabs #}
+            <div class="nav nav-pills mb-3" role="tablist">
+                <a href="{{ url_for('admin.payment_verification', status='pending_verification') }}"
+                   class="nav-link py-1 px-3 {{ 'active' if status_filter == 'pending_verification' else '' }}">
+                    Pending <span class="badge bg-warning text-dark ms-1">{{ pending_count }}</span>
+                </a>
+                <a href="{{ url_for('admin.payment_verification', status='verified') }}"
+                   class="nav-link py-1 px-3 {{ 'active' if status_filter == 'verified' else '' }}">
+                    Verified <span class="badge bg-success ms-1">{{ verified_count }}</span>
+                </a>
+                <a href="{{ url_for('admin.payment_verification', status='rejected') }}"
+                   class="nav-link py-1 px-3 {{ 'active' if status_filter == 'rejected' else '' }}">
+                    Rejected <span class="badge bg-danger ms-1">{{ rejected_count }}</span>
+                </a>
+                <a href="{{ url_for('admin.payment_verification', status='all') }}"
+                   class="nav-link py-1 px-3 {{ 'active' if status_filter == 'all' else '' }}">
+                    All Online Orders <span class="badge bg-secondary ms-1">{{ all_count }}</span>
+                </a>
+            </div>
+        </div>
+
         <div class="table-responsive">
-            <table class="table admin-table">
+            <table class="table admin-table align-middle">
                 <thead>
                     <tr>
-                        <th>Order</th><th>Customer</th><th>Phone</th><th>Amount</th>
-                        <th>Method</th><th>Advance</th><th>Proof</th><th>Placed</th><th>Action</th>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Payment Proof / Receipt</th>
+                        <th>Date Placed</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% if pending %}
                         {% for row in pending %}
+                            {% set order_id = row[0] %}
+                            {% set cust_name = row[1] %}
+                            {% set cust_email = row[2] %}
+                            {% set cust_phone = row[3] %}
+                            {% set total_amount = row[4] %}
+                            {% set pay_method = row[5] %}
+                            {% set adv_amount = row[6] %}
+                            {% set proof_path = row[7] %}
+                            {% set order_date = row[8] %}
+                            {% set pay_status = row[9] %}
+                            {% set verified_at = row[10] %}
+                            {% set reject_reason = row[11] %}
+                            {% set delivery_addr = row[12] %}
+                            {% set order_status = row[13] %}
+                            {% set wa_link = get_whatsapp_order_link(cust_phone, order_id, cust_name, total_amount, order_status, pay_method, delivery_addr, 'status') %}
+                            {% set wa_req_link = get_whatsapp_order_link(cust_phone, order_id, cust_name, total_amount, order_status, pay_method, delivery_addr, 'verify_request') %}
+
                             <tr>
-                                <td><strong>#{{ row[0] }}</strong></td>
-                                <td>{{ row[1] }}<br><small class="text-muted">{{ row[2] }}</small></td>
-                                <td>{{ row[3] }}</td>
-                                <td>Rs{{ "{:,.2f}".format(row[4]) }}</td>
-                                <td>{{ row[5]|replace('_', ' ')|capitalize }}</td>
-                                <td>Rs{{ "{:,.2f}".format(row[6]) }}</td>
                                 <td>
-                                    {% if row[7] %}
-                                        <a href="{{ media_url(row[7]) }}" target="_blank">
-                                            <img src="{{ media_url(row[7]) }}" class="payment-proof-thumb">
-                                        </a>
-                                    {% else %}&mdash;{% endif %}
-                                </td>
-                                <td>{{ row[8].strftime('%d %b %Y') if row[8] else '' }}</td>
-                                <td>
-                                    <a href="{{ url_for('admin.order_detail', order_id=row[0]) }}" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye"></i> Review
+                                    <a href="{{ url_for('admin.order_detail', order_id=order_id) }}" class="fw-bold text-decoration-none">
+                                        #{{ order_id }}
                                     </a>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold">{{ cust_name }}</div>
+                                    <div class="small text-muted">{{ cust_email }}</div>
+                                    <div class="small d-flex align-items-center gap-1 mt-1">
+                                        <i class="bi bi-telephone text-muted"></i>
+                                        <span>{{ cust_phone or 'N/A' }}</span>
+                                        {% if cust_phone %}
+                                            <a href="{{ wa_link }}" target="_blank" rel="noopener"
+                                               class="badge bg-success text-decoration-none ms-1"
+                                               title="Chat with {{ cust_name }} on WhatsApp">
+                                                <i class="bi bi-whatsapp"></i> WhatsApp
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong class="text-warning fs-6">Rs {{ "{:,.2f}".format(total_amount) }}</strong>
+                                </td>
+                                <td>
+                                    {% if proof_path %}
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="position-relative" style="cursor: pointer;"
+                                                 onclick="openReceiptModal('{{ media_url(proof_path) }}', '{{ order_id }}', '{{ cust_name|replace(\"'\", \"\\\\'\") }}', '{{ '{:,.2f}'.format(total_amount) }}', '{{ pay_status }}')">
+                                                <img src="{{ media_url(proof_path) }}" class="payment-proof-thumb shadow-sm"
+                                                     style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(255,255,255,0.15);"
+                                                     alt="Receipt #{{ order_id }}">
+                                                <span class="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white p-1 rounded-start" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-zoom-in"></i>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <button type="button" class="btn btn-sm btn-outline-info"
+                                                        onclick="openReceiptModal('{{ media_url(proof_path) }}', '{{ order_id }}', '{{ cust_name|replace(\"'\", \"\\\\'\") }}', '{{ '{:,.2f}'.format(total_amount) }}', '{{ pay_status }}')">
+                                                    <i class="bi bi-eye me-1"></i>Inspect
+                                                </button>
+                                                <a href="{{ media_url(proof_path) }}" target="_blank" rel="noopener" class="d-block small text-muted mt-1 text-decoration-none">
+                                                    <i class="bi bi-box-arrow-up-right"></i> Open full
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-danger small">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>No receipt uploaded
+                                        </div>
+                                        {% if cust_phone %}
+                                            <a href="{{ wa_req_link }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success mt-1 py-0 px-2" style="font-size: 0.75rem;">
+                                                <i class="bi bi-whatsapp me-1"></i>Request Receipt
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>{{ order_date.strftime('%d %b %Y') if order_date else '' }}</div>
+                                    <small class="text-muted">{{ order_date.strftime('%I:%M %p') if order_date else '' }}</small>
+                                </td>
+                                <td>
+                                    <span class="payment-status-badge payment-{{ pay_status }}">
+                                        {% if pay_status == 'pending_verification' %}
+                                            <i class="bi bi-hourglass-split me-1"></i>Pending Verification
+                                        {% elif pay_status == 'verified' %}
+                                            <i class="bi bi-check-circle-fill me-1"></i>Verified
+                                        {% elif pay_status == 'rejected' %}
+                                            <i class="bi bi-x-circle-fill me-1"></i>Rejected
+                                        {% else %}
+                                            {{ pay_status|capitalize }}
+                                        {% endif %}
+                                    </span>
+                                    {% if reject_reason %}
+                                        <div class="small text-danger mt-1">Reason: {{ reject_reason }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1" style="min-width: 130px;">
+                                        {% if pay_status == 'pending_verification' %}
+                                            <form action="{{ url_for('admin.verify_payment', order_id=order_id) }}" method="POST"
+                                                  onsubmit="return confirm('Verify and approve payment of Rs {{ '{:,.2f}'.format(total_amount) }} for Order #{{ order_id }}?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="next" value="{{ request.full_path }}">
+                                                <button type="submit" class="btn btn-sm btn-success w-100">
+                                                    <i class="bi bi-check-lg me-1"></i>Verify Payment
+                                                </button>
+                                            </form>
+                                            <button type="button" class="btn btn-sm btn-outline-danger w-100"
+                                                    onclick="openRejectPrompt('{{ order_id }}', '{{ cust_name|replace(\"'\", \"\\\\'\") }}')">
+                                                <i class="bi bi-x-lg me-1"></i>Reject
+                                            </button>
+                                        {% endif %}
+                                        <a href="{{ url_for('admin.order_detail', order_id=order_id) }}" class="btn btn-sm btn-outline-secondary w-100">
+                                            <i class="bi bi-file-earmark-text me-1"></i>Order Details
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
                     {% else %}
-                        <tr><td colspan="9" class="text-center text-muted py-4">No pending payments right now.</td></tr>
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-receipt fs-1 d-block mb-2 text-secondary"></i>
+                                <h5>No {{ status_filter|replace('_', ' ') }} payments found.</h5>
+                                <p class="small text-muted">Online bank transfer orders and customer-uploaded receipts will appear here.</p>
+                            </td>
+                        </tr>
                     {% endif %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    {# ── MODAL: HIGH-RESOLUTION RECEIPT VIEWER ── #}
+    <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background: #181c24; border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title d-flex align-items-center gap-2" id="receiptModalLabel">
+                        <i class="bi bi-receipt text-warning"></i>
+                        <span>Payment Receipt &mdash; Order #<span id="modalOrderId"></span></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-3">
+                    <div class="d-flex justify-content-between align-items-center bg-dark bg-opacity-50 p-2 rounded mb-3 text-start">
+                        <div>
+                            <div><strong>Customer:</strong> <span id="modalCustomerName" class="text-warning"></span></div>
+                            <div><strong>Order Amount:</strong> Rs <span id="modalOrderAmount" class="fw-bold text-success"></span></div>
+                        </div>
+                        <div>
+                            <span class="badge bg-info" id="modalPaymentStatus"></span>
+                        </div>
+                    </div>
+
+                    <div style="background: #0d1117; border-radius: 8px; padding: 12px; min-height: 350px; display: flex; align-items: center; justify-content: center; overflow: auto; max-height: 65vh;">
+                        <img id="modalReceiptImg" src="" alt="Payment Receipt"
+                             style="max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary d-flex justify-content-between">
+                    <div>
+                        <a id="modalFullSizeLink" href="" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Open Full Size
+                        </a>
+                        <a id="modalDownloadLink" href="" download="payment_receipt.jpg" class="btn btn-outline-info btn-sm ms-1">
+                            <i class="bi bi-download me-1"></i>Download
+                        </a>
+                    </div>
+                    <div class="d-flex gap-2" id="modalActionButtons">
+                        <form id="modalVerifyForm" method="POST" action="">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="next" value="{{ request.full_path }}">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="bi bi-check-lg me-1"></i>Verify Payment
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-danger btn-sm" id="modalRejectBtn">
+                            <i class="bi bi-x-lg me-1"></i>Reject
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── MODAL: REJECT PAYMENT REASON ── #}
+    <div class="modal fade" id="rejectPaymentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #181c24; border: 1px solid rgba(239,68,68,0.4); color: #fff;">
+                <form id="rejectPaymentForm" method="POST" action="">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="next" value="{{ request.full_path }}">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-danger">
+                            <i class="bi bi-x-circle me-2"></i>Reject Payment for Order #<span id="rejectOrderIdSpan"></span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted">Please provide a reason why this payment proof is rejected. The customer will see this message.</p>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Rejection Reason</label>
+                            <textarea name="reason" class="form-control bg-dark text-white border-secondary" rows="3" required
+                                      placeholder="e.g. Transaction ID not visible, incorrect amount transferred, blurry screenshot..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-x-lg me-1"></i>Confirm Rejection
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openReceiptModal(imgUrl, orderId, custName, amount, status) {
+            document.getElementById('modalOrderId').innerText = orderId;
+            document.getElementById('modalCustomerName').innerText = custName;
+            document.getElementById('modalOrderAmount').innerText = amount;
+            document.getElementById('modalPaymentStatus').innerText = status.replace('_', ' ').toUpperCase();
+            document.getElementById('modalReceiptImg').src = imgUrl;
+            document.getElementById('modalFullSizeLink').href = imgUrl;
+            document.getElementById('modalDownloadLink').href = imgUrl;
+
+            const verifyForm = document.getElementById('modalVerifyForm');
+            verifyForm.action = `/admin/payments/${orderId}/verify`;
+
+            const rejectBtn = document.getElementById('modalRejectBtn');
+            rejectBtn.onclick = function() {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('receiptModal'));
+                if (modal) modal.hide();
+                openRejectPrompt(orderId, custName);
+            };
+
+            const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
+            modal.show();
+        }
+
+        function openRejectPrompt(orderId, custName) {
+            document.getElementById('rejectOrderIdSpan').innerText = orderId;
+            const form = document.getElementById('rejectPaymentForm');
+            form.action = `/admin/payments/${orderId}/reject`;
+            const modal = new bootstrap.Modal(document.getElementById('rejectPaymentModal'));
+            modal.show();
+        }
+    </script>
 {% endblock %}

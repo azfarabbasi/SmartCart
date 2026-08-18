@@ -23,13 +23,15 @@ customer_bp = Blueprint('customer', __name__)
 LOW_STOCK_THRESHOLD = 5
 
 
+from whatsapp_utils import format_whatsapp_phone, get_whatsapp_order_link
+
+
 def whatsapp_link(phone, message):
-    digits = ''.join(ch for ch in phone if ch.isdigit())
-    if digits.startswith('0'):
-        digits = '92' + digits[1:]
-    elif not digits.startswith('92'):
-        digits = '92' + digits
-    return f'https://wa.me/{digits}?text={quote(message)}'
+    phone_clean = format_whatsapp_phone(phone)
+    if not phone_clean:
+        return '#'
+    return f'https://api.whatsapp.com/send?phone={phone_clean}&text={quote(message)}'
+
 
 
 def notify_admin_stock_issue(cur, product_name, requested, available, customer_name, customer_email):

@@ -40,9 +40,11 @@
 .bi-arrow-return-left::before { content: "\f131"; }
 .bi-arrow-right-circle::before { content: "\f134"; }
 .bi-arrow-right::before { content: "\f138"; }
+.bi-arrows-fullscreen::before { content: "\f14d"; }
 .bi-box-arrow-in-right::before { content: "\f1be"; }
 .bi-box-arrow-left::before { content: "\f1c2"; }
 .bi-box-arrow-right::before { content: "\f1c3"; }
+.bi-box-arrow-up-right::before { content: "\f1c5"; }
 .bi-box-seam::before { content: "\f1c7"; }
 .bi-box::before { content: "\f1c8"; }
 .bi-calculator::before { content: "\f1e0"; }
@@ -58,6 +60,7 @@
 .bi-chat-square-text::before { content: "\f264"; }
 .bi-check-circle-fill::before { content: "\f26a"; }
 .bi-check-circle::before { content: "\f26b"; }
+.bi-check2-circle::before { content: "\f270"; }
 .bi-chevron-left::before { content: "\f284"; }
 .bi-chevron-right::before { content: "\f285"; }
 .bi-clipboard-check::before { content: "\f28b"; }
@@ -65,6 +68,7 @@
 .bi-clock::before { content: "\f293"; }
 .bi-cloud-arrow-up::before { content: "\f297"; }
 .bi-credit-card::before { content: "\f2dc"; }
+.bi-download::before { content: "\f30a"; }
 .bi-envelope-fill::before { content: "\f32c"; }
 .bi-envelope::before { content: "\f32f"; }
 .bi-exclamation-circle-fill::before { content: "\f332"; }
@@ -72,10 +76,12 @@
 .bi-exclamation-triangle::before { content: "\f33b"; }
 .bi-eye-slash::before { content: "\f340"; }
 .bi-eye::before { content: "\f341"; }
+.bi-file-earmark-text::before { content: "\f38b"; }
 .bi-folder2-open::before { content: "\f3d8"; }
 .bi-gear::before { content: "\f3e5"; }
 .bi-geo-alt::before { content: "\f3e8"; }
 .bi-gift::before { content: "\f3ec"; }
+.bi-hand-thumbs-up::before { content: "\f407"; }
 .bi-heart-fill::before { content: "\f415"; }
 .bi-heart::before { content: "\f417"; }
 .bi-hourglass-split::before { content: "\f41f"; }
@@ -118,6 +124,7 @@
 .bi-whatsapp::before { content: "\f618"; }
 .bi-x-circle-fill::before { content: "\f622"; }
 .bi-x-circle::before { content: "\f623"; }
+.bi-zoom-in::before { content: "\f62c"; }
 .bi-bank::before { content: "\f62e"; }
 .bi-bank2::before { content: "\f62f"; }
 .bi-cash-coin::before { content: "\f632"; }

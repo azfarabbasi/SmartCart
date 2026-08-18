@@ -132,30 +132,79 @@
 
 
             <div class="admin-card mb-4">
-                <div class="card-header"><h5><i class="bi bi-credit-card me-2"></i>Payment Verification</h5></div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="bi bi-credit-card me-2"></i>Payment Verification</h5>
+                    <span class="payment-status-badge payment-{{ order[9] }}">{{ order[9]|replace('_', ' ')|capitalize }}</span>
+                </div>
                 <div class="card-body">
-                    <p><strong>Method:</strong> {{ order[8]|replace('_', ' ')|capitalize }}</p>
-                    <p><strong>Advance Required:</strong> Rs{{ "{:,.2f}".format(order[11]) }}</p>
-                    <p><strong>Status:</strong>
-                        <span class="payment-status-badge payment-{{ order[9] }}">{{ order[9]|replace('_', ' ')|capitalize }}</span>
-                    </p>
-                    {% if order[18] %}<p class="text-danger"><strong>Rejection reason:</strong> {{ order[18] }}</p>{% endif %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Payment Method:</strong> {{ 'Cash on Delivery (COD)' if order[8] == 'cod' else 'Online Bank Transfer' }}</p>
+                            <p class="mb-1"><strong>Advance Required:</strong> Rs{{ "{:,.2f}".format(order[11]) }}</p>
+                            <p class="mb-1"><strong>Total Order Amount:</strong> Rs{{ "{:,.2f}".format(order[4]) }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Payment Status:</strong>
+                                <span class="badge {% if order[9] == 'verified' %}bg-success{% elif order[9] == 'rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                    {{ order[9]|replace('_', ' ')|capitalize }}
+                                </span>
+                            </p>
+                            {% if order[18] %}
+                                <div class="alert alert-danger py-2 px-3 mb-0 small">
+                                    <strong>Rejection reason:</strong> {{ order[18] }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
 
+                    {# ── PAYMENT RECEIPT INSPECTION ── #}
                     {% if order[10] %}
-                        <p><strong>Payment Proof:</strong></p>
-                        <img src="{{ media_url(order[10]) }}" alt="payment proof" class="payment-proof-preview">
+                        <div class="p-3 rounded mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-info"><i class="bi bi-receipt me-1"></i>Customer Uploaded Payment Receipt:</span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                            onclick="openDetailReceiptModal('{{ media_url(order[10]) }}')">
+                                        <i class="bi bi-arrows-fullscreen me-1"></i>View Full Screen
+                                    </button>
+                                    <a href="{{ media_url(order[10]) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>Open Original
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="text-center p-2 rounded" style="background: #0d1117; max-height: 380px; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer;"
+                                 onclick="openDetailReceiptModal('{{ media_url(order[10]) }}')">
+                                <img src="{{ media_url(order[10]) }}" alt="Payment Receipt" class="img-fluid rounded shadow-sm"
+                                     style="max-height: 350px; object-fit: contain; transition: transform 0.2s;"
+                                     onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                            </div>
+                            <small class="text-muted d-block text-center mt-2">Click image to inspect in high resolution</small>
+                        </div>
+                    {% elif order[8] == 'bank_transfer' %}
+                        <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <div>
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <span>No payment receipt uploaded by customer yet.</span>
+                            </div>
+                            {% if order[6] %}
+                                <a href="{{ wa_links.verify_request }}" target="_blank" rel="noopener" class="btn btn-sm btn-success">
+                                    <i class="bi bi-whatsapp me-1"></i>Request Receipt on WhatsApp
+                                </a>
+                            {% endif %}
+                        </div>
                     {% endif %}
 
                     {% if order[9] == 'pending_verification' %}
                         <div class="d-flex gap-2 mt-3">
                             <form action="{{ url_for('admin.verify_payment', order_id=order[0]) }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Verify Payment</button>
+                                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>Verify Payment</button>
                             </form>
-                            <form action="{{ url_for('admin.reject_payment', order_id=order[0]) }}" method="POST" class="d-flex gap-2" data-confirm="Reject this payment?">
+                            <form action="{{ url_for('admin.reject_payment', order_id=order[0]) }}" method="POST" class="d-flex gap-2 flex-grow-1"
+                                  onsubmit="return confirm('Reject this payment proof?');">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="text" name="reason" class="form-control" placeholder="Rejection reason (optional)">
-                                <button type="submit" class="btn btn-danger"><i class="bi bi-x-lg"></i> Reject</button>
+                                <button type="submit" class="btn btn-danger"><i class="bi bi-x-lg me-1"></i>Reject</button>
                             </form>
                         </div>
                     {% endif %}
@@ -249,17 +298,83 @@
                 </div>
             {% endif %}
 
+            {# ── QUICK ACTIONS & WHATSAPP CENTER ── #}
+            <div class="admin-card mb-4">
+                <div class="card-header"><h5><i class="bi bi-whatsapp text-success me-2"></i>WhatsApp Action Center</h5></div>
+                <div class="card-body">
+                    <p class="small text-muted mb-2">Opens customer's chat with pre-filled message:</p>
+
+                    {# Primary Button #}
+                    <a href="{{ whatsapp_link }}" target="_blank" rel="noopener" class="btn btn-success w-100 mb-3 py-2 fw-semibold shadow-sm">
+                        <i class="bi bi-whatsapp me-2 fs-5 align-middle"></i>Message Customer (Status Update)
+                    </a>
+
+                    <div class="small fw-bold text-muted mb-2">Quick Message Templates:</div>
+                    <div class="d-grid gap-2">
+                        <a href="{{ wa_links.confirm }}" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm text-start">
+                            <i class="bi bi-check2-circle me-1"></i> Send Order Confirmation
+                        </a>
+                        <a href="{{ wa_links.shipped }}" target="_blank" rel="noopener" class="btn btn-outline-info btn-sm text-start">
+                            <i class="bi bi-truck me-1"></i> Send Out for Delivery Alert
+                        </a>
+                        {% if order[8] == 'bank_transfer' %}
+                            <a href="{{ wa_links.verify_request }}" target="_blank" rel="noopener" class="btn btn-outline-warning btn-sm text-start">
+                                <i class="bi bi-credit-card me-1"></i> Request Bank Transfer Receipt
+                            </a>
+                        {% endif %}
+                        <a href="{{ wa_links.delivered }}" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm text-start">
+                            <i class="bi bi-hand-thumbs-up me-1"></i> Delivery Complete &amp; Thank You
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <div class="admin-card">
-                <div class="card-header"><h5><i class="bi bi-lightning me-2"></i>Quick Actions</h5></div>
+                <div class="card-header"><h5><i class="bi bi-lightning me-2"></i>Quick Navigation</h5></div>
                 <div class="card-body">
                     <a href="{{ url_for('admin.orders') }}" class="btn btn-outline-secondary w-100 mb-2">
-                        <i class="bi bi-arrow-left me-2"></i>Back to Orders
+                        <i class="bi bi-arrow-left me-2"></i>Back to All Orders
                     </a>
-                    <a href="https://wa.me/{{ order[6]|replace(' ', '')|replace('+', '') }}" target="_blank" rel="noopener" class="btn btn-outline-success w-100">
-                        <i class="bi bi-whatsapp me-2"></i>Message Customer
+                    <a href="{{ url_for('admin.payment_verification') }}" class="btn btn-outline-warning w-100">
+                        <i class="bi bi-credit-card me-2"></i>Payment Verification
                     </a>
                 </div>
             </div>
         </div>
     </div>
+
+    {# ── MODAL FOR FULL-SIZE RECEIPT IN ORDER DETAIL ── #}
+    {% if order[10] %}
+        <div class="modal fade" id="detailReceiptModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content" style="background: #181c24; border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title">
+                            <i class="bi bi-receipt text-warning me-2"></i>Payment Receipt &mdash; Order #{{ order[0] }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center p-3">
+                        <div style="background: #0d1117; border-radius: 8px; padding: 12px; max-height: 70vh; overflow: auto; display: flex; align-items: center; justify-content: center;">
+                            <img id="detailReceiptImg" src="{{ media_url(order[10]) }}" alt="Receipt Full View"
+                                 style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 6px;">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary d-flex justify-content-between">
+                        <a href="{{ media_url(order[10]) }}" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Open in New Tab
+                        </a>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function openDetailReceiptModal(imgUrl) {
+                const modal = new bootstrap.Modal(document.getElementById('detailReceiptModal'));
+                modal.show();
+            }
+        </script>
+    {% endif %}
 {% endblock %}
