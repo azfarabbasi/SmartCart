@@ -24,12 +24,53 @@
         </div>
     </div>
 
+    {# ── CONFIRMED NET PROFIT HIGHLIGHT ── #}
+    <div class="admin-card mb-4" style="border: 2px solid rgba(34,197,94,0.4); background: linear-gradient(135deg, rgba(34,197,94,0.07) 0%, rgba(16,185,129,0.04) 100%);">
+        <div class="card-body py-3">
+            <div class="row align-items-center g-3">
+                <div class="col-auto">
+                    <div style="width:56px;height:56px;border-radius:14px;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-patch-check-fill text-success" style="font-size:1.6rem;"></i>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="text-muted small mb-1">Confirmed Net Profit <span class="badge bg-success ms-1">PAYMENT RECEIVED</span></div>
+                    <h3 class="mb-0 fw-bold {{ 'text-success' if confirmed_net_profit >= 0 else 'text-danger' }}">
+                        Rs {{ "{:,.2f}".format(confirmed_net_profit) }}
+                        <span class="text-muted fw-normal" style="font-size:1rem;">
+                            &nbsp;({{ "{:.1f}%".format(confirmed_margin) }} margin)
+                        </span>
+                    </h3>
+                    <div class="small text-muted mt-1">
+                        From {{ confirmed_orders_count }} order{{ 's' if confirmed_orders_count != 1 else '' }} where cash was collected or bank transfer verified.
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <a href="{{ url_for('admin.orders') }}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-eye me-1"></i>View Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if pending_cod_collection %}
+        <div class="alert alert-warning d-flex justify-content-between align-items-center mb-3">
+            <span><i class="bi bi-cash-coin me-2"></i>
+                <strong>{{ pending_cod_collection }}</strong> COD order{{ 's' if pending_cod_collection != 1 else '' }} delivered but cash not yet marked as received.
+            </span>
+            <a href="{{ url_for('admin.orders') }}" class="btn btn-sm btn-warning">Mark Received</a>
+        </div>
+    {% endif %}
+
     {% if pending_payments %}
         <div class="alert alert-warning d-flex justify-content-between align-items-center mb-4">
             <span><i class="bi bi-hourglass-split"></i> {{ pending_payments }} payment(s) awaiting verification.</span>
             <a href="{{ url_for('admin.payment_verification') }}" class="btn btn-sm btn-warning">Review Now</a>
         </div>
     {% endif %}
+
+
 
     <div class="quick-actions mb-4">
         <h2>Quick Actions</h2>

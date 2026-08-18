@@ -109,17 +109,27 @@
                             <div class="small text-muted mb-1">Total Cost of Goods (COGS): <strong>Rs {{ "{:,.2f}".format(financials.total_cost) }}</strong></div>
                             <div class="mt-2">
                                 <span class="small text-muted">Net Order Profit:</span>
-                                <h4 class="{{ 'text-success' if financials.net_profit >= 0 else 'text-danger' }} mb-0 fw-bold">
+                                <h4 class="{{ 'text-success' if financials.net_profit >= 0 else 'text-danger' }} mb-1 fw-bold">
                                     Rs {{ "{:,.2f}".format(financials.net_profit) }}
                                     <span class="badge {{ 'bg-success' if financials.margin_pct >= 20 else 'bg-warning text-dark' if financials.margin_pct >= 0 else 'bg-danger' }} ms-1" style="font-size: 0.8rem; vertical-align: middle;">
                                         {{ "{:.1f}% Margin".format(financials.margin_pct) }}
                                     </span>
                                 </h4>
+                                {% if financials.confirmed %}
+                                    <span class="badge bg-success d-inline-flex align-items-center gap-1" style="font-size:0.8rem;">
+                                        <i class="bi bi-patch-check-fill"></i> CONFIRMED NET PROFIT
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary d-inline-flex align-items-center gap-1" style="font-size:0.8rem;">
+                                        <i class="bi bi-hourglass-split"></i> Awaiting Payment Collection
+                                    </span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <div class="admin-card mb-4">
                 <div class="card-header"><h5><i class="bi bi-credit-card me-2"></i>Payment Verification</h5></div>
@@ -149,8 +159,58 @@
                             </form>
                         </div>
                     {% endif %}
+
+                    {# ── MARK PAYMENT RECEIVED button ── #}
+                    <div class="mt-4 pt-3 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
+                        <h6 class="mb-3">
+                            <i class="bi bi-cash-coin me-2"></i>
+                            <strong>Confirm Payment Received</strong>
+                            <span class="text-muted small ms-2">(adds to Confirmed Net Profit)</span>
+                        </h6>
+
+                        {% if financials.cash_received_at %}
+                            <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2">
+                                <i class="bi bi-patch-check-fill fs-5"></i>
+                                <div>
+                                    <strong>✓ Payment Received</strong> &mdash; confirmed on
+                                    {{ financials.cash_received_at.strftime('%d %b %Y at %I:%M %p') }}
+                                    <br>
+                                    <span class="text-success fw-bold">Net Profit Rs {{ "{:,.2f}".format(financials.net_profit) }} is counted in confirmed earnings.</span>
+                                </div>
+                            </div>
+                        {% elif order[8] == 'bank_transfer' and order[9] == 'verified' %}
+                            <div class="alert alert-success d-flex align-items-center gap-2 mb-2 py-2">
+                                <i class="bi bi-bank me-1"></i>
+                                <strong>Bank Transfer Verified</strong> — counted in confirmed profit.
+                            </div>
+                            <form action="{{ url_for('admin.mark_payment_received', order_id=order[0]) }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-success btn-sm">
+                                    <i class="bi bi-patch-check me-1"></i> Re-confirm Payment Received
+                                </button>
+                            </form>
+                        {% elif order[8] == 'cod' %}
+                            <div class="alert alert-warning d-flex align-items-center gap-2 mb-2 py-2">
+                                <i class="bi bi-hourglass-split me-1"></i>
+                                <span>Cash not yet marked as collected from customer.</span>
+                            </div>
+                            <form action="{{ url_for('admin.mark_payment_received', order_id=order[0]) }}" method="POST"
+                                  onsubmit="return confirm('Confirm you have received Rs {{ '{:,.2f}'.format(order[4]) }} cash from {{ order[1] }}?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-cash-coin me-2"></i>Mark Cash Received (Rs {{ "{:,.2f}".format(order[4]) }})
+                                </button>
+                            </form>
+                        {% elif order[8] == 'bank_transfer' and order[9] != 'verified' %}
+                            <div class="alert alert-info py-2 mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Verify the bank transfer payment first, then payment received will be auto-confirmed.
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
+
         </div>
 
         <div class="col-lg-4">

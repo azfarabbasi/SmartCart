@@ -87,7 +87,17 @@ def _auto_migrate(conn):
                     conn.commit()
             except Exception:
                 pass
-        # 4. Always keep place_order procedure up to date (recompile on every startup)
+        # 5. Ensure cash_received_at and cash_received_by columns exist on Orders
+        try:
+            cur.execute("SELECT cash_received_at FROM Orders WHERE ROWNUM=1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Orders ADD (cash_received_at DATE, cash_received_by NUMBER)")
+                conn.commit()
+            except Exception:
+                pass
+        # 6. Always keep place_order procedure up to date (recompile on every startup)
+
         try:
             cur.execute("""
 CREATE OR REPLACE PROCEDURE place_order(

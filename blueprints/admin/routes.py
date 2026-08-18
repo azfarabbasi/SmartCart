@@ -90,8 +90,58 @@ def dashboard():
     net_profit = total_revenue - total_cost
     profit_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
 
+    # Confirmed Net Profit: only orders where payment was physically received
+    # (COD with cash_received_at set, OR bank_transfer with payment_status=verified)
+    confirmed_revenue = 0.0
+    confirmed_cost = 0.0
+    confirmed_orders_count = 0
+    try:
+        cur.execute("""
+            SELECT NVL(SUM(o.total_amount), 0), COUNT(o.order_id)
+            FROM Orders o
+            WHERE o.status != 'cancelled'
+              AND (
+                  (o.payment_method = 'cod' AND o.cash_received_at IS NOT NULL)
+                  OR (o.payment_method = 'bank_transfer' AND o.payment_status = 'verified')
+              )
+        """)
+        row = cur.fetchone()
+        confirmed_revenue = float(row[0])
+        confirmed_orders_count = int(row[1])
+        cur.execute("""
+            SELECT NVL(SUM(oi.quantity * NVL(p.cost_price, 0)), 0)
+            FROM OrderItems oi
+            JOIN Products p ON oi.product_id = p.product_id
+            JOIN Orders o ON oi.order_id = o.order_id
+            WHERE o.status != 'cancelled'
+              AND (
+                  (o.payment_method = 'cod' AND o.cash_received_at IS NOT NULL)
+                  OR (o.payment_method = 'bank_transfer' AND o.payment_status = 'verified')
+              )
+        """)
+        confirmed_cost = float(cur.fetchone()[0])
+    except Exception as e:
+        current_app.logger.warning(f"Error computing confirmed profit: {e}")
+
+    confirmed_net_profit = confirmed_revenue - confirmed_cost
+    confirmed_margin = (confirmed_net_profit / confirmed_revenue * 100) if confirmed_revenue > 0 else 0.0
+
     cur.execute("SELECT COUNT(*) FROM Orders WHERE payment_status = 'pending_verification'")
     pending_payments = cur.fetchone()[0]
+
+    # Orders awaiting cash collection (COD delivered but cash not yet marked received)
+    pending_cod_collection = 0
+    try:
+        cur.execute("""
+            SELECT COUNT(*) FROM Orders
+            WHERE payment_method = 'cod'
+              AND status = 'delivered'
+              AND cash_received_at IS NULL
+        """)
+        pending_cod_collection = cur.fetchone()[0]
+    except Exception:
+        pass
+
     cur.execute(
         "SELECT order_id, name, order_date, total_amount, status FROM ("
         "  SELECT o.order_id, u.name, o.order_date, o.total_amount, o.status "
@@ -104,8 +154,12 @@ def dashboard():
         'admin/dashboard.html', total_products=total_products, total_orders=total_orders,
         total_customers=total_customers, total_revenue=total_revenue, total_cost=total_cost,
         net_profit=net_profit, profit_margin=profit_margin,
-        pending_payments=pending_payments, recent_orders=recent_orders,
+        confirmed_net_profit=confirmed_net_profit, confirmed_margin=confirmed_margin,
+        confirmed_revenue=confirmed_revenue, confirmed_orders_count=confirmed_orders_count,
+        pending_payments=pending_payments, pending_cod_collection=pending_cod_collection,
+        recent_orders=recent_orders,
     )
+
 
 
 # ── PRODUCTS ─────────────────────────────────────────────────────
@@ -516,7 +570,8 @@ def order_detail(order_id):
                o.phone_number, o.delivery_address, o.payment_method, o.payment_status,
                o.payment_proof_path, o.advance_amount, o.coupon_code, o.coupon_discount_amount,
                o.loyalty_points_redeemed, o.loyalty_discount_amount, o.loyalty_points_earned,
-               o.cashback_points_awarded, o.payment_rejection_reason
+               o.cashback_points_awarded, o.payment_rejection_reason,
+               o.cash_received_at, o.cash_received_by
         FROM Orders o JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1
         """,
         [order_id],
@@ -558,6 +613,14 @@ def order_detail(order_id):
     total_discounts = coupon_discount + loyalty_discount
     net_order_profit = realized_revenue - total_order_cost
     margin_pct = (net_order_profit / realized_revenue * 100) if realized_revenue > 0 else 0.0
+
+    # Check if payment is confirmed received (cash collected or bank transfer verified)
+    cash_received_at = order[19]   # index 19
+    pay_method = order[8]
+    pay_status = order[9]
+    payment_confirmed = (cash_received_at is not None) or \
+                        (pay_method == 'bank_transfer' and pay_status == 'verified')
+
     financials = {
         'items_subtotal': items_subtotal,
         'total_cost': total_order_cost,
@@ -567,6 +630,8 @@ def order_detail(order_id):
         'realized_revenue': realized_revenue,
         'net_profit': net_order_profit,
         'margin_pct': margin_pct,
+        'confirmed': payment_confirmed,
+        'cash_received_at': cash_received_at,
     }
 
     cur.execute("SELECT amount, payment_date, method FROM Payments WHERE order_id = :1", [order_id])
@@ -576,6 +641,7 @@ def order_detail(order_id):
         'admin/order_detail.html', order=order, items=items, payment=payment,
         financials=financials, whatsapp_link=whatsapp_link,
     )
+
 
 
 # ── REVENUE & PROFIT MARGIN CALCULATOR ───────────────────────────
@@ -896,7 +962,52 @@ def reject_payment(order_id):
     return redirect(url_for('admin.order_detail', order_id=order_id))
 
 
-# ── COUPONS ──────────────────────────────────────────────────────
+@admin_bp.route('/orders/<int:order_id>/mark_payment_received', methods=['POST'])
+@admin_required
+def mark_payment_received(order_id):
+    """Mark that physical cash has been collected (primarily for COD orders).
+    For bank transfers, payment is confirmed via verify_payment; this route still
+    allows re-confirming if needed."""
+    cur = get_db().cursor()
+    cur.execute(
+        "SELECT payment_method, payment_status, cash_received_at, status, o.total_amount, u.name "
+        "FROM Orders o JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1",
+        [order_id],
+    )
+    row = cur.fetchone()
+    if not row:
+        flash('Order not found.', 'error')
+        return redirect(url_for('admin.orders'))
+
+    pay_method, pay_status, cash_at, order_status, total_amount, customer_name = row
+
+    if cash_at is not None:
+        flash('Cash already marked as received for this order.', 'error')
+        return redirect(url_for('admin.order_detail', order_id=order_id))
+
+    # For bank transfers that haven't been payment-verified yet, block
+    if pay_method == 'bank_transfer' and pay_status != 'verified':
+        flash('Bank transfer payment must be verified first before marking as received.', 'error')
+        return redirect(url_for('admin.order_detail', order_id=order_id))
+
+    cur.execute(
+        "UPDATE Orders SET cash_received_at = SYSDATE, cash_received_by = :uid WHERE order_id = :oid",
+        {'uid': current_user_id(), 'oid': order_id},
+    )
+    log_admin_action(cur, current_user_id(), 'payment.cash_received', 'Order', order_id,
+                     f'method={pay_method}, amount={total_amount}')
+    get_db().commit()
+
+    if pay_method == 'cod':
+        flash(f'✓ Cash payment of Rs {total_amount:,.2f} marked as received from {customer_name}. '
+              f'Profit for this order is now confirmed.', 'success')
+    else:
+        flash(f'✓ Payment of Rs {total_amount:,.2f} confirmed received for {customer_name}. '
+              f'This order is now counted in confirmed net profit.', 'success')
+    return redirect(url_for('admin.order_detail', order_id=order_id))
+
+
+
 @admin_bp.route('/coupons')
 @admin_required
 def coupons():

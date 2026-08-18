@@ -88,6 +88,8 @@
 .bi-list::before { content: "\f479"; }
 .bi-lock-fill::before { content: "\f47a"; }
 .bi-megaphone-fill::before { content: "\f483"; }
+.bi-patch-check-fill::before { content: "\f4b5"; }
+.bi-patch-check::before { content: "\f4b6"; }
 .bi-pencil-square::before { content: "\f4ca"; }
 .bi-pencil::before { content: "\f4cb"; }
 .bi-people::before { content: "\f4d0"; }
@@ -118,6 +120,7 @@
 .bi-x-circle::before { content: "\f623"; }
 .bi-bank::before { content: "\f62e"; }
 .bi-bank2::before { content: "\f62f"; }
+.bi-cash-coin::before { content: "\f632"; }
 .bi-check-lg::before { content: "\f633"; }
 .bi-plus-lg::before { content: "\f64d"; }
 .bi-x-lg::before { content: "\f659"; }
