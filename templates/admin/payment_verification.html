@@ -150,8 +150,12 @@
                                 <td>
                                     {% if proof_path %}
                                         <div class="d-flex align-items-center gap-2">
-                                            <div class="position-relative" style="cursor: pointer;"
-                                                 onclick="openReceiptModal('{{ media_url(proof_path) }}', '{{ order_id }}', '{{ cust_name|replace(\"'\", \"\\\\'\") }}', '{{ '{:,.2f}'.format(total_amount) }}', '{{ pay_status }}')">
+                                            <div class="position-relative js-receipt-trigger" style="cursor: pointer;"
+                                                 data-proof="{{ media_url(proof_path) }}"
+                                                 data-order-id="{{ order_id }}"
+                                                 data-name="{{ cust_name }}"
+                                                 data-amount="{{ '{:,.2f}'.format(total_amount) }}"
+                                                 data-status="{{ pay_status }}">
                                                 <img src="{{ media_url(proof_path) }}" class="payment-proof-thumb shadow-sm"
                                                      style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(255,255,255,0.15);"
                                                      alt="Receipt #{{ order_id }}">
@@ -160,8 +164,12 @@
                                                 </span>
                                             </div>
                                             <div>
-                                                <button type="button" class="btn btn-sm btn-outline-info"
-                                                        onclick="openReceiptModal('{{ media_url(proof_path) }}', '{{ order_id }}', '{{ cust_name|replace(\"'\", \"\\\\'\") }}', '{{ '{:,.2f}'.format(total_amount) }}', '{{ pay_status }}')">
+                                                <button type="button" class="btn btn-sm btn-outline-info js-receipt-trigger"
+                                                        data-proof="{{ media_url(proof_path) }}"
+                                                        data-order-id="{{ order_id }}"
+                                                        data-name="{{ cust_name }}"
+                                                        data-amount="{{ '{:,.2f}'.format(total_amount) }}"
+                                                        data-status="{{ pay_status }}">
                                                     <i class="bi bi-eye me-1"></i>Inspect
                                                 </button>
                                                 <a href="{{ media_url(proof_path) }}" target="_blank" rel="noopener" class="d-block small text-muted mt-1 text-decoration-none">
@@ -211,8 +219,9 @@
                                                     <i class="bi bi-check-lg me-1"></i>Verify Payment
                                                 </button>
                                             </form>
-                                            <button type="button" class="btn btn-sm btn-outline-danger w-100"
-                                                    onclick="openRejectPrompt('{{ order_id }}', '{{ cust_name|replace(\"'\", \"\\\\'\") }}')">
+                                            <button type="button" class="btn btn-sm btn-outline-danger w-100 js-reject-trigger"
+                                                    data-order-id="{{ order_id }}"
+                                                    data-name="{{ cust_name }}">
                                                 <i class="bi bi-x-lg me-1"></i>Reject
                                             </button>
                                         {% endif %}
@@ -324,33 +333,53 @@
     </div>
 
     <script>
-        function openReceiptModal(imgUrl, orderId, custName, amount, status) {
-            document.getElementById('modalOrderId').innerText = orderId;
-            document.getElementById('modalCustomerName').innerText = custName;
-            document.getElementById('modalOrderAmount').innerText = amount;
-            document.getElementById('modalPaymentStatus').innerText = status.replace('_', ' ').toUpperCase();
-            document.getElementById('modalReceiptImg').src = imgUrl;
-            document.getElementById('modalFullSizeLink').href = imgUrl;
-            document.getElementById('modalDownloadLink').href = imgUrl;
+        document.addEventListener('DOMContentLoaded', function() {
+            // Receipt modal triggers
+            document.querySelectorAll('.js-receipt-trigger').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    const imgUrl = this.getAttribute('data-proof');
+                    const orderId = this.getAttribute('data-order-id');
+                    const custName = this.getAttribute('data-name');
+                    const amount = this.getAttribute('data-amount');
+                    const status = this.getAttribute('data-status') || '';
 
-            const verifyForm = document.getElementById('modalVerifyForm');
-            verifyForm.action = `/admin/payments/${orderId}/verify`;
+                    document.getElementById('modalOrderId').innerText = orderId;
+                    document.getElementById('modalCustomerName').innerText = custName;
+                    document.getElementById('modalOrderAmount').innerText = amount;
+                    document.getElementById('modalPaymentStatus').innerText = status.replace('_', ' ').toUpperCase();
+                    document.getElementById('modalReceiptImg').src = imgUrl;
+                    document.getElementById('modalFullSizeLink').href = imgUrl;
+                    document.getElementById('modalDownloadLink').href = imgUrl;
 
-            const rejectBtn = document.getElementById('modalRejectBtn');
-            rejectBtn.onclick = function() {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('receiptModal'));
-                if (modal) modal.hide();
-                openRejectPrompt(orderId, custName);
-            };
+                    const verifyForm = document.getElementById('modalVerifyForm');
+                    verifyForm.action = '/admin/payments/' + orderId + '/verify';
 
-            const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
-            modal.show();
-        }
+                    const rejectBtn = document.getElementById('modalRejectBtn');
+                    rejectBtn.onclick = function() {
+                        const receiptModal = bootstrap.Modal.getInstance(document.getElementById('receiptModal'));
+                        if (receiptModal) receiptModal.hide();
+                        openRejectPrompt(orderId, custName);
+                    };
+
+                    const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
+                    modal.show();
+                });
+            });
+
+            // Reject modal triggers
+            document.querySelectorAll('.js-reject-trigger').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    const orderId = this.getAttribute('data-order-id');
+                    const custName = this.getAttribute('data-name');
+                    openRejectPrompt(orderId, custName);
+                });
+            });
+        });
 
         function openRejectPrompt(orderId, custName) {
             document.getElementById('rejectOrderIdSpan').innerText = orderId;
             const form = document.getElementById('rejectPaymentForm');
-            form.action = `/admin/payments/${orderId}/reject`;
+            form.action = '/admin/payments/' + orderId + '/reject';
             const modal = new bootstrap.Modal(document.getElementById('rejectPaymentModal'));
             modal.show();
         }
