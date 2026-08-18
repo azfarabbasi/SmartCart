@@ -148,6 +148,51 @@ function initializeUnobtrusiveHandlers() {
         });
     }
 
+    // Admin Coupons: Discount Type Switcher (Percentage vs Fixed Cost)
+    const typePercentage = document.getElementById('typePercentage');
+    const typeFixed = document.getElementById('typeFixed');
+    const sectionPercent = document.getElementById('sectionPercentage');
+    const sectionFixed = document.getElementById('sectionFixed');
+    const inputPercent = document.getElementById('inputPercent');
+    const inputFixed = document.getElementById('inputFixed');
+
+    if (typePercentage && typeFixed && sectionPercent && sectionFixed) {
+        function syncCouponDiscountType() {
+            if (typeFixed.checked) {
+                sectionFixed.classList.remove('d-none');
+                sectionPercent.classList.add('d-none');
+                if (inputFixed) {
+                    inputFixed.required = true;
+                    inputFixed.disabled = false;
+                }
+                if (inputPercent) {
+                    inputPercent.required = false;
+                    inputPercent.disabled = true;
+                }
+            } else {
+                sectionPercent.classList.remove('d-none');
+                sectionFixed.classList.add('d-none');
+                if (inputPercent) {
+                    inputPercent.required = true;
+                    inputPercent.disabled = false;
+                }
+                if (inputFixed) {
+                    inputFixed.required = false;
+                    inputFixed.disabled = true;
+                }
+            }
+        }
+
+        typePercentage.addEventListener('change', syncCouponDiscountType);
+        typeFixed.addEventListener('change', syncCouponDiscountType);
+        document.querySelectorAll('label[for="typePercentage"], label[for="typeFixed"]').forEach(function(lbl) {
+            lbl.addEventListener('click', function() {
+                setTimeout(syncCouponDiscountType, 10);
+            });
+        });
+        syncCouponDiscountType();
+    }
+
     // Checkout: live "this is what your points are worth" hint
     const pointsInput = document.getElementById('pointsToRedeem');
     const pointsPreview = document.getElementById('pointsDiscountPreview');
