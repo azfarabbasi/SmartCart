@@ -34,7 +34,7 @@ FIELD_GROUPS = [
     ]),
     ('Payment Amounts', [
         ('cod_advance_amount', 'Cash on Delivery advance (Rs)', 'number'),
-        ('cashback_points', 'Bank transfer cashback (loyalty points, 2 pts = Rs. 1)', 'number'),
+        ('cashback_points', 'Bank transfer cashback (loyalty points, 10 pts = Rs. 1)', 'number'),
     ]),
     ('Site Messages', [
         ('hero_title', 'Homepage Hero Title', 'text'),

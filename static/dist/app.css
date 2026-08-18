@@ -57,6 +57,7 @@
 .bi-cart3::before { content: "\f244"; }
 .bi-cart4::before { content: "\f245"; }
 .bi-cash-stack::before { content: "\f246"; }
+.bi-cash::before { content: "\f247"; }
 .bi-chat-square-text::before { content: "\f264"; }
 .bi-check-circle-fill::before { content: "\f26a"; }
 .bi-check-circle::before { content: "\f26b"; }
@@ -99,6 +100,7 @@
 .bi-pencil-square::before { content: "\f4ca"; }
 .bi-pencil::before { content: "\f4cb"; }
 .bi-people::before { content: "\f4d0"; }
+.bi-percent::before { content: "\f4d1"; }
 .bi-person-check::before { content: "\f4d6"; }
 .bi-person-circle::before { content: "\f4d7"; }
 .bi-person-lines-fill::before { content: "\f4db"; }

@@ -145,7 +145,7 @@ function initializeUnobtrusiveHandlers() {
         pointsInput.addEventListener('input', function () {
             const pts = parseInt(this.value, 10) || 0;
             pointsPreview.textContent =
-                'Discount: Rs. ' + (pts / 2).toFixed(2) + ' (confirmed at checkout)';
+                'Discount: Rs. ' + (pts / 10).toFixed(2) + ' (confirmed at checkout)';
         });
     }
 

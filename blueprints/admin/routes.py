@@ -15,8 +15,9 @@ from db import get_db
 from extensions import limiter
 from security import log_admin_action
 from uploads import process_upload, save_upload, validate_upload
-from validators import (validate_cost_price, validate_discount_percent,
-                         validate_price, validate_required_text, validate_stock)
+from validators import (validate_cost_price, validate_coupon_discount,
+                         validate_discount_percent, validate_price,
+                         validate_required_text, validate_stock)
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 limiter.limit('60 per minute')(admin_bp)
@@ -1095,7 +1096,8 @@ def mark_payment_received(order_id):
 def coupons():
     cur = get_db().cursor()
     cur.execute(
-        "SELECT coupon_id, code, discount_percent, max_uses, used_count, valid_from, valid_to, active "
+        "SELECT coupon_id, code, NVL(discount_type, 'percentage'), discount_percent, discount_amount, "
+        "max_uses, used_count, valid_from, valid_to, active "
         "FROM Coupons ORDER BY created_at DESC"
     )
     return render_template('admin/coupons.html', coupons=cur.fetchall())
@@ -1105,13 +1107,19 @@ def coupons():
 @admin_required
 def add_coupon():
     code = request.form.get('code', '').strip().upper()
+    discount_type = request.form.get('discount_type', 'percentage').strip().lower()
+    discount_value = request.form.get('discount_value')
+
     ok, err = validate_required_text(code, 'Coupon code', min_len=3, max_len=30)
-    pct = None
+    val = None
     if ok:
-        ok, err, pct = validate_discount_percent(request.form.get('discount_percent'))
+        ok, err, val = validate_coupon_discount(discount_type, discount_value)
     if not ok:
         flash(err, 'error')
         return redirect(url_for('admin.coupons'))
+
+    pct = val if discount_type == 'percentage' else None
+    amt = val if discount_type == 'fixed' else 0.0
 
     max_uses = request.form.get('max_uses') or None
     valid_to = request.form.get('valid_to') or None
@@ -1119,11 +1127,11 @@ def add_coupon():
     cur = get_db().cursor()
     try:
         cur.execute(
-            "INSERT INTO Coupons (coupon_id, code, discount_percent, max_uses, valid_to, created_by) "
-            "VALUES (coupons_seq.NEXTVAL, :c, :p, :m, TO_DATE(:vt, 'YYYY-MM-DD'), :u)",
-            {'c': code, 'p': pct, 'm': max_uses, 'vt': valid_to, 'u': current_user_id()},
+            "INSERT INTO Coupons (coupon_id, code, discount_type, discount_percent, discount_amount, max_uses, valid_to, created_by) "
+            "VALUES (coupons_seq.NEXTVAL, :c, :dt, :p, :a, :m, TO_DATE(:vt, 'YYYY-MM-DD'), :u)",
+            {'c': code, 'dt': discount_type, 'p': pct, 'a': amt, 'm': max_uses, 'vt': valid_to, 'u': current_user_id()},
         )
-        log_admin_action(cur, current_user_id(), 'coupon.create', 'Coupon', None, f'code={code}')
+        log_admin_action(cur, current_user_id(), 'coupon.create', 'Coupon', None, f'code={code}, type={discount_type}, val={val}')
         get_db().commit()
         flash('Coupon created.', 'success')
     except oracledb.IntegrityError:

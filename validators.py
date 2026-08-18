@@ -6,7 +6,7 @@ _COUPON_RE = re.compile(r'^[A-Z0-9_-]{3,30}$')
 
 
 def validate_phone_pk(phone):
-    phone = (phone or '').strip().replace(' ', '')
+    phone = (phone or '').strip().replace(' ', '').replace('-', '')
     if not _PHONE_RE.match(phone):
         return False, 'Enter a valid Pakistani mobile number, e.g. 03001234567 or +923001234567.'
     return True, None
@@ -87,3 +87,20 @@ def validate_discount_percent(value):
     if not 1 <= pct <= 100:
         return False, 'Discount percent must be between 1 and 100.', None
     return True, None, pct
+
+
+def validate_coupon_discount(discount_type, value):
+    discount_type = (discount_type or 'percentage').strip().lower()
+    if discount_type not in ('percentage', 'fixed'):
+        return False, 'Discount type must be either percentage or fixed amount.', None
+    try:
+        val = float(value)
+    except (TypeError, ValueError):
+        return False, 'Discount value must be a valid number.', None
+    if discount_type == 'percentage':
+        if not 1 <= val <= 100:
+            return False, 'Discount percent must be between 1% and 100%.', None
+    else:
+        if val <= 0:
+            return False, 'Discount amount must be greater than Rs. 0.', None
+    return True, None, val

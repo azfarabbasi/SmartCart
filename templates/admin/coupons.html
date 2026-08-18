@@ -3,29 +3,55 @@
 {% block page_title %}Coupons{% endblock %}
 {% block content %}
     <div class="row">
-        <div class="col-lg-4">
+        <div class="col-lg-4 mb-4">
             <div class="admin-card">
                 <div class="card-header"><h5><i class="bi bi-plus-circle me-2"></i>Create Coupon</h5></div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('admin.add_coupon') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
                         <div class="mb-3">
-                            <label class="form-label">Coupon Code</label>
-                            <input type="text" class="form-control text-uppercase" name="code" required minlength="3" maxlength="30" placeholder="e.g. WELCOME10">
+                            <label class="form-label fw-bold">Coupon Code</label>
+                            <input type="text" class="form-control text-uppercase font-monospace" name="code" required minlength="3" maxlength="30" placeholder="e.g. SAVE200 or SUMMER15">
+                            <small class="text-muted">Unique identifier entered by the customer.</small>
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label">Discount Percent</label>
-                            <input type="number" class="form-control" name="discount_percent" required min="1" max="100" step="0.01" placeholder="10">
+                            <label class="form-label fw-bold">Discount Type</label>
+                            <div class="btn-group w-100" role="group" aria-label="Coupon Discount Type">
+                                <input type="radio" class="btn-check" name="discount_type" id="typePercentage" value="percentage" checked autocomplete="off">
+                                <label class="btn btn-outline-primary" for="typePercentage">
+                                    <i class="bi bi-percent me-1"></i>Percentage (%)
+                                </label>
+
+                                <input type="radio" class="btn-check" name="discount_type" id="typeFixed" value="fixed" autocomplete="off">
+                                <label class="btn btn-outline-primary" for="typeFixed">
+                                    <i class="bi bi-cash-stack me-1"></i>Fixed Cost (Rs.)
+                                </label>
+                            </div>
                         </div>
+
+                        <div class="mb-3" id="discountValueGroup">
+                            <label class="form-label fw-bold" id="discountValueLabel">Discount Percentage (%)</label>
+                            <div class="input-group">
+                                <span class="input-group-text d-none" id="valuePrefix">Rs.</span>
+                                <input type="number" class="form-control" name="discount_value" id="discountValueInput" required min="1" max="100" step="0.01" placeholder="e.g. 10">
+                                <span class="input-group-text" id="valueSuffix">%</span>
+                            </div>
+                            <small class="text-muted" id="discountValueHint">Customer gets 1% to 100% off eligible subtotal.</small>
+                        </div>
+
                         <div class="mb-3">
-                            <label class="form-label">Max Uses (optional)</label>
+                            <label class="form-label fw-bold">Max Uses (optional)</label>
                             <input type="number" class="form-control" name="max_uses" min="1" placeholder="Unlimited">
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label">Expiry Date (optional)</label>
+                            <label class="form-label fw-bold">Expiry Date (optional)</label>
                             <input type="date" class="form-control" name="valid_to">
                         </div>
-                        <button type="submit" class="btn btn-warning w-100">
+
+                        <button type="submit" class="btn btn-warning w-100 fw-bold">
                             <i class="bi bi-plus-lg me-2"></i>Create Coupon
                         </button>
                     </form>
@@ -42,21 +68,42 @@
                 <div class="table-responsive">
                     <table class="table admin-table">
                         <thead>
-                            <tr><th>Code</th><th>Discount</th><th>Usage</th><th>Valid</th><th>Status</th><th>Action</th></tr>
+                            <tr>
+                                <th>Code</th>
+                                <th>Type</th>
+                                <th>Discount</th>
+                                <th>Usage</th>
+                                <th>Valid</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {% if coupons %}
                                 {% for c in coupons %}
                                     <tr>
-                                        <td><strong>{{ c[1] }}</strong></td>
-                                        <td>{{ c[2] }}%</td>
-                                        <td>{{ c[4] }}{% if c[3] %} / {{ c[3] }}{% else %} / &infin;{% endif %}</td>
+                                        <td><strong class="font-monospace">{{ c[1] }}</strong></td>
                                         <td>
-                                            {{ c[5].strftime('%d %b %Y') if c[5] else '' }}
-                                            {% if c[6] %} &ndash; {{ c[6].strftime('%d %b %Y') }}{% endif %}
+                                            {% if c[2] == 'fixed' %}
+                                                <span class="badge bg-success"><i class="bi bi-cash me-1"></i>Fixed Rs.</span>
+                                            {% else %}
+                                                <span class="badge bg-primary"><i class="bi bi-percent me-1"></i>Percentage</span>
+                                            {% endif %}
                                         </td>
                                         <td>
-                                            {% if c[7] %}
+                                            {% if c[2] == 'fixed' %}
+                                                <strong class="text-success">Rs. {{ "{:,.2f}".format(c[4] if c[4] else 0) }}</strong>
+                                            {% else %}
+                                                <strong class="text-primary">{{ c[3] }}%</strong>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ c[6] }}{% if c[5] %} / {{ c[5] }}{% else %} / &infin;{% endif %}</td>
+                                        <td>
+                                            {{ c[7].strftime('%d %b %Y') if c[7] else '' }}
+                                            {% if c[8] %} &ndash; {{ c[8].strftime('%d %b %Y') }}{% endif %}
+                                        </td>
+                                        <td>
+                                            {% if c[9] %}
                                                 <span class="badge bg-success">Active</span>
                                             {% else %}
                                                 <span class="badge bg-secondary">Inactive</span>
@@ -65,15 +112,15 @@
                                         <td>
                                             <form action="{{ url_for('admin.toggle_coupon', coupon_id=c[0]) }}" method="POST">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                                    {{ 'Deactivate' if c[7] else 'Activate' }}
+                                                <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if c[9] else 'btn-outline-success' }}">
+                                                    {{ 'Deactivate' if c[9] else 'Activate' }}
                                                 </button>
                                             </form>
                                         </td>
                                     </tr>
                                 {% endfor %}
                             {% else %}
-                                <tr><td colspan="6" class="text-center text-muted py-4">No coupons yet.</td></tr>
+                                <tr><td colspan="7" class="text-center text-muted py-4">No coupons yet.</td></tr>
                             {% endif %}
                         </tbody>
                     </table>
@@ -81,4 +128,45 @@
             </div>
         </div>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typePercentage = document.getElementById('typePercentage');
+        const typeFixed = document.getElementById('typeFixed');
+        const label = document.getElementById('discountValueLabel');
+        const input = document.getElementById('discountValueInput');
+        const prefix = document.getElementById('valuePrefix');
+        const suffix = document.getElementById('valueSuffix');
+        const hint = document.getElementById('discountValueHint');
+
+        function updateDiscountType() {
+            if (typeFixed && typeFixed.checked) {
+                label.textContent = 'Discount Price / Amount (Rs.)';
+                input.placeholder = 'e.g. 200 (for Rs. 200 off)';
+                input.min = '1';
+                input.removeAttribute('max');
+                input.step = '1';
+                prefix.classList.remove('d-none');
+                suffix.classList.add('d-none');
+                hint.textContent = 'Direct fixed rupee deduction (e.g. Rs. 200, Rs. 400 off total order).';
+            } else {
+                label.textContent = 'Discount Percentage (%)';
+                input.placeholder = 'e.g. 10 (for 10% off)';
+                input.min = '1';
+                input.max = '100';
+                input.step = '0.01';
+                prefix.classList.add('d-none');
+                suffix.classList.remove('d-none');
+                hint.textContent = 'Customer gets 1% to 100% off eligible subtotal.';
+            }
+        }
+
+        if (typePercentage && typeFixed) {
+            typePercentage.addEventListener('change', updateDiscountType);
+            typeFixed.addEventListener('change', updateDiscountType);
+            updateDiscountType();
+        }
+    });
+    </script>
 {% endblock %}
+

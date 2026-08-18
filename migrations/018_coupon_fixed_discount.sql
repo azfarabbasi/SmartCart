@@ -1,154 +1,21 @@
-import oracledb
-from flask import g
+-- Migration 018: Add discount_type and discount_amount to Coupons for fixed-amount discounts
+ALTER TABLE Coupons ADD (
+    discount_type   VARCHAR2(20) DEFAULT 'percentage' NOT NULL,
+    discount_amount NUMBER(10,2) DEFAULT 0
+);
 
-_pool = None
+ALTER TABLE Coupons MODIFY (discount_percent NUMBER(5,2) NULL);
 
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER TABLE Coupons DROP CONSTRAINT chk_coupon_discount';
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END;
+/
 
-def _output_type_handler(cursor, metadata):
-    # Auto-fetch CLOB/BLOB columns as plain str/bytes instead of LOB objects
-    # (Oracle 11.2 thick-mode default), so callers never need cur.read().
-    if metadata.type_code is oracledb.DB_TYPE_CLOB:
-        return cursor.var(oracledb.DB_TYPE_LONG, arraysize=cursor.arraysize)
-    if metadata.type_code is oracledb.DB_TYPE_BLOB:
-        return cursor.var(oracledb.DB_TYPE_LONG_RAW, arraysize=cursor.arraysize)
+ALTER TABLE Coupons ADD CONSTRAINT chk_coupon_type CHECK (discount_type IN ('percentage', 'fixed'));
+ALTER TABLE Coupons ADD CONSTRAINT chk_coupon_discount CHECK (discount_percent IS NULL OR (discount_percent BETWEEN 1 AND 100));
 
-
-def init_pool(app):
-    global _pool
-    # Use thick mode only when ORACLE_CLIENT_LIB_DIR is set (local dev).
-    # On Vercel / serverless, thin mode is used automatically (no native libs).
-    oracle_client_dir = app.config.get('ORACLE_CLIENT_LIB_DIR')
-    if oracle_client_dir:
-        try:
-            oracledb.init_oracle_client(lib_dir=oracle_client_dir)
-        except oracledb.ProgrammingError:
-            pass  # Already initialised
-    _pool = oracledb.create_pool(
-        user=app.config['DB_USER'],
-        password=app.config['DB_PASSWORD'],
-        dsn=app.config['DB_DSN'],
-        min=2,
-        max=10,
-        increment=1,
-        getmode=oracledb.POOL_GETMODE_WAIT,
-    )
-
-
-_migrated = False
-
-
-def _auto_migrate(conn):
-    try:
-        cur = conn.cursor()
-        # 1. Ensure cost_price column exists on Products
-        try:
-            cur.execute("SELECT cost_price FROM Products WHERE ROWNUM = 1")
-        except Exception:
-            try:
-                cur.execute("ALTER TABLE Products ADD (cost_price NUMBER(10,2) DEFAULT 0 NOT NULL)")
-                conn.commit()
-            except Exception:
-                pass
-
-        # 2. Ensure min_profit_margin_floor in SiteSettings
-        try:
-            cur.execute("""
-            MERGE INTO SiteSettings s
-            USING (SELECT 'min_profit_margin_floor' AS setting_key FROM dual) d
-            ON (s.setting_key = d.setting_key)
-            WHEN NOT MATCHED THEN INSERT (setting_key, setting_value) VALUES ('min_profit_margin_floor', '300')
-            """)
-            conn.commit()
-        except Exception:
-            pass
-
-        # 3. Ensure image and media columns are CLOB for Base64 storage
-        media_columns = (
-            ('PRODUCTS', 'IMAGE_PATH'),
-            ('PRODUCTMEDIA', 'MEDIA_PATH'),
-            ('PRODUCTFEEDBACK', 'MEDIA_PATH'),
-            ('FEEDBACKREPLIES', 'MEDIA_PATH'),
-            ('PRODUCTSUGGESTIONS', 'MEDIA_PATH'),
-            ('ORDERS', 'PAYMENT_PROOF_PATH'),
-        )
-        for table, col in media_columns:
-            try:
-                cur.execute(
-                    "SELECT data_type FROM user_tab_cols WHERE table_name = :t AND column_name = :c",
-                    {'t': table, 'c': col},
-                )
-                row = cur.fetchone()
-                if row and row[0] != 'CLOB':
-                    temp_col = f"{col.lower()}_clob"
-                    cur.execute(f"ALTER TABLE {table} ADD ({temp_col} CLOB)")
-                    cur.execute(f"UPDATE {table} SET {temp_col} = {col}")
-                    cur.execute(f"ALTER TABLE {table} DROP COLUMN {col}")
-                    cur.execute(f"ALTER TABLE {table} RENAME COLUMN {temp_col} TO {col}")
-                    conn.commit()
-            except Exception:
-                pass
-
-        # 4. Ensure address columns exist on Orders
-        try:
-            cur.execute("SELECT address_city FROM Orders WHERE ROWNUM = 1")
-        except Exception:
-            try:
-                cur.execute("ALTER TABLE Orders MODIFY (delivery_address VARCHAR2(500))")
-            except Exception:
-                pass
-            try:
-                cur.execute("""
-                ALTER TABLE Orders ADD (
-                    address_city         VARCHAR2(50),
-                    address_area         VARCHAR2(150),
-                    address_house_no     VARCHAR2(100),
-                    address_block_sector VARCHAR2(100),
-                    address_landmark     VARCHAR2(150),
-                    address_notes        VARCHAR2(255)
-                )
-                """)
-                conn.commit()
-            except Exception:
-                pass
-
-        # 5. Ensure cash_received_at and cash_received_by columns exist on Orders
-        try:
-            cur.execute("SELECT cash_received_at FROM Orders WHERE ROWNUM = 1")
-        except Exception:
-            try:
-                cur.execute("ALTER TABLE Orders ADD (cash_received_at DATE, cash_received_by NUMBER)")
-                conn.commit()
-            except Exception:
-                pass
-
-        # 6. Ensure discount_type and discount_amount columns exist on Coupons
-        try:
-            cur.execute("SELECT discount_type FROM Coupons WHERE ROWNUM = 1")
-        except Exception:
-            try:
-                cur.execute("ALTER TABLE Coupons ADD (discount_type VARCHAR2(20) DEFAULT 'percentage' NOT NULL, discount_amount NUMBER(10,2) DEFAULT 0)")
-                conn.commit()
-            except Exception:
-                pass
-            try:
-                cur.execute("ALTER TABLE Coupons MODIFY (discount_percent NUMBER(5,2) NULL)")
-                conn.commit()
-            except Exception:
-                pass
-            try:
-                cur.execute("ALTER TABLE Coupons DROP CONSTRAINT chk_coupon_discount")
-                conn.commit()
-            except Exception:
-                pass
-            try:
-                cur.execute("ALTER TABLE Coupons ADD CONSTRAINT chk_coupon_type CHECK (discount_type IN ('percentage', 'fixed'))")
-                conn.commit()
-            except Exception:
-                pass
-
-        # 7. Always keep place_order procedure up to date (recompile on startup)
-        try:
-            cur.execute("""
 CREATE OR REPLACE PROCEDURE place_order(
     p_user_id           IN  NUMBER,
     p_pay_method        IN  VARCHAR2,
@@ -324,33 +191,4 @@ BEGIN
     p_points_redeemed   := v_redeem_points;
     p_advance_required  := v_advance;
 END place_order;
-""")
-            conn.commit()
-        except Exception:
-            pass
-    except Exception:
-        pass
-
-
-def get_db():
-    global _migrated, _pool
-    if _pool is None:
-        from flask import current_app
-        init_pool(current_app)
-    if 'db_conn' not in g:
-        conn = _pool.acquire()
-        conn.outputtypehandler = _output_type_handler
-        if not _migrated:
-            _migrated = True
-            _auto_migrate(conn)
-        g.db_conn = conn
-    return g.db_conn
-
-
-def close_db(_exc=None):
-    try:
-        conn = g.pop('db_conn', None)
-        if conn is not None and _pool is not None:
-            _pool.release(conn)
-    except (RuntimeError, AttributeError):
-        pass
+/

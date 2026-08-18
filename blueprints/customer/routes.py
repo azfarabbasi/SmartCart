@@ -448,19 +448,20 @@ def remove_from_wishlist(wishlist_id):
 @login_required
 def checkout():
     cur = get_db().cursor()
-    cur.execute("SELECT loyalty_points_balance FROM Users WHERE user_id = :1", [current_user_id()])
-    points_balance = cur.fetchone()[0]
+    cur.execute("SELECT NVL(loyalty_points_balance, 0) FROM Users WHERE user_id = :1", [current_user_id()])
+    row = cur.fetchone()
+    points_balance = int(row[0]) if row and row[0] is not None else 0
 
     if request.method == 'POST':
         payment_method = request.form.get('payment_method', 'cod')
-        phone = request.form.get('phone', '').strip()
-        city = request.form.get('address_city', '').strip()
-        area = request.form.get('address_area', '').strip()
-        house_no = request.form.get('address_house_no', '').strip()
-        block_sector = request.form.get('address_block_sector', '').strip()
-        landmark = request.form.get('address_landmark', '').strip()
-        address_notes = request.form.get('address_notes', '').strip()
-        coupon_code = request.form.get('coupon_code', '').strip() or None
+        phone = (request.form.get('phone', '') or '').strip().replace(' ', '').replace('-', '')
+        city = (request.form.get('address_city', '') or '').strip()
+        area = (request.form.get('address_area', '') or '').strip()
+        house_no = (request.form.get('address_house_no', '') or '').strip()
+        block_sector = (request.form.get('address_block_sector', '') or '').strip()
+        landmark = (request.form.get('address_landmark', '') or '').strip()
+        address_notes = (request.form.get('address_notes', '') or '').strip()
+        coupon_code = (request.form.get('coupon_code', '') or '').strip() or None
         try:
             points_to_redeem = int(request.form.get('points_to_redeem', 0) or 0)
         except ValueError:
@@ -553,16 +554,20 @@ def checkout():
 
             new_order_id = order_id_var.getvalue()
 
-            cur.execute(
-                "UPDATE Orders SET address_city=:c, address_area=:a, address_house_no=:h, "
-                "address_block_sector=:b, address_landmark=:l, address_notes=:n WHERE order_id=:oid",
-                {'c': city, 'a': area, 'h': house_no, 'b': block_sector or None,
-                 'l': landmark, 'n': address_notes or None, 'oid': new_order_id},
-            )
+            try:
+                cur.execute(
+                    "UPDATE Orders SET address_city=:c, address_area=:a, address_house_no=:h, "
+                    "address_block_sector=:b, address_landmark=:l, address_notes=:n WHERE order_id=:oid",
+                    {'c': city, 'a': area, 'h': house_no, 'b': block_sector or None,
+                     'l': landmark, 'n': address_notes or None, 'oid': new_order_id},
+                )
+            except Exception as e:
+                current_app.logger.warning(f'Updating structured address parts failed: {e}')
+
             log_activity(cur, current_user_id(), 'order_placed', order_id=new_order_id)
             get_db().commit()
 
-            final_total = final_total_var.getvalue()
+            final_total = final_total_var.getvalue() or 0.0
             points_earned_estimate = 0
             if final_total >= 5000:
                 points_earned_estimate = 100 + int((final_total - 5000) // 1000) * 20
@@ -614,7 +619,7 @@ def checkout():
                 return redirect(url_for('customer.checkout'))
             elif 'ORA-02290' in error_msg:
                 current_app.logger.error(f'CHECK CONSTRAINT VIOLATED: {error_msg}')
-                flash('Order could not be saved due to a database error. Please contact support.', 'error')
+                flash('Order could not be saved due to a database constraint error. Please contact support.', 'error')
                 return redirect(url_for('customer.checkout'))
             else:
                 first_line = error_msg.split('\n')[0].strip()
@@ -636,13 +641,13 @@ def checkout():
         [current_user_id()],
     )
     cart_rows = cur.fetchall()
-    cart_items = [(r[0], r[1], r[2]) for r in cart_rows]
-    subtotal = sum(row[1] * row[2] for row in cart_rows)
+    cart_items = [(r[0], r[1], float(r[2])) for r in cart_rows]
+    subtotal = sum(row[1] * float(row[2]) for row in cart_rows)
     settings = sitesettings.get_settings(cur)
     floor_margin = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
     min_floor_price = sum(row[1] * (float(row[3]) + floor_margin) for row in cart_rows)
     max_total_discount = max(0.0, subtotal - min_floor_price)
-    max_redeemable_points = int(min(points_balance, subtotal * 0.5 * 2, max_total_discount * 2))
+    max_redeemable_points = int(min(points_balance, subtotal * 0.5 * 10, max_total_discount * 10))
     return render_template(
         'customer/checkout.html', cart_items=cart_items, subtotal=subtotal,
         points_balance=points_balance, max_redeemable_points=max_redeemable_points,
@@ -693,7 +698,9 @@ def order_detail(order_id):
     cur.execute("SELECT amount, payment_date, method FROM Payments WHERE order_id = :1", [order_id])
     payment = cur.fetchone()
 
-    total_amount, status, points_earned = order[2], order[3], order[13]
+    total_amount = float(order[2]) if order[2] is not None else 0.0
+    status = order[3] or 'pending'
+    points_earned = order[13] or 0
     pending_points_estimate = 0
     if not points_earned and status != 'cancelled' and total_amount >= 5000:
         pending_points_estimate = 100 + int((total_amount - 5000) // 1000) * 20
