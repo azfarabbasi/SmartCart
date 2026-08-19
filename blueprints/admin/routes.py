@@ -1045,48 +1045,67 @@ def reject_payment(order_id):
     return redirect(next_url)
 
 
-@admin_bp.route('/orders/<int:order_id>/mark_payment_received', methods=['POST'])
+@admin_bp.route('/orders/<int:order_id>/mark_payment_received', methods=['GET', 'POST'])
 @admin_required
 def mark_payment_received(order_id):
     """Mark that physical cash has been collected (primarily for COD orders).
     For bank transfers, payment is confirmed via verify_payment; this route still
     allows re-confirming if needed."""
+    if request.method == 'GET':
+        return redirect(url_for('admin.order_detail', order_id=order_id))
+
     cur = get_db().cursor()
-    cur.execute(
-        "SELECT payment_method, payment_status, cash_received_at, status, o.total_amount, u.name "
-        "FROM Orders o JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1",
-        [order_id],
-    )
-    row = cur.fetchone()
-    if not row:
-        flash('Order not found.', 'error')
-        return redirect(url_for('admin.orders'))
+    try:
+        cur.execute(
+            "SELECT o.payment_method, o.payment_status, o.cash_received_at, o.status, o.total_amount, u.name "
+            "FROM Orders o LEFT JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1",
+            [order_id],
+        )
+        row = cur.fetchone()
+        if not row:
+            flash('Order not found.', 'error')
+            return redirect(url_for('admin.orders'))
 
-    pay_method, pay_status, cash_at, order_status, total_amount, customer_name = row
+        pay_method, pay_status, cash_at, order_status, total_amount, customer_name = row
+        total_amount = float(total_amount or 0.0)
+        customer_name = customer_name or 'Customer'
 
-    if cash_at is not None:
-        flash('Cash already marked as received for this order.', 'error')
-        return redirect(url_for('admin.order_detail', order_id=order_id))
+        if cash_at is not None:
+            flash('Cash already marked as received for this order.', 'info')
+            return redirect(url_for('admin.order_detail', order_id=order_id))
 
-    # For bank transfers that haven't been payment-verified yet, block
-    if pay_method == 'bank_transfer' and pay_status != 'verified':
-        flash('Bank transfer payment must be verified first before marking as received.', 'error')
-        return redirect(url_for('admin.order_detail', order_id=order_id))
+        # For bank transfers that haven't been payment-verified yet, block
+        if pay_method == 'bank_transfer' and pay_status != 'verified':
+            flash('Bank transfer payment must be verified first before marking as received.', 'warning')
+            return redirect(url_for('admin.order_detail', order_id=order_id))
 
-    cur.execute(
-        "UPDATE Orders SET cash_received_at = SYSDATE, cash_received_by = :uid WHERE order_id = :oid",
-        {'uid': current_user_id(), 'oid': order_id},
-    )
-    log_admin_action(cur, current_user_id(), 'payment.cash_received', 'Order', order_id,
-                     f'method={pay_method}, amount={total_amount}')
-    get_db().commit()
+        uid = current_user_id()
+        try:
+            cur.execute(
+                "UPDATE Orders SET cash_received_at = SYSDATE, cash_received_by = :uid WHERE order_id = :oid",
+                {'uid': uid, 'oid': order_id},
+            )
+        except Exception:
+            cur.execute(
+                "UPDATE Orders SET cash_received_at = SYSDATE WHERE order_id = :oid",
+                {'oid': order_id},
+            )
 
-    if pay_method == 'cod':
-        flash(f'✓ Cash payment of Rs {total_amount:,.2f} marked as received from {customer_name}. '
-              f'Profit for this order is now confirmed.', 'success')
-    else:
-        flash(f'✓ Payment of Rs {total_amount:,.2f} confirmed received for {customer_name}. '
-              f'This order is now counted in confirmed net profit.', 'success')
+        log_admin_action(cur, uid, 'payment.cash_received', 'Order', order_id,
+                         f'method={pay_method}, amount={total_amount}')
+        get_db().commit()
+
+        if pay_method == 'cod':
+            flash(f'✓ Cash payment of Rs {total_amount:,.2f} marked as received from {customer_name}. '
+                  f'Profit for this order is now confirmed.', 'success')
+        else:
+            flash(f'✓ Payment of Rs {total_amount:,.2f} confirmed received for {customer_name}. '
+                  f'This order is now counted in confirmed net profit.', 'success')
+    except Exception as e:
+        get_db().rollback()
+        current_app.logger.error(f"Error marking payment received for order #{order_id}: {e}")
+        flash(f'Failed to update payment status: {e}', 'error')
+
     return redirect(url_for('admin.order_detail', order_id=order_id))
 
 

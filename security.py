@@ -36,31 +36,41 @@ def register_security_headers(app):
 
 
 def log_admin_action(cur, admin_user_id, action, target_type=None, target_id=None, details=None):
-    cur.execute(
-        """
-        INSERT INTO AdminAuditLog (audit_id, admin_user_id, action, target_type, target_id,
-                                    details, ip_address, created_at)
-        VALUES (adminauditlog_seq.NEXTVAL, :p_uid, :act, :ttype, :tid, :det, :ip, SYSDATE)
-        """,
-        {
-            'p_uid': admin_user_id,
-            'act': action,
-            'ttype': target_type,
-            'tid': target_id,
-            'det': details,
-            'ip': request.remote_addr,
-        },
-    )
+    try:
+        cur.execute(
+            """
+            INSERT INTO AdminAuditLog (audit_id, admin_user_id, action, target_type, target_id,
+                                        details, ip_address, created_at)
+            VALUES (adminauditlog_seq.NEXTVAL, :p_uid, :act, :ttype, :tid, :det, :ip, SYSDATE)
+            """,
+            {
+                'p_uid': admin_user_id,
+                'act': action,
+                'ttype': target_type,
+                'tid': target_id,
+                'det': str(details)[:1000] if details else None,
+                'ip': request.remote_addr if request else None,
+            },
+        )
+    except Exception:
+        pass
 
 
 def record_login_attempt(cur, email, success):
-    cur.execute(
-        """
-        INSERT INTO LoginAttempts (attempt_id, email, ip_address, success, attempted_at)
-        VALUES (loginattempts_seq.NEXTVAL, :e, :ip, :s, SYSDATE)
-        """,
-        {'e': email.lower(), 'ip': request.remote_addr, 's': 1 if success else 0},
-    )
+    try:
+        cur.execute(
+            """
+            INSERT INTO LoginAttempts (attempt_id, email, ip_address, success, attempted_at)
+            VALUES (loginattempts_seq.NEXTVAL, :e, :ip, :s, SYSDATE)
+            """,
+            {
+                'e': email,
+                'ip': request.remote_addr if request else None,
+                's': 1 if success else 0,
+            },
+        )
+    except Exception:
+        pass
     if success:
         cur.execute("DELETE FROM LoginAttempts WHERE LOWER(email) = :e AND success = 0", {'e': email.lower()})
 

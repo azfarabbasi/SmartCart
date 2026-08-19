@@ -116,7 +116,16 @@ def _auto_migrate(conn):
             cur.execute("SELECT cash_received_at FROM Orders WHERE ROWNUM = 1")
         except Exception:
             try:
-                cur.execute("ALTER TABLE Orders ADD (cash_received_at DATE, cash_received_by NUMBER)")
+                cur.execute("ALTER TABLE Orders ADD (cash_received_at DATE)")
+                conn.commit()
+            except Exception:
+                pass
+
+        try:
+            cur.execute("SELECT cash_received_by FROM Orders WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Orders ADD (cash_received_by NUMBER)")
                 conn.commit()
             except Exception:
                 pass
@@ -142,6 +151,55 @@ def _auto_migrate(conn):
                 pass
             try:
                 cur.execute("ALTER TABLE Coupons ADD CONSTRAINT chk_coupon_type CHECK (discount_type IN ('percentage', 'fixed'))")
+                conn.commit()
+            except Exception:
+                pass
+
+        # 7. Ensure AdminAuditLog table and sequence exist
+        try:
+            cur.execute("SELECT 1 FROM AdminAuditLog WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("""
+                CREATE TABLE AdminAuditLog (
+                    audit_id      NUMBER PRIMARY KEY,
+                    admin_user_id NUMBER,
+                    action        VARCHAR2(100) NOT NULL,
+                    target_type   VARCHAR2(50),
+                    target_id     NUMBER,
+                    details       VARCHAR2(1000),
+                    ip_address    VARCHAR2(45),
+                    created_at    DATE DEFAULT SYSDATE
+                )
+                """)
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                cur.execute("CREATE SEQUENCE adminauditlog_seq START WITH 1 INCREMENT BY 1")
+                conn.commit()
+            except Exception:
+                pass
+
+        # 8. Ensure LoginAttempts table and sequence exist
+        try:
+            cur.execute("SELECT 1 FROM LoginAttempts WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("""
+                CREATE TABLE LoginAttempts (
+                    attempt_id   NUMBER PRIMARY KEY,
+                    email        VARCHAR2(100) NOT NULL,
+                    ip_address   VARCHAR2(45),
+                    success      NUMBER(1) DEFAULT 0,
+                    attempted_at DATE DEFAULT SYSDATE
+                )
+                """)
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                cur.execute("CREATE SEQUENCE loginattempts_seq START WITH 1 INCREMENT BY 1")
                 conn.commit()
             except Exception:
                 pass

@@ -244,10 +244,10 @@
                                 <span>Cash not yet marked as collected from customer.</span>
                             </div>
                             <form action="{{ url_for('admin.mark_payment_received', order_id=order[0]) }}" method="POST"
-                                  onsubmit="return confirm('Confirm you have received Rs {{ '{:,.2f}'.format(order[4]) }} cash from {{ order[1] }}?')">
+                                  onsubmit="return confirm('Confirm you have received Rs {{ '{:,.2f}'.format(order[4] or 0) }} cash from {{ (order[1] or \'Customer\')|replace(\'\'\', \'\\\'\') }}?');">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-success">
-                                    <i class="bi bi-cash-coin me-2"></i>Mark Cash Received (Rs {{ "{:,.2f}".format(order[4]) }})
+                                    <i class="bi bi-cash-coin me-2"></i>Mark Cash Received (Rs {{ "{:,.2f}".format(order[4] or 0) }})
                                 </button>
                             </form>
                         {% elif order[8] == 'bank_transfer' and order[9] != 'verified' %}
