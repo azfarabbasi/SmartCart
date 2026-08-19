@@ -5,7 +5,7 @@
     <div class="order-detail-header mb-4">
         <div class="order-info-header">
             <h2><i class="bi bi-receipt me-2"></i>Order #{{ order[0] }}</h2>
-            <span class="order-date">{{ order[3].strftime('%d %B %Y, %I:%M %p') if order[3] else 'N/A' }}</span>
+            <span class="order-date">{{ order[3].strftime('%d %B %Y, %I:%M %p') if (order[3] and order[3].strftime is defined) else (order[3] or 'N/A') }}</span>
         </div>
         <a href="{{ url_for('admin.packing_slip', order_id=order[0]) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-printer"></i> Print Packing Slip
@@ -140,8 +140,8 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <p class="mb-1"><strong>Payment Method:</strong> {{ 'Cash on Delivery (COD)' if order[8] == 'cod' else 'Online Bank Transfer' }}</p>
-                            <p class="mb-1"><strong>Advance Required:</strong> Rs{{ "{:,.2f}".format(order[11]) }}</p>
-                            <p class="mb-1"><strong>Total Order Amount:</strong> Rs{{ "{:,.2f}".format(order[4]) }}</p>
+                            <p class="mb-1"><strong>Advance Required:</strong> Rs{{ "{:,.2f}".format(order[11] or 0.0) }}</p>
+                            <p class="mb-1"><strong>Total Order Amount:</strong> Rs{{ "{:,.2f}".format(order[4] or 0.0) }}</p>
                         </div>
                         <div class="col-md-6">
                             <p class="mb-1"><strong>Payment Status:</strong>
@@ -222,9 +222,13 @@
                                 <i class="bi bi-patch-check-fill fs-5"></i>
                                 <div>
                                     <strong>✓ Payment Received</strong> &mdash; confirmed on
-                                    {{ financials.cash_received_at.strftime('%d %b %Y at %I:%M %p') }}
+                                    {% if financials.cash_received_at and financials.cash_received_at.strftime is defined %}
+                                        {{ financials.cash_received_at.strftime('%d %b %Y at %I:%M %p') }}
+                                    {% else %}
+                                        {{ financials.cash_received_at }}
+                                    {% endif %}
                                     <br>
-                                    <span class="text-success fw-bold">Net Profit Rs {{ "{:,.2f}".format(financials.net_profit) }} is counted in confirmed earnings.</span>
+                                    <span class="text-success fw-bold">Net Profit Rs {{ "{:,.2f}".format(financials.net_profit or 0.0) }} is counted in confirmed earnings.</span>
                                 </div>
                             </div>
                         {% elif order[8] == 'bank_transfer' and order[9] == 'verified' %}

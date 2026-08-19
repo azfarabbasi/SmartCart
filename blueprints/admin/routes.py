@@ -568,118 +568,154 @@ def orders():
 @admin_required
 def order_detail(order_id):
     cur = get_db().cursor()
-    cur.execute(
-        """
-        SELECT o.order_id, u.name, u.email, o.order_date, o.total_amount, o.status,
-               o.phone_number, o.delivery_address, o.payment_method, o.payment_status,
-               o.payment_proof_path, o.advance_amount, o.coupon_code, o.coupon_discount_amount,
-               o.loyalty_points_redeemed, o.loyalty_discount_amount, o.loyalty_points_earned,
-               o.cashback_points_awarded, o.payment_rejection_reason,
-               o.cash_received_at, o.cash_received_by
-        FROM Orders o JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1
-        """,
-        [order_id],
-    )
-    order = cur.fetchone()
-    if not order:
-        flash('Order not found.', 'error')
-        return redirect(url_for('admin.orders'))
-
     try:
-        cur.execute(
-            "SELECT p.name, oi.quantity, oi.unit_price, NVL(p.cost_price, 0) "
-            "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
-            [order_id],
+        try:
+            cur.execute(
+                """
+                SELECT o.order_id, u.name, u.email, o.order_date, o.total_amount, o.status,
+                       o.phone_number, o.delivery_address, o.payment_method, o.payment_status,
+                       o.payment_proof_path, o.advance_amount, o.coupon_code, o.coupon_discount_amount,
+                       o.loyalty_points_redeemed, o.loyalty_discount_amount, o.loyalty_points_earned,
+                       o.cashback_points_awarded, o.payment_rejection_reason,
+                       o.cash_received_at, o.cash_received_by
+                FROM Orders o LEFT JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1
+                """,
+                [order_id],
+            )
+            order = cur.fetchone()
+        except Exception:
+            # Fallback if cash_received_at / cash_received_by columns are not yet present
+            cur.execute(
+                """
+                SELECT o.order_id, u.name, u.email, o.order_date, o.total_amount, o.status,
+                       o.phone_number, o.delivery_address, o.payment_method, o.payment_status,
+                       o.payment_proof_path, o.advance_amount, o.coupon_code, o.coupon_discount_amount,
+                       o.loyalty_points_redeemed, o.loyalty_discount_amount, o.loyalty_points_earned,
+                       o.cashback_points_awarded, o.payment_rejection_reason,
+                       NULL, NULL
+                FROM Orders o LEFT JOIN Users u ON o.user_id = u.user_id WHERE o.order_id = :1
+                """,
+                [order_id],
+            )
+            order = cur.fetchone()
+
+        if not order:
+            flash('Order not found.', 'error')
+            return redirect(url_for('admin.orders'))
+
+        # Safe normalization for order values
+        order_list = list(order)
+        order_list[1] = order_list[1] or 'Customer'
+        order_list[2] = order_list[2] or ''
+        order_list[4] = float(order_list[4] or 0.0)
+        order_list[11] = float(order_list[11] or 0.0)
+        order_list[13] = float(order_list[13] or 0.0)
+        order_list[14] = int(order_list[14] or 0)
+        order_list[15] = float(order_list[15] or 0.0)
+        order_list[16] = int(order_list[16] or 0)
+        order_list[17] = int(order_list[17] or 0)
+        order = tuple(order_list)
+
+        try:
+            cur.execute(
+                "SELECT p.name, oi.quantity, oi.unit_price, NVL(p.cost_price, 0) "
+                "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
+                [order_id],
+            )
+            raw_items = cur.fetchall()
+        except Exception:
+            cur.execute(
+                "SELECT p.name, oi.quantity, oi.unit_price, 0 "
+                "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
+                [order_id],
+            )
+            raw_items = cur.fetchall()
+
+        items = []
+        total_order_cost = 0.0
+        items_subtotal = 0.0
+        for name, qty, unit_price, cost_price in raw_items:
+            item_total = qty * float(unit_price or 0.0)
+            item_cost = qty * float(cost_price or 0.0)
+            item_profit = item_total - item_cost
+            items_subtotal += item_total
+            total_order_cost += item_cost
+            items.append((name, qty, unit_price, cost_price, item_total, item_cost, item_profit))
+
+        realized_revenue = float(order[4] or 0.0)
+        coupon_discount = float(order[13] or 0.0)
+        loyalty_discount = float(order[15] or 0.0)
+        total_discounts = coupon_discount + loyalty_discount
+        net_order_profit = realized_revenue - total_order_cost
+        margin_pct = (net_order_profit / realized_revenue * 100) if realized_revenue > 0 else 0.0
+
+        cash_received_at = order[19]
+        pay_method = order[8]
+        pay_status = order[9]
+        payment_confirmed = (cash_received_at is not None) or \
+                            (pay_method == 'bank_transfer' and pay_status == 'verified')
+
+        financials = {
+            'items_subtotal': items_subtotal,
+            'total_cost': total_order_cost,
+            'coupon_discount': coupon_discount,
+            'loyalty_discount': loyalty_discount,
+            'total_discounts': total_discounts,
+            'realized_revenue': realized_revenue,
+            'net_profit': net_order_profit,
+            'margin_pct': margin_pct,
+            'confirmed': payment_confirmed,
+            'cash_received_at': cash_received_at,
+        }
+
+        try:
+            cur.execute("SELECT amount, payment_date, method FROM Payments WHERE order_id = :1", [order_id])
+            payment = cur.fetchone()
+        except Exception:
+            payment = None
+
+        customer_phone = order[6]
+        customer_name = order[1]
+        order_total = order[4]
+        order_status = order[5]
+        delivery_addr = order[7]
+
+        whatsapp_link = get_whatsapp_order_link(
+            customer_phone, order_id, customer_name, order_total,
+            status=order_status, payment_method=pay_method, address=delivery_addr, intent='status'
         )
-        raw_items = cur.fetchall()
-    except Exception:
-        cur.execute(
-            "SELECT p.name, oi.quantity, oi.unit_price, 0 "
-            "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
-            [order_id],
+        wa_links = {
+            'default': whatsapp_link,
+            'confirm': get_whatsapp_order_link(
+                customer_phone, order_id, customer_name, order_total,
+                status='pending', payment_method=pay_method, address=delivery_addr, intent='confirm'
+            ),
+            'shipped': get_whatsapp_order_link(
+                customer_phone, order_id, customer_name, order_total,
+                status='shipped', payment_method=pay_method, address=delivery_addr, intent='shipped'
+            ),
+            'delivered': get_whatsapp_order_link(
+                customer_phone, order_id, customer_name, order_total,
+                status='delivered', payment_method=pay_method, address=delivery_addr, intent='delivered'
+            ),
+            'verify_request': get_whatsapp_order_link(
+                customer_phone, order_id, customer_name, order_total,
+                status=order_status, payment_method=pay_method, address=delivery_addr, intent='verify_request'
+            ),
+            'payment_verified': get_whatsapp_order_link(
+                customer_phone, order_id, customer_name, order_total,
+                status=order_status, payment_method=pay_method, address=delivery_addr, intent='payment_verified'
+            ),
+        }
+
+        return render_template(
+            'admin/order_detail.html', order=order, items=items, payment=payment,
+            financials=financials, whatsapp_link=whatsapp_link, wa_links=wa_links,
         )
-        raw_items = cur.fetchall()
-
-    items = []
-    total_order_cost = 0.0
-    items_subtotal = 0.0
-    for name, qty, unit_price, cost_price in raw_items:
-        item_total = qty * float(unit_price)
-        item_cost = qty * float(cost_price)
-        item_profit = item_total - item_cost
-        items_subtotal += item_total
-        total_order_cost += item_cost
-        items.append((name, qty, unit_price, cost_price, item_total, item_cost, item_profit))
-
-    realized_revenue = float(order[4]) if order[4] else 0.0
-    coupon_discount = float(order[13]) if order[13] else 0.0
-    loyalty_discount = float(order[15]) if order[15] else 0.0
-    total_discounts = coupon_discount + loyalty_discount
-    net_order_profit = realized_revenue - total_order_cost
-    margin_pct = (net_order_profit / realized_revenue * 100) if realized_revenue > 0 else 0.0
-
-    # Check if payment is confirmed received (cash collected or bank transfer verified)
-    cash_received_at = order[19]   # index 19
-    pay_method = order[8]
-    pay_status = order[9]
-    payment_confirmed = (cash_received_at is not None) or \
-                        (pay_method == 'bank_transfer' and pay_status == 'verified')
-
-    financials = {
-        'items_subtotal': items_subtotal,
-        'total_cost': total_order_cost,
-        'coupon_discount': coupon_discount,
-        'loyalty_discount': loyalty_discount,
-        'total_discounts': total_discounts,
-        'realized_revenue': realized_revenue,
-        'net_profit': net_order_profit,
-        'margin_pct': margin_pct,
-        'confirmed': payment_confirmed,
-        'cash_received_at': cash_received_at,
-    }
-
-    cur.execute("SELECT amount, payment_date, method FROM Payments WHERE order_id = :1", [order_id])
-    payment = cur.fetchone()
-
-    # Generate custom context-aware WhatsApp links
-    customer_phone = order[6]
-    customer_name = order[1]
-    order_total = order[4]
-    order_status = order[5]
-    delivery_addr = order[7]
-
-    whatsapp_link = get_whatsapp_order_link(
-        customer_phone, order_id, customer_name, order_total,
-        status=order_status, payment_method=pay_method, address=delivery_addr, intent='status'
-    )
-    wa_links = {
-        'default': whatsapp_link,
-        'confirm': get_whatsapp_order_link(
-            customer_phone, order_id, customer_name, order_total,
-            status='pending', payment_method=pay_method, address=delivery_addr, intent='confirm'
-        ),
-        'shipped': get_whatsapp_order_link(
-            customer_phone, order_id, customer_name, order_total,
-            status='shipped', payment_method=pay_method, address=delivery_addr, intent='shipped'
-        ),
-        'delivered': get_whatsapp_order_link(
-            customer_phone, order_id, customer_name, order_total,
-            status='delivered', payment_method=pay_method, address=delivery_addr, intent='delivered'
-        ),
-        'verify_request': get_whatsapp_order_link(
-            customer_phone, order_id, customer_name, order_total,
-            status=order_status, payment_method=pay_method, address=delivery_addr, intent='verify_request'
-        ),
-        'payment_verified': get_whatsapp_order_link(
-            customer_phone, order_id, customer_name, order_total,
-            status=order_status, payment_method=pay_method, address=delivery_addr, intent='payment_verified'
-        ),
-    }
-
-    return render_template(
-        'admin/order_detail.html', order=order, items=items, payment=payment,
-        financials=financials, whatsapp_link=whatsapp_link, wa_links=wa_links,
-    )
+    except Exception as e:
+        current_app.logger.error(f"Error viewing order #{order_id}: {e}")
+        flash(f"Failed to load order #{order_id}: {e}", 'error')
+        return redirect(url_for('admin.orders'))
 
 
 
