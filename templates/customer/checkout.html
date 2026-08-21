@@ -5,7 +5,7 @@
         <h1 class="checkout-title mb-4">Checkout ({{ cart_items|length }} item{% if cart_items|length != 1 %}s{% endif %})</h1>
 
         {% if cart_items %}
-            <form method="POST" action="{{ url_for('customer.checkout') }}" id="checkoutForm" enctype="multipart/form-data">
+            <form method="POST" action="{{ url_for('customer.checkout') }}" id="checkoutForm" enctype="multipart/form-data" novalidate data-invalid-field="{{ invalid_field or '' }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="row">
                     <div class="col-lg-8">
@@ -14,43 +14,82 @@
                             <div class="section-content">
                                 <h2>Delivery Information</h2>
                                 <div class="mb-3">
-                                    <label class="sc-form-label" for="phone">Phone number</label>
-                                    <input class="sc-form-control form-control" id="phone" name="phone" type="tel" required
+                                    <label class="sc-form-label" for="phone">
+                                        Phone number <span class="text-danger required-star" title="Required">*</span>
+                                    </label>
+                                    <input class="sc-form-control form-control {% if invalid_field == 'phone' %}is-invalid{% endif %}"
+                                           id="phone" name="phone" type="tel" required
                                            placeholder="03001234567" pattern="^(\+92|0)3\d{9}$"
+                                           value="{{ form_data.get('phone') if form_data.get('phone') is not none else default_data.get('phone', '') }}"
                                            title="Enter a valid Pakistani mobile number, e.g. 03001234567">
+                                    <div class="invalid-feedback" id="phoneError">
+                                        Please enter a valid Pakistani mobile number (e.g. 03001234567).
+                                    </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="sc-form-label" for="address_city">City</label>
-                                        <select class="sc-form-control form-control" id="address_city" name="address_city" required>
-                                            <option value="Karachi">Karachi</option>
+                                        <label class="sc-form-label" for="address_city">
+                                            City <span class="text-danger required-star" title="Required">*</span>
+                                        </label>
+                                        <select class="sc-form-control form-control {% if invalid_field == 'address_city' %}is-invalid{% endif %}"
+                                                id="address_city" name="address_city" required>
+                                            <option value="Karachi" selected>Karachi</option>
                                         </select>
                                         <small class="text-muted">We currently deliver in Karachi only.</small>
+                                        <div class="invalid-feedback" id="addressCityError">
+                                            Please select a valid city.
+                                        </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="sc-form-label" for="address_area">Area</label>
-                                        <input class="sc-form-control form-control" id="address_area" name="address_area" type="text" required
-                                               minlength="2" maxlength="150" placeholder="e.g. Gulshan-e-Iqbal">
+                                        <label class="sc-form-label" for="address_area">
+                                            Area <span class="text-danger required-star" title="Required">*</span>
+                                        </label>
+                                        <input class="sc-form-control form-control {% if invalid_field == 'address_area' %}is-invalid{% endif %}"
+                                               id="address_area" name="address_area" type="text" required
+                                               minlength="2" maxlength="150" placeholder="e.g. Gulshan-e-Iqbal"
+                                               value="{{ form_data.get('address_area') if form_data.get('address_area') is not none else default_data.get('address_area', '') }}">
+                                        <div class="invalid-feedback" id="addressAreaError">
+                                            Please enter your area (e.g. Gulshan-e-Iqbal).
+                                        </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="sc-form-label" for="address_house_no">Flat No. / House No.</label>
-                                        <input class="sc-form-control form-control" id="address_house_no" name="address_house_no" type="text" required
-                                               maxlength="100" placeholder="e.g. House 12-A, Street 5">
+                                        <label class="sc-form-label" for="address_house_no">
+                                            Flat No. / House No. <span class="text-danger required-star" title="Required">*</span>
+                                        </label>
+                                        <input class="sc-form-control form-control {% if invalid_field == 'address_house_no' %}is-invalid{% endif %}"
+                                               id="address_house_no" name="address_house_no" type="text" required
+                                               maxlength="100" placeholder="e.g. House 12-A, Street 5"
+                                               value="{{ form_data.get('address_house_no') if form_data.get('address_house_no') is not none else default_data.get('address_house_no', '') }}">
+                                        <div class="invalid-feedback" id="addressHouseNoError">
+                                            Please enter your flat or house number.
+                                        </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="sc-form-label" for="address_block_sector">Block / Phase / Sector <span class="text-muted">(optional)</span></label>
+                                        <label class="sc-form-label" for="address_block_sector">
+                                            Block / Phase / Sector <span class="text-muted">(optional)</span>
+                                        </label>
                                         <input class="sc-form-control form-control" id="address_block_sector" name="address_block_sector" type="text"
-                                               maxlength="100" placeholder="e.g. Block A, Phase 6">
+                                               maxlength="100" placeholder="e.g. Block A, Phase 6"
+                                               value="{{ form_data.get('address_block_sector') if form_data.get('address_block_sector') is not none else default_data.get('address_block_sector', '') }}">
                                     </div>
                                     <div class="col-md-12 mb-3">
-                                        <label class="sc-form-label" for="address_landmark">Nearest Landmark</label>
-                                        <input class="sc-form-control form-control" id="address_landmark" name="address_landmark" type="text" required
-                                               maxlength="150" placeholder="e.g. Near ABC Bakery">
+                                        <label class="sc-form-label" for="address_landmark">
+                                            Nearest Landmark <span class="text-danger required-star" title="Required">*</span>
+                                        </label>
+                                        <input class="sc-form-control form-control {% if invalid_field == 'address_landmark' %}is-invalid{% endif %}"
+                                               id="address_landmark" name="address_landmark" type="text" required
+                                               maxlength="150" placeholder="e.g. Near ABC Bakery"
+                                               value="{{ form_data.get('address_landmark') if form_data.get('address_landmark') is not none else default_data.get('address_landmark', '') }}">
+                                        <div class="invalid-feedback" id="addressLandmarkError">
+                                            Please enter the nearest landmark (e.g. Near ABC Bakery).
+                                        </div>
                                     </div>
                                     <div class="col-md-12 mb-3">
-                                        <label class="sc-form-label" for="address_notes">Additional details <span class="text-muted">(optional)</span></label>
+                                        <label class="sc-form-label" for="address_notes">
+                                            Additional details <span class="text-muted">(optional)</span>
+                                        </label>
                                         <textarea class="sc-form-control form-control" id="address_notes" name="address_notes" rows="2" maxlength="255"
-                                                  placeholder="Anything else that helps the rider find you"></textarea>
+                                                  placeholder="Anything else that helps the rider find you">{{ form_data.get('address_notes') if form_data.get('address_notes') is not none else default_data.get('address_notes', '') }}</textarea>
                                     </div>
                                 </div>
                             </div>
@@ -61,7 +100,13 @@
                             <div class="section-content">
                                 <h2>Coupon Code</h2>
                                 <div class="mb-2">
-                                    <input type="text" name="coupon_code" class="form-control" placeholder="Enter coupon code (optional)">
+                                    <input type="text" name="coupon_code" id="coupon_code"
+                                           class="form-control {% if invalid_field == 'coupon_code' %}is-invalid{% endif %}"
+                                           placeholder="Enter coupon code (optional)"
+                                           value="{{ form_data.get('coupon_code', '') }}">
+                                    <div class="invalid-feedback" id="couponCodeError">
+                                        Please check the coupon code or remove it.
+                                    </div>
                                     <small class="text-muted">Discount is applied when your order is placed.</small>
                                 </div>
                             </div>
@@ -76,7 +121,7 @@
                                 <div class="mb-2">
                                     <label class="sc-form-label" for="pointsToRedeem">How many points would you like to redeem on this order?</label>
                                     <input type="number" name="points_to_redeem" id="pointsToRedeem" class="form-control"
-                                           min="0" max="{{ max_redeemable_points }}" value="0" step="1">
+                                           min="0" max="{{ max_redeemable_points }}" value="{{ form_data.get('points_to_redeem', '0') }}" step="1">
                                     <small class="text-muted" id="pointsDiscountPreview">Discount: Rs. 0.00</small>
                                 </div>
                             </div>
@@ -88,7 +133,8 @@
                                 <h2>Payment method</h2>
                                 <div class="payment-methods">
                                     <label class="payment-option">
-                                        <input type="radio" name="payment_method" value="cod" class="payment-method-radio" checked>
+                                        <input type="radio" name="payment_method" value="cod" class="payment-method-radio"
+                                               {% if not form_data or form_data.get('payment_method', 'cod') == 'cod' %}checked{% endif %}>
                                         <div class="payment-card">
                                             <i class="bi bi-cash-stack"></i>
                                             <div>
@@ -98,7 +144,8 @@
                                         </div>
                                     </label>
                                     <label class="payment-option">
-                                        <input type="radio" name="payment_method" value="bank_transfer" class="payment-method-radio">
+                                        <input type="radio" name="payment_method" value="bank_transfer" class="payment-method-radio"
+                                               {% if form_data and form_data.get('payment_method') == 'bank_transfer' %}checked{% endif %}>
                                         <div class="payment-card">
                                             <i class="bi bi-bank"></i>
                                             <div>
@@ -110,7 +157,8 @@
                                 </div>
 
                                 <!-- Bank Transfer Details (Visible ONLY when Online Bank Transfer is selected) -->
-                                <div id="bankTransferDetails" class="bank-transfer-container mt-3" style="display: none;">
+                                <div id="bankTransferDetails" class="bank-transfer-container mt-3"
+                                     style="{% if form_data and form_data.get('payment_method') == 'bank_transfer' %}display: block;{% else %}display: none;{% endif %}">
                                     <div class="bank-details-box">
                                         <h6><i class="bi bi-bank2"></i> Our Bank Account Details</h6>
                                         <p class="mb-1">Bank: <strong>{{ settings.get('bank_name') or 'N/A' }}</strong></p>
@@ -120,8 +168,15 @@
                                     </div>
 
                                     <div class="mb-2 mt-3">
-                                        <label class="sc-form-label" for="payment_proof">Upload Payment Screenshot / Receipt (Required for Online Payment)</label>
-                                        <input type="file" name="payment_proof" id="payment_proof" class="form-control" accept="image/*">
+                                        <label class="sc-form-label" for="payment_proof">
+                                            Upload Payment Screenshot / Receipt <span class="text-danger required-star" id="paymentProofStar" style="display: none;">*</span>
+                                        </label>
+                                        <input type="file" name="payment_proof" id="payment_proof"
+                                               class="form-control {% if invalid_field == 'payment_proof' %}is-invalid{% endif %}"
+                                               accept="image/*">
+                                        <div class="invalid-feedback" id="paymentProofError">
+                                            Please upload a screenshot or receipt of your bank transfer.
+                                        </div>
                                         <small class="text-muted">Upload JPG, PNG, or WEBP screenshot of your bank/easypaisa/jazzcash transfer.</small>
                                     </div>
                                 </div>
@@ -158,7 +213,7 @@
 
                     <div class="col-lg-4">
                         <div class="order-summary-card">
-                            <button type="submit" class="btn btn-warning w-100 mb-3">
+                            <button type="submit" id="placeOrderBtn" class="btn btn-warning w-100 mb-3">
                                 <i class="bi bi-lock-fill me-2"></i>Place your order
                             </button>
                             <p class="terms-text">

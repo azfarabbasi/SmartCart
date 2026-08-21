@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     lazyLoadImages();
     checkLowStock();
     initializeFormLoadingState();
+    initializeCheckoutValidation();
     initializeUnobtrusiveHandlers();
 });
 
@@ -102,6 +103,7 @@ function initializeUnobtrusiveHandlers() {
     const paymentRadios = document.querySelectorAll('.payment-method-radio');
     const bankDetailsBox = document.getElementById('bankTransferDetails');
     const paymentProofInput = document.getElementById('payment_proof');
+    const paymentProofStar = document.getElementById('paymentProofStar');
 
     function updatePaymentMethodView() {
         const selected = document.querySelector('.payment-method-radio:checked');
@@ -109,11 +111,14 @@ function initializeUnobtrusiveHandlers() {
 
         if (selected.value === 'bank_transfer') {
             bankDetailsBox.style.display = 'block';
+            if (paymentProofStar) paymentProofStar.style.display = 'inline';
             if (paymentProofInput) paymentProofInput.required = true;
         } else {
             bankDetailsBox.style.display = 'none';
+            if (paymentProofStar) paymentProofStar.style.display = 'none';
             if (paymentProofInput) {
                 paymentProofInput.required = false;
+                paymentProofInput.classList.remove('is-invalid');
                 paymentProofInput.value = '';
             }
         }
@@ -796,7 +801,12 @@ function checkLowStock() {
 function initializeFormLoadingState() {
     const forms = document.querySelectorAll('form');
     forms.forEach(function(form) {
-        form.addEventListener('submit', function() {
+        // Skip checkoutForm because it has custom validation and loading controller
+        if (form.id === 'checkoutForm') return;
+        form.addEventListener('submit', function(e) {
+            if (e.defaultPrevented || (form.checkValidity && !form.checkValidity())) {
+                return;
+            }
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn && !submitBtn.disabled) {
                 const originalText = submitBtn.innerHTML;
@@ -810,6 +820,231 @@ function initializeFormLoadingState() {
                 }, 10000);
             }
         });
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Checkout Validation & Detail Preservation
+// ═══════════════════════════════════════════════════════════
+function initializeCheckoutValidation() {
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (!checkoutForm) return;
+
+    const phoneInput = document.getElementById('phone');
+    const citySelect = document.getElementById('address_city');
+    const areaInput = document.getElementById('address_area');
+    const houseNoInput = document.getElementById('address_house_no');
+    const blockSectorInput = document.getElementById('address_block_sector');
+    const landmarkInput = document.getElementById('address_landmark');
+    const notesInput = document.getElementById('address_notes');
+    const couponInput = document.getElementById('coupon_code');
+    const pointsInput = document.getElementById('pointsToRedeem');
+    const paymentProofInput = document.getElementById('payment_proof');
+    const placeOrderBtn = document.getElementById('placeOrderBtn') || checkoutForm.querySelector('button[type="submit"]');
+    const DRAFT_KEY = 'smartcart_checkout_draft';
+
+    // 1. SessionStorage Draft Preservation (Save as customer types, restore if fields empty)
+    function saveDraft() {
+        try {
+            const selectedPayment = document.querySelector('.payment-method-radio:checked');
+            const draft = {
+                phone: phoneInput ? phoneInput.value : '',
+                city: citySelect ? citySelect.value : 'Karachi',
+                area: areaInput ? areaInput.value : '',
+                house_no: houseNoInput ? houseNoInput.value : '',
+                block_sector: blockSectorInput ? blockSectorInput.value : '',
+                landmark: landmarkInput ? landmarkInput.value : '',
+                notes: notesInput ? notesInput.value : '',
+                coupon_code: couponInput ? couponInput.value : '',
+                points_to_redeem: pointsInput ? pointsInput.value : '0',
+                payment_method: selectedPayment ? selectedPayment.value : 'cod'
+            };
+            sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch (e) {
+            // Ignore quota or security restriction errors
+        }
+    }
+
+    function restoreDraft() {
+        try {
+            const raw = sessionStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            if (phoneInput && !phoneInput.value && draft.phone) phoneInput.value = draft.phone;
+            if (areaInput && !areaInput.value && draft.area) areaInput.value = draft.area;
+            if (houseNoInput && !houseNoInput.value && draft.house_no) houseNoInput.value = draft.house_no;
+            if (blockSectorInput && !blockSectorInput.value && draft.block_sector) blockSectorInput.value = draft.block_sector;
+            if (landmarkInput && !landmarkInput.value && draft.landmark) landmarkInput.value = draft.landmark;
+            if (notesInput && !notesInput.value && draft.notes) notesInput.value = draft.notes;
+            if (couponInput && !couponInput.value && draft.coupon_code) couponInput.value = draft.coupon_code;
+            if (pointsInput && (!pointsInput.value || pointsInput.value === '0') && draft.points_to_redeem) {
+                pointsInput.value = draft.points_to_redeem;
+            }
+            if (draft.payment_method) {
+                const radio = document.querySelector(`.payment-method-radio[value="${draft.payment_method}"]`);
+                if (radio && !radio.checked) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change'));
+                }
+            }
+        } catch (e) {}
+    }
+
+    restoreDraft();
+
+    // 2. Real-time removal of invalid feedback as customer types/changes input
+    const allInputs = checkoutForm.querySelectorAll('input, select, textarea');
+    allInputs.forEach(function(input) {
+        function handleInputActivity() {
+            if (input.classList.contains('is-invalid')) {
+                input.classList.remove('is-invalid');
+                const feedback = input.parentElement ? input.parentElement.querySelector('.invalid-feedback') : null;
+                if (feedback) feedback.style.display = '';
+            }
+            saveDraft();
+        }
+        input.addEventListener('input', handleInputActivity);
+        input.addEventListener('change', handleInputActivity);
+    });
+
+    // 3. Scroll to server-reported invalid field on initial page load if present
+    const serverInvalid = checkoutForm.querySelector('.is-invalid') ||
+        (checkoutForm.dataset.invalidField ? document.getElementById(checkoutForm.dataset.invalidField) : null);
+    if (serverInvalid) {
+        setTimeout(function() {
+            serverInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            serverInvalid.focus();
+            serverInvalid.classList.add('field-highlight-pulse');
+            setTimeout(function() {
+                serverInvalid.classList.remove('field-highlight-pulse');
+            }, 1500);
+        }, 300);
+    }
+
+    // 4. Client-side Form Submit Validation
+    checkoutForm.addEventListener('submit', function(e) {
+        const invalidElements = [];
+        let firstErrorMessage = '';
+
+        function markFieldInvalid(el, message) {
+            if (!el) return;
+            el.classList.add('is-invalid');
+            const feedback = el.parentElement ? el.parentElement.querySelector('.invalid-feedback') : null;
+            if (feedback && message) {
+                feedback.textContent = message;
+                feedback.style.display = 'block';
+            }
+            invalidElements.push(el);
+            if (!firstErrorMessage) {
+                firstErrorMessage = message;
+            }
+        }
+
+        function markFieldValid(el) {
+            if (!el) return;
+            el.classList.remove('is-invalid');
+            const feedback = el.parentElement ? el.parentElement.querySelector('.invalid-feedback') : null;
+            if (feedback) feedback.style.display = '';
+        }
+
+        // Phone Validation (Pakistani format e.g. 03001234567 or +923001234567)
+        if (phoneInput) {
+            const phoneVal = (phoneInput.value || '').trim().replace(/[\s-]/g, '');
+            const phonePattern = /^(\+92|0)3\d{9}$/;
+            if (!phoneVal) {
+                markFieldInvalid(phoneInput, 'Phone number is required. Please enter your mobile number.');
+            } else if (!phonePattern.test(phoneVal)) {
+                markFieldInvalid(phoneInput, 'Please enter a valid Pakistani mobile number (e.g. 03001234567).');
+            } else {
+                markFieldValid(phoneInput);
+            }
+        }
+
+        // City Validation
+        if (citySelect) {
+            if (!citySelect.value || citySelect.value.trim() !== 'Karachi') {
+                markFieldInvalid(citySelect, 'We currently only deliver in Karachi.');
+            } else {
+                markFieldValid(citySelect);
+            }
+        }
+
+        // Area Validation
+        if (areaInput) {
+            const areaVal = (areaInput.value || '').trim();
+            if (!areaVal || areaVal.length < 2) {
+                markFieldInvalid(areaInput, 'Area is required. Please enter your area (e.g. Gulshan-e-Iqbal).');
+            } else {
+                markFieldValid(areaInput);
+            }
+        }
+
+        // Flat No. / House No. Validation
+        if (houseNoInput) {
+            const houseVal = (houseNoInput.value || '').trim();
+            if (!houseVal || houseVal.length < 1) {
+                markFieldInvalid(houseNoInput, 'Flat / House number is required.');
+            } else {
+                markFieldValid(houseNoInput);
+            }
+        }
+
+        // Nearest Landmark Validation
+        if (landmarkInput) {
+            const landmarkVal = (landmarkInput.value || '').trim();
+            if (!landmarkVal || landmarkVal.length < 2) {
+                markFieldInvalid(landmarkInput, 'Nearest landmark is required (e.g. Near ABC Bakery).');
+            } else {
+                markFieldValid(landmarkInput);
+            }
+        }
+
+        // Payment Proof Validation (if Online Bank Transfer selected)
+        const selectedPayment = document.querySelector('.payment-method-radio:checked');
+        if (selectedPayment && selectedPayment.value === 'bank_transfer') {
+            if (paymentProofInput && (!paymentProofInput.files || paymentProofInput.files.length === 0)) {
+                markFieldInvalid(paymentProofInput, 'Please upload a screenshot or receipt of your bank transfer.');
+            } else {
+                markFieldValid(paymentProofInput);
+            }
+        }
+
+        // If validation failed for any required field:
+        if (invalidElements.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Re-enable place order button immediately
+            if (placeOrderBtn) {
+                placeOrderBtn.disabled = false;
+                placeOrderBtn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Place your order';
+            }
+
+            // Smoothly scroll back to the first empty / invalid box
+            const firstInvalid = invalidElements[0];
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            setTimeout(function() {
+                firstInvalid.focus();
+                firstInvalid.classList.add('field-highlight-pulse');
+                setTimeout(function() {
+                    firstInvalid.classList.remove('field-highlight-pulse');
+                }, 1500);
+            }, 350);
+
+            showToast(firstErrorMessage || 'Please fill in all required fields marked with *.', 'error');
+            return false;
+        }
+
+        // All fields are valid -- clean draft and show loading spinner
+        try {
+            sessionStorage.removeItem(DRAFT_KEY);
+        } catch (err) {}
+
+        if (placeOrderBtn) {
+            placeOrderBtn.disabled = true;
+            placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Placing your order...';
+        }
     });
 }
 

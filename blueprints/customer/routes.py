@@ -443,6 +443,67 @@ def remove_from_wishlist(wishlist_id):
     return redirect(url_for('customer.view_wishlist'))
 
 
+def _get_checkout_summary(cur, user_id, points_balance):
+    cur.execute(
+        "SELECT p.name, c.quantity, p.price, NVL(p.cost_price, 0) FROM Cart c JOIN Products p ON c.product_id = p.product_id "
+        "WHERE c.user_id = :1",
+        [user_id],
+    )
+    cart_rows = cur.fetchall()
+    cart_items = [(r[0], r[1], float(r[2])) for r in cart_rows]
+    subtotal = sum(row[1] * float(row[2]) for row in cart_rows)
+    settings = sitesettings.get_settings(cur)
+    floor_margin = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
+    min_floor_price = sum(row[1] * (float(row[3]) + floor_margin) for row in cart_rows)
+    max_total_discount = max(0.0, subtotal - min_floor_price)
+    max_redeemable_points = int(min(points_balance, subtotal * 0.5 * 10, max_total_discount * 10))
+    return {
+        'cart_items': cart_items,
+        'subtotal': subtotal,
+        'points_balance': points_balance,
+        'max_redeemable_points': max_redeemable_points,
+        'settings': settings,
+    }
+
+
+def _get_user_default_address(cur, user_id):
+    try:
+        cur.execute(
+            """
+            SELECT * FROM (
+                SELECT phone_number, address_city, address_area, address_house_no,
+                       address_block_sector, address_landmark, address_notes
+                FROM Orders
+                WHERE user_id = :1 AND (phone_number IS NOT NULL OR address_area IS NOT NULL)
+                ORDER BY order_date DESC, order_id DESC
+            ) WHERE ROWNUM = 1
+            """,
+            [user_id],
+        )
+        row = cur.fetchone()
+        if row:
+            return {
+                'phone': row[0] or '',
+                'address_city': row[1] or 'Karachi',
+                'address_area': row[2] or '',
+                'address_house_no': row[3] or '',
+                'address_block_sector': row[4] or '',
+                'address_landmark': row[5] or '',
+                'address_notes': row[6] or '',
+            }
+    except Exception:
+        pass
+    return {
+        'phone': '',
+        'address_city': 'Karachi',
+        'address_area': '',
+        'address_house_no': '',
+        'address_block_sector': '',
+        'address_landmark': '',
+        'address_notes': '',
+    }
+
+
 # ── CHECKOUT / ORDERS ────────────────────────────────────────────
 @customer_bp.route('/checkout', methods=['GET', 'POST'])
 @login_required
@@ -467,22 +528,37 @@ def checkout():
         except ValueError:
             points_to_redeem = 0
 
-        ok, err = (True, None)
+        ok, err, invalid_field = (True, None, None)
         if city != 'Karachi':
-            ok, err = False, 'We currently only deliver in Karachi.'
-        if ok:
-            ok, err = validate_required_text(area, 'Area', min_len=2, max_len=150)
-        if ok:
-            ok, err = validate_required_text(house_no, 'Flat No. / House No.', min_len=1, max_len=100)
-        if ok:
-            ok, err = validate_required_text(landmark, 'Nearest landmark', min_len=2, max_len=150)
+            ok, err, invalid_field = False, 'We currently only deliver in Karachi.', 'address_city'
         if ok:
             ok, err = validate_phone_pk(phone)
-        if payment_method not in ('cod', 'bank_transfer'):
-            ok, err = False, 'Invalid payment method.'
+            if not ok:
+                invalid_field = 'phone'
+        if ok:
+            ok, err = validate_required_text(area, 'Area', min_len=2, max_len=150)
+            if not ok:
+                invalid_field = 'address_area'
+        if ok:
+            ok, err = validate_required_text(house_no, 'Flat No. / House No.', min_len=1, max_len=100)
+            if not ok:
+                invalid_field = 'address_house_no'
+        if ok:
+            ok, err = validate_required_text(landmark, 'Nearest landmark', min_len=2, max_len=150)
+            if not ok:
+                invalid_field = 'address_landmark'
+        if ok and payment_method not in ('cod', 'bank_transfer'):
+            ok, err, invalid_field = False, 'Invalid payment method.', 'payment_method'
         if not ok:
             flash(err, 'error')
-            return redirect(url_for('customer.checkout'))
+            ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+            return render_template(
+                'customer/checkout.html',
+                **ctx,
+                form_data=request.form,
+                default_data={},
+                invalid_field=invalid_field,
+            ), 400
 
         address_line_parts = [house_no]
         if block_sector:
@@ -523,11 +599,25 @@ def checkout():
             proof_file = request.files.get('payment_proof')
             if not proof_file or not proof_file.filename:
                 flash('Please upload a screenshot of your bank transfer as payment proof for online payment.', 'error')
-                return redirect(url_for('customer.checkout'))
+                ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+                return render_template(
+                    'customer/checkout.html',
+                    **ctx,
+                    form_data=request.form,
+                    default_data={},
+                    invalid_field='payment_proof',
+                ), 400
             proof_ok, proof_err, data_url, _kind = process_upload(proof_file, allow_video=False)
             if not proof_ok:
                 flash(proof_err, 'error')
-                return redirect(url_for('customer.checkout'))
+                ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+                return render_template(
+                    'customer/checkout.html',
+                    **ctx,
+                    form_data=request.form,
+                    default_data={},
+                    invalid_field='payment_proof',
+                ), 400
             proof_path = data_url
             log_activity(cur, current_user_id(), 'payment_uploaded')
             get_db().commit()
@@ -613,45 +703,68 @@ def checkout():
                 return redirect(url_for('customer.view_cart'))
             elif 'ORA-20003' in error_msg:
                 flash('Invalid or expired coupon code. Please remove it and try again.', 'error')
-                return redirect(url_for('customer.checkout'))
+                ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+                return render_template(
+                    'customer/checkout.html',
+                    **ctx,
+                    form_data=request.form,
+                    default_data={},
+                    invalid_field='coupon_code',
+                ), 400
             elif 'ORA-20004' in error_msg:
                 flash('You have already used this coupon code on a previous order.', 'error')
-                return redirect(url_for('customer.checkout'))
+                ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+                return render_template(
+                    'customer/checkout.html',
+                    **ctx,
+                    form_data=request.form,
+                    default_data={},
+                    invalid_field='coupon_code',
+                ), 400
             elif 'ORA-02290' in error_msg:
                 current_app.logger.error(f'CHECK CONSTRAINT VIOLATED: {error_msg}')
                 flash('Order could not be saved due to a database constraint error. Please contact support.', 'error')
-                return redirect(url_for('customer.checkout'))
+                ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+                return render_template(
+                    'customer/checkout.html',
+                    **ctx,
+                    form_data=request.form,
+                    default_data={},
+                ), 400
             else:
                 first_line = error_msg.split('\n')[0].strip()
                 flash(f'Order could not be placed: {first_line}', 'error')
-                return redirect(url_for('customer.checkout'))
+                ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+                return render_template(
+                    'customer/checkout.html',
+                    **ctx,
+                    form_data=request.form,
+                    default_data={},
+                ), 400
         except Exception as e:
             get_db().rollback()
             current_app.logger.exception(f'Unexpected error during checkout: {e}')
             flash(f'Order could not be placed. Please try again. ({type(e).__name__}: {str(e)[:200]})', 'error')
-            return redirect(url_for('customer.checkout'))
+            ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+            return render_template(
+                'customer/checkout.html',
+                **ctx,
+                form_data=request.form,
+                default_data={},
+            ), 400
 
     # GET
     log_activity(cur, current_user_id(), 'checkout_start')
     get_db().commit()
 
-    cur.execute(
-        "SELECT p.name, c.quantity, p.price, NVL(p.cost_price, 0) FROM Cart c JOIN Products p ON c.product_id = p.product_id "
-        "WHERE c.user_id = :1",
-        [current_user_id()],
-    )
-    cart_rows = cur.fetchall()
-    cart_items = [(r[0], r[1], float(r[2])) for r in cart_rows]
-    subtotal = sum(row[1] * float(row[2]) for row in cart_rows)
-    settings = sitesettings.get_settings(cur)
-    floor_margin = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
-    min_floor_price = sum(row[1] * (float(row[3]) + floor_margin) for row in cart_rows)
-    max_total_discount = max(0.0, subtotal - min_floor_price)
-    max_redeemable_points = int(min(points_balance, subtotal * 0.5 * 10, max_total_discount * 10))
+    ctx = _get_checkout_summary(cur, current_user_id(), points_balance)
+    default_data = _get_user_default_address(cur, current_user_id())
     return render_template(
-        'customer/checkout.html', cart_items=cart_items, subtotal=subtotal,
-        points_balance=points_balance, max_redeemable_points=max_redeemable_points,
-        settings=settings,
+        'customer/checkout.html',
+        **ctx,
+        form_data={},
+        default_data=default_data,
+        invalid_field=None,
     )
 
 

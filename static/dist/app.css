@@ -1479,6 +1479,73 @@ a:hover {
     min-height: calc(100vh - 120px);
 }
 
+/* Form Labels and Required Asterisks */
+.sc-form-label {
+    font-weight: 500;
+    font-size: 0.9375rem;
+    color: var(--gray-800);
+    margin-bottom: 6px;
+    display: inline-block;
+}
+
+.required-star {
+    color: #dc3545;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-left: 2px;
+    vertical-align: middle;
+    line-height: 1;
+}
+
+/* Invalid Field Styling & Feedback */
+.form-control.is-invalid,
+.was-validated .form-control:invalid {
+    border-color: #dc3545 !important;
+    background-color: #fff8f8;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15) !important;
+}
+
+.form-control.is-invalid:focus,
+.was-validated .form-control:invalid:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: #dc3545;
+    font-weight: 500;
+}
+
+.is-invalid ~ .invalid-feedback,
+.is-invalid + .invalid-feedback,
+.was-validated :invalid ~ .invalid-feedback {
+    display: block;
+}
+
+/* Attention Pulse for Highlighted Empty Field */
+@keyframes invalidFieldPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6);
+    }
+    50% {
+        transform: scale(1.015);
+        box-shadow: 0 0 0 8px rgba(220, 53, 69, 0.2);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+.field-highlight-pulse {
+    animation: invalidFieldPulse 0.5s ease-in-out 2;
+}
+
 .checkout-section {
     display: flex;
     gap: 16px;
