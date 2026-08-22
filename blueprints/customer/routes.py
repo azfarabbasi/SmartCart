@@ -900,3 +900,25 @@ def loyalty_history():
     )
     ledger = cur.fetchall()
     return render_template('customer/loyalty_history.html', balance=balance, ledger=ledger)
+
+
+# ── POLICIES & MARKETING INFO PAGES ──────────────────────────────
+@customer_bp.route('/returns')
+def returns_policy():
+    return render_template('customer/returns.html')
+
+
+@customer_bp.route('/shipping')
+def shipping_policy():
+    return render_template('customer/shipping.html')
+
+
+@customer_bp.route('/faq')
+def faq():
+    return render_template('customer/faq.html')
+
+
+@customer_bp.route('/about')
+def about():
+    return render_template('customer/about.html')
+

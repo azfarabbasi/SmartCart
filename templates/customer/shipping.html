@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ site_settings.get('shipping_policy_title', 'Shipping & Delivery in Karachi') }} | SmartCart{% endblock %}
+
+{% block content %}
+<div class="policy-page-wrapper">
+    <div class="policy-hero bg-dark text-white py-5 mb-5 border-bottom border-secondary">
+        <div class="container py-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-3">
+                    <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}" class="text-warning text-decoration-none"><i class="bi bi-house-door me-1"></i>Home</a></li>
+                    <li class="breadcrumb-item active text-light" aria-current="page">Shipping &amp; Delivery</li>
+                </ol>
+            </nav>
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-warning text-dark px-3 py-2 fw-bold mb-3"><i class="bi bi-truck me-1"></i> EXPRESS DISPATCH</span>
+                    <h1 class="display-5 fw-bold mb-3">{{ site_settings.get('shipping_policy_title', 'Shipping & Delivery in Karachi') }}</h1>
+                    <p class="lead text-light opacity-85 mb-0">
+                        {{ site_settings.get('shipping_policy_summary', 'Fast, secure doorstep delivery across all areas of Karachi with live tracking and Cash on Delivery.') }}
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                    <a href="{{ url_for('customer.index') }}" class="btn btn-warning btn-lg px-4 py-3 fw-bold shadow">
+                        <i class="bi bi-bag-check me-2"></i>Shop Catalog Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container pb-5">
+        <div class="row g-5">
+            <div class="col-lg-8">
+                <!-- Delivery Timelines Table -->
+                <section class="mb-5">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-speedometer2 text-warning me-2"></i>Karachi Delivery Timelines &amp; Rates</h3>
+                    <div class="table-responsive bg-white rounded-3 shadow-sm border mb-4">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Service Type</th>
+                                    <th>Estimated Time</th>
+                                    <th>Delivery Fee</th>
+                                    <th>Availability</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong class="text-primary"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Same-Day Express</strong></td>
+                                    <td>4 – 8 Hours (Orders before 4 PM)</td>
+                                    <td>Standard Rate</td>
+                                    <td><span class="badge bg-success">All Karachi</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="bi bi-truck me-1"></i>Standard Doorstep</strong></td>
+                                    <td>24 Hours (Next Day)</td>
+                                    <td>{{ site_settings.get('free_delivery_notice', 'FREE on orders over Rs 2,000') }}</td>
+                                    <td><span class="badge bg-success">All Karachi</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="bi bi-cash-coin me-1"></i>Cash on Delivery (COD)</strong></td>
+                                    <td>1 – 2 Business Days</td>
+                                    <td>Advance Rs {{ site_settings.get('cod_advance_amount', '300') }} (Adjusted in total)</td>
+                                    <td><span class="badge bg-success">All Karachi</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="mb-5">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Areas Covered in Karachi</h3>
+                    <p class="text-secondary leading-relaxed">
+                        We deliver to every corner of Karachi including DHA (Phase 1–8), Clifton, Gulshan-e-Iqbal, Gulistan-e-Johar, PECHS, Bahria Town Karachi, North Nazimabad, Malir, Korangi, Nazimabad, Saddar, Scheme 33, and all surrounding areas.
+                    </p>
+                </section>
+
+                <section class="mb-4">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-box-seam text-info me-2"></i>Order Packing &amp; Safe Handling</h3>
+                    <p class="text-secondary leading-relaxed">
+                        All tech items, delicate earphones, and smartwatches are securely packaged in bubble wrap and impact-resistant cartons. Every order is inspected and sealed before handing over to our courier partner.
+                    </p>
+                </section>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 100px; background: #0f172a; color: #fff;">
+                    <h5 class="fw-bold text-warning mb-3"><i class="bi bi-whatsapp me-2"></i>Track Your Order</h5>
+                    <p class="text-light opacity-75 small mb-4">
+                        Need an update on your shipment? Drop your Order ID on WhatsApp and get real-time rider tracking.
+                    </p>
+                    <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20would%20like%20to%20track%20my%20order." target="_blank" class="btn btn-success fw-bold py-2 mb-3">
+                        <i class="bi bi-whatsapp me-2"></i>Live Track on WhatsApp
+                    </a>
+                    <div class="border-top border-secondary pt-3 text-muted small">
+                        <p class="mb-1"><i class="bi bi-shield-check text-warning me-1"></i> 100% Insured Delivery</p>
+                        <p class="mb-0"><i class="bi bi-arrow-repeat text-warning me-1"></i> 7-Day Replacement Guarantee</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

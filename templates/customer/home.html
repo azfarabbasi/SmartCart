@@ -138,6 +138,58 @@
         </div>
     </section>
 
+    <!-- ═══ 3.5 MARKETING VALUE PILLARS STRIP ═══ -->
+    <section class="marketing-pillars-section mb-3">
+        <div class="container-fluid px-2 px-md-3">
+            <div class="row g-2 g-md-3">
+                <div class="col-6 col-md-3">
+                    <a href="{{ url_for('customer.returns_policy') }}" class="pillar-card d-flex align-items-center gap-2 p-2 p-md-3 rounded-3 text-decoration-none">
+                        <div class="pillar-icon bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="bi {{ site_settings.get('prop_1_icon') or 'bi-arrow-repeat' }}"></i>
+                        </div>
+                        <div class="pillar-text">
+                            <h6 class="mb-0 fw-bold">{{ site_settings.get('prop_1_title') or '7-Day Easy Exchange' }}</h6>
+                            <small class="text-muted d-none d-sm-block">{{ site_settings.get('prop_1_sub') or 'Hassle-free replacement' }}</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="{{ url_for('customer.returns_policy') }}" class="pillar-card d-flex align-items-center gap-2 p-2 p-md-3 rounded-3 text-decoration-none">
+                        <div class="pillar-icon bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="bi {{ site_settings.get('prop_2_icon') or 'bi-patch-check-fill' }}"></i>
+                        </div>
+                        <div class="pillar-text">
+                            <h6 class="mb-0 fw-bold">{{ site_settings.get('prop_2_title') or '100% Genuine Brands' }}</h6>
+                            <small class="text-muted d-none d-sm-block">{{ site_settings.get('prop_2_sub') or 'Official local warranty' }}</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="{{ url_for('customer.shipping_policy') }}" class="pillar-card d-flex align-items-center gap-2 p-2 p-md-3 rounded-3 text-decoration-none">
+                        <div class="pillar-icon bg-info-subtle text-info rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="bi {{ site_settings.get('prop_3_icon') or 'bi-truck' }}"></i>
+                        </div>
+                        <div class="pillar-text">
+                            <h6 class="mb-0 fw-bold">{{ site_settings.get('prop_3_title') or 'Fast Karachi Delivery' }}</h6>
+                            <small class="text-muted d-none d-sm-block">{{ site_settings.get('prop_3_sub') or 'Same-day express dispatch' }}</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20have%20a%20question%20about%20a%20product." target="_blank" class="pillar-card d-flex align-items-center gap-2 p-2 p-md-3 rounded-3 text-decoration-none">
+                        <div class="pillar-icon bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="bi {{ site_settings.get('prop_4_icon') or 'bi-chat-dots-fill' }}"></i>
+                        </div>
+                        <div class="pillar-text">
+                            <h6 class="mb-0 fw-bold">{{ site_settings.get('prop_4_title') or 'Live WhatsApp Help' }}</h6>
+                            <small class="text-muted d-none d-sm-block">{{ site_settings.get('prop_4_sub') or 'Instant human support' }}</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- ═══ 4. PRODUCTS SECTION (2-COLUMN PORTRAIT SHEIN GRID) ═══ -->
     <section class="products-section" id="productsGrid">
         <div class="container-fluid px-2 px-md-3">

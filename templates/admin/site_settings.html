@@ -4,38 +4,84 @@
 {% block content %}
     <div class="row mb-3">
         <div class="col-12">
-            <div class="alert alert-dark border-secondary d-flex align-items-center justify-content-between">
+            <div class="alert alert-dark border-secondary d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div>
                     <i class="bi bi-gear-wide-connected text-warning fs-5 me-2"></i>
-                    <span>All texts, header trust badges, delivery policies, contact numbers, and payment details are live editable below.</span>
+                    <span>All storefront texts, trust badges, exchange &amp; return policies, Karachi delivery notices, and payment settings are live editable below.</span>
                 </div>
                 <span class="badge bg-warning text-dark">Instant Live Sync</span>
             </div>
         </div>
     </div>
 
-    <!-- Live Top Bar Badge Preview -->
+    <!-- Live Preview Strip 1: Top Bar Badges -->
     <div class="admin-card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-white"><i class="bi bi-eye text-warning me-2"></i>Top Bar Header Preview</h5>
-            <small class="text-muted">Live view as customers see on Desktop</small>
+            <h5 class="mb-0 text-white"><i class="bi bi-eye text-warning me-2"></i>Live Storefront Previews</h5>
+            <small class="text-muted">Real-time customer view</small>
         </div>
         <div class="card-body p-3 bg-black rounded-bottom">
-            <div class="d-flex flex-wrap justify-content-between align-items-center p-2 rounded bg-dark border border-secondary" style="font-size: 0.85rem;">
-                <div class="d-flex align-items-center gap-3 text-muted">
-                    <span><i class="bi bi-telephone-fill text-warning me-1"></i> <span id="previewPhone">{{ settings.get('contact_phone', '+923312344418') }}</span></span>
-                    <span>|</span>
-                    <span><i class="bi bi-envelope-fill text-warning me-1"></i> <span id="previewEmail">{{ settings.get('contact_email', 'azfar.aa.abbasi@gmail.com') }}</span></span>
+            <div class="mb-3">
+                <small class="text-muted text-uppercase fw-bold d-block mb-1">Top Bar Header Badges (Desktop):</small>
+                <div class="d-flex flex-wrap justify-content-between align-items-center p-2 rounded bg-dark border border-secondary" style="font-size: 0.85rem;">
+                    <div class="d-flex align-items-center gap-3 text-muted">
+                        <span><i class="bi bi-telephone-fill text-warning me-1"></i> <span id="previewPhone">{{ settings.get('contact_phone', '+923312344418') }}</span></span>
+                        <span>|</span>
+                        <span><i class="bi bi-envelope-fill text-warning me-1"></i> <span id="previewEmail">{{ settings.get('contact_email', 'azfar.aa.abbasi@gmail.com') }}</span></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 text-light">
+                        <span>
+                            <i class="bi {{ settings.get('top_badge_1_icon', 'bi-shield-check') }} text-warning me-1" id="previewBadge1Icon"></i>
+                            <strong id="previewBadge1Text">{{ settings.get('top_badge_1_text', '100% Authentic Products') }}</strong>
+                        </span>
+                        <span>
+                            <i class="bi {{ settings.get('top_badge_2_icon', 'bi-truck') }} text-warning me-1" id="previewBadge2Icon"></i>
+                            <strong id="previewBadge2Text">{{ settings.get('top_badge_2_text', 'Delivery All Over Karachi') }}</strong>
+                        </span>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center gap-3 text-light">
-                    <span>
-                        <i class="bi {{ settings.get('top_badge_1_icon', 'bi-shield-check') }} text-warning me-1" id="previewBadge1Icon"></i>
-                        <strong id="previewBadge1Text">{{ settings.get('top_badge_1_text', '100% Authentic Products') }}</strong>
-                    </span>
-                    <span>
-                        <i class="bi {{ settings.get('top_badge_2_icon', 'bi-truck') }} text-warning me-1" id="previewBadge2Icon"></i>
-                        <strong id="previewBadge2Text">{{ settings.get('top_badge_2_text', 'Delivery All Over Karachi') }}</strong>
-                    </span>
+            </div>
+
+            <!-- Live Preview Strip 2: 4 Trust Pillars -->
+            <div>
+                <small class="text-muted text-uppercase fw-bold d-block mb-1">4 Trust Marketing Value Pillars (Home &amp; Product Pages):</small>
+                <div class="row g-2">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-dark border border-secondary d-flex align-items-center gap-2">
+                            <div class="bg-warning-subtle text-warning p-2 rounded-circle"><i class="bi bi-arrow-repeat fs-5"></i></div>
+                            <div>
+                                <strong class="d-block text-light small" id="prevProp1Title">{{ settings.get('prop_1_title', '7-Day Easy Exchange') }}</strong>
+                                <span class="text-muted" style="font-size: 0.7rem;" id="prevProp1Sub">{{ settings.get('prop_1_sub', 'Hassle-free replacement on unused items') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-dark border border-secondary d-flex align-items-center gap-2">
+                            <div class="bg-success-subtle text-success p-2 rounded-circle"><i class="bi bi-patch-check-fill fs-5"></i></div>
+                            <div>
+                                <strong class="d-block text-light small" id="prevProp2Title">{{ settings.get('prop_2_title', '100% Genuine with Warranty') }}</strong>
+                                <span class="text-muted" style="font-size: 0.7rem;" id="prevProp2Sub">{{ settings.get('prop_2_sub', 'Official tech brands with direct warranty') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-dark border border-secondary d-flex align-items-center gap-2">
+                            <div class="bg-info-subtle text-info p-2 rounded-circle"><i class="bi bi-truck fs-5"></i></div>
+                            <div>
+                                <strong class="d-block text-light small" id="prevProp3Title">{{ settings.get('prop_3_title', 'Express Delivery in Karachi') }}</strong>
+                                <span class="text-muted" style="font-size: 0.7rem;" id="prevProp3Sub">{{ settings.get('prop_3_sub', 'Same-day & next-day doorstep delivery') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-dark border border-secondary d-flex align-items-center gap-2">
+                            <div class="bg-primary-subtle text-primary p-2 rounded-circle"><i class="bi bi-chat-dots-fill fs-5"></i></div>
+                            <div>
+                                <strong class="d-block text-light small" id="prevProp4Title">{{ settings.get('prop_4_title', 'Instant WhatsApp Support') }}</strong>
+                                <span class="text-muted" style="font-size: 0.7rem;" id="prevProp4Sub">{{ settings.get('prop_4_sub', 'Real human assistance & tracking') }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -52,8 +98,12 @@
                             <h5 class="mb-0 text-white">
                                 {% if 'Header' in group_name %}
                                     <i class="bi bi-badge-ad text-warning me-2"></i>
+                                {% elif 'Pillars' in group_name or 'Marketing' in group_name %}
+                                    <i class="bi bi-shield-check text-warning me-2"></i>
                                 {% elif 'Contact' in group_name %}
                                     <i class="bi bi-telephone-outbound text-warning me-2"></i>
+                                {% elif 'Policy' in group_name or 'Customer Policy' in group_name %}
+                                    <i class="bi bi-file-earmark-text text-warning me-2"></i>
                                 {% elif 'Storefront' in group_name or 'Messages' in group_name %}
                                     <i class="bi bi-chat-left-quote text-warning me-2"></i>
                                 {% elif 'Pricing' in group_name or 'Margin' in group_name %}
@@ -87,28 +137,37 @@
             {% endfor %}
         </div>
 
-        <div class="mt-4 p-3 bg-dark rounded border border-secondary d-flex justify-content-between align-items-center">
+        <div class="mt-4 p-3 bg-dark rounded border border-secondary d-flex justify-content-between align-items-center sticky-bottom" style="z-index: 100;">
             <span class="text-muted small">All changes take effect immediately on the live storefront and customer pages.</span>
-            <button type="submit" class="btn btn-warning px-4 py-2 fw-semibold">
+            <button type="submit" class="btn btn-warning px-4 py-2 fw-semibold shadow">
                 <i class="bi bi-check-lg me-2"></i>Save All Settings
             </button>
         </div>
     </form>
 
     <script>
-        // Live update header preview on typing
+        // Live update header & trust pillar previews on typing
         document.addEventListener('DOMContentLoaded', function() {
-            const b1Text = document.getElementById('top_badge_1_text');
-            const b2Text = document.getElementById('top_badge_2_text');
-            const b1Icon = document.getElementById('top_badge_1_icon');
-            const b2Icon = document.getElementById('top_badge_2_icon');
-            const pPhone = document.getElementById('contact_phone');
-            const pEmail = document.getElementById('contact_email');
+            const bindInput = (id, targetId) => {
+                const el = document.getElementById(id);
+                const target = document.getElementById(targetId);
+                if (el && target) {
+                    el.addEventListener('input', e => target.innerText = e.target.value);
+                }
+            };
 
-            if (b1Text) b1Text.addEventListener('input', e => document.getElementById('previewBadge1Text').innerText = e.target.value);
-            if (b2Text) b2Text.addEventListener('input', e => document.getElementById('previewBadge2Text').innerText = e.target.value);
-            if (pPhone) pPhone.addEventListener('input', e => document.getElementById('previewPhone').innerText = e.target.value);
-            if (pEmail) pEmail.addEventListener('input', e => document.getElementById('previewEmail').innerText = e.target.value);
+            bindInput('top_badge_1_text', 'previewBadge1Text');
+            bindInput('top_badge_2_text', 'previewBadge2Text');
+            bindInput('contact_phone', 'previewPhone');
+            bindInput('contact_email', 'previewEmail');
+            bindInput('prop_1_title', 'prevProp1Title');
+            bindInput('prop_1_sub', 'prevProp1Sub');
+            bindInput('prop_2_title', 'prevProp2Title');
+            bindInput('prop_2_sub', 'prevProp2Sub');
+            bindInput('prop_3_title', 'prevProp3Title');
+            bindInput('prop_3_sub', 'prevProp3Sub');
+            bindInput('prop_4_title', 'prevProp4Title');
+            bindInput('prop_4_sub', 'prevProp4Sub');
         });
     </script>
 {% endblock %}

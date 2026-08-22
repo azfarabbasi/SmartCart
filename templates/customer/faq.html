@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ site_settings.get('faq_title', 'Frequently Asked Questions') }} | SmartCart{% endblock %}
+
+{% block content %}
+<div class="policy-page-wrapper">
+    <div class="policy-hero bg-dark text-white py-5 mb-5 border-bottom border-secondary">
+        <div class="container py-3 text-center">
+            <span class="badge bg-warning text-dark px-3 py-2 fw-bold mb-3"><i class="bi bi-question-circle-fill me-1"></i> HELP CENTER</span>
+            <h1 class="display-5 fw-bold mb-3">{{ site_settings.get('faq_title', 'Frequently Asked Questions') }}</h1>
+            <p class="lead text-light opacity-85 mx-auto" style="max-width: 650px;">
+                Got questions about delivery in Karachi, product authenticity, or 7-day returns? Find quick answers below.
+            </p>
+        </div>
+    </div>
+
+    <div class="container pb-5" style="max-width: 860px;">
+        <div class="accordion accordion-flush shadow-sm rounded-4 border p-3 bg-white" id="faqAccordion">
+            <!-- FAQ 1 -->
+            <div class="accordion-item border-bottom">
+                <h2 class="accordion-header" id="faqHead1">
+                    <button class="accordion-button fw-bold py-3 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCol1" aria-expanded="true" aria-controls="faqCol1">
+                        <i class="bi bi-patch-check-fill text-warning me-2 fs-5"></i> Are all products listed on SmartCart 100% original &amp; authentic?
+                    </button>
+                </h2>
+                <div id="faqCol1" class="accordion-collapse collapse show" aria-labelledby="faqHead1" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-secondary leading-relaxed">
+                        Yes, absolutely. We source all our electronics, audio devices, smartwatches, and accessories directly from authorized distributors and official brand importers (Ronin, Apple, Anker, Samsung, Sony, Razer, Audionic, Baseus). Every item is 100% brand new and covered by official local warranty.
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ 2 -->
+            <div class="accordion-item border-bottom">
+                <h2 class="accordion-header" id="faqHead2">
+                    <button class="accordion-button collapsed fw-bold py-3 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCol2" aria-expanded="false" aria-controls="faqCol2">
+                        <i class="bi bi-arrow-repeat text-warning me-2 fs-5"></i> How does the 7-day return &amp; exchange process work?
+                    </button>
+                </h2>
+                <div id="faqCol2" class="accordion-collapse collapse" aria-labelledby="faqHead2" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-secondary leading-relaxed">
+                        If you receive an item and change your mind or want to exchange it for another model, simply message us on WhatsApp within 7 days of delivery. As long as the product is unused and in its original sealed box, we will arrange a rider exchange or issue a full refund within 24–48 hours.
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ 3 -->
+            <div class="accordion-item border-bottom">
+                <h2 class="accordion-header" id="faqHead3">
+                    <button class="accordion-button collapsed fw-bold py-3 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCol3" aria-expanded="false" aria-controls="faqCol3">
+                        <i class="bi bi-truck text-warning me-2 fs-5"></i> Do you deliver all over Karachi? How fast is delivery?
+                    </button>
+                </h2>
+                <div id="faqCol3" class="accordion-collapse collapse" aria-labelledby="faqHead3" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-secondary leading-relaxed">
+                        Yes! We deliver across all areas of Karachi (DHA, Clifton, Gulshan, Johar, North Nazimabad, Malir, Bahria Town, etc.). Orders placed before 4:00 PM are eligible for Same-Day express delivery, while standard deliveries are fulfilled within 24 hours.
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ 4 -->
+            <div class="accordion-item border-bottom">
+                <h2 class="accordion-header" id="faqHead4">
+                    <button class="accordion-button collapsed fw-bold py-3 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCol4" aria-expanded="false" aria-controls="faqCol4">
+                        <i class="bi bi-credit-card-2-front text-warning me-2 fs-5"></i> What payment methods do you accept?
+                    </button>
+                </h2>
+                <div id="faqCol4" class="accordion-collapse collapse" aria-labelledby="faqHead4" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-secondary leading-relaxed">
+                        We accept:
+                        <ul class="mt-2 mb-0">
+                            <li><strong>Direct Bank Transfer</strong> (NayaPay, Sadapay, HBL, Meezan Bank, etc.) with instant Rs cashback loyalty points.</li>
+                            <li><strong>Cash on Delivery (COD)</strong> with a small advance booking deposit of Rs {{ site_settings.get('cod_advance_amount', '300') }} (deducted from your total bill at doorstep).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ 5 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="faqHead5">
+                    <button class="accordion-button collapsed fw-bold py-3 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faqCol5" aria-expanded="false" aria-controls="faqCol5">
+                        <i class="bi bi-shield-lock-fill text-warning me-2 fs-5"></i> How do I claim product warranty in Karachi?
+                    </button>
+                </h2>
+                <div id="faqCol5" class="accordion-collapse collapse" aria-labelledby="faqHead5" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-secondary leading-relaxed">
+                        Warranty claims are managed directly with our Karachi customer support. You don't have to fill out complicated manufacturer forms; just send your Order ID and description of the technical issue to our WhatsApp team, and we will guide you through diagnosis or warranty replacement.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5 p-4 bg-light rounded-4 border">
+            <h5 class="fw-bold text-dark mb-2">Still have questions?</h5>
+            <p class="text-muted small mb-3">Our team in Karachi is always happy to help you via live chat.</p>
+            <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20have%20a%20question%20before%20placing%20my%20order." target="_blank" class="btn btn-success fw-bold px-4 py-2">
+                <i class="bi bi-whatsapp me-2"></i>Ask on WhatsApp
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

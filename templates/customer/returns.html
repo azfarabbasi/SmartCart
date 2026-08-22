@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ site_settings.get('returns_policy_title', '7-Day Easy Returns & Warranty Policy') }} | SmartCart{% endblock %}
+
+{% block content %}
+<div class="policy-page-wrapper">
+    <!-- Hero Banner -->
+    <div class="policy-hero bg-dark text-white py-5 mb-5 border-bottom border-secondary">
+        <div class="container py-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-3">
+                    <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}" class="text-warning text-decoration-none"><i class="bi bi-house-door me-1"></i>Home</a></li>
+                    <li class="breadcrumb-item active text-light" aria-current="page">Returns &amp; Warranty</li>
+                </ol>
+            </nav>
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-warning text-dark px-3 py-2 fw-bold mb-3"><i class="bi bi-shield-check me-1"></i> CUSTOMER-FIRST POLICY</span>
+                    <h1 class="display-5 fw-bold mb-3">{{ site_settings.get('returns_policy_title', '7-Day Easy Returns & Warranty Policy') }}</h1>
+                    <p class="lead text-light opacity-85 mb-0">
+                        {{ site_settings.get('returns_policy_summary', 'What to do when something is not right — straightforward, customer-first service with zero hassle.') }}
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                    <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20need%20assistance%20with%20a%20return%20or%20warranty%20claim." target="_blank" class="btn btn-success btn-lg px-4 py-3 shadow">
+                        <i class="bi bi-whatsapp me-2 fs-5"></i>Start Return on WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container pb-5">
+        <!-- 4 Key Highlights Grid -->
+        <div class="row g-3 mb-5">
+            <div class="col-6 col-md-3">
+                <div class="trust-highlight-card text-center p-4 rounded-3 h-100 border">
+                    <div class="highlight-icon-circle bg-warning-subtle text-warning mb-3 mx-auto">
+                        <i class="bi bi-arrow-repeat fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">{{ site_settings.get('returns_days', '7') }}-Day Return Window</h5>
+                    <p class="text-muted small mb-0">Full refund or exchange on all unused items in original packaging.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="trust-highlight-card text-center p-4 rounded-3 h-100 border">
+                    <div class="highlight-icon-circle bg-success-subtle text-success mb-3 mx-auto">
+                        <i class="bi bi-patch-check-fill fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">100% Genuine Brands</h5>
+                    <p class="text-muted small mb-0">Authentic tech from Ronin, Apple, Anker, Samsung, Sony &amp; more.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="trust-highlight-card text-center p-4 rounded-3 h-100 border">
+                    <div class="highlight-icon-circle bg-info-subtle text-info mb-3 mx-auto">
+                        <i class="bi bi-shield-lock-fill fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Official Local Warranty</h5>
+                    <p class="text-muted small mb-0">Direct warranty handled by us without cumbersome manufacturer loops.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="trust-highlight-card text-center p-4 rounded-3 h-100 border">
+                    <div class="highlight-icon-circle bg-primary-subtle text-primary mb-3 mx-auto">
+                        <i class="bi bi-truck fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">{{ site_settings.get('delivery_scope_text', 'Delivery All Over Karachi') }}</h5>
+                    <p class="text-muted small mb-0">Same-day pickup &amp; replacement delivery available across Karachi.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-5">
+            <!-- Main Policy Body -->
+            <div class="col-lg-8">
+                <section class="policy-section mb-5">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ site_settings.get('returns_days', '7') }}-Day Easy Return &amp; Exchange Policy</h3>
+                    <p class="text-secondary leading-relaxed">
+                        At SmartCart, customer satisfaction is our highest priority. You can return or exchange any product within <strong>{{ site_settings.get('returns_days', '7') }} days of delivery</strong> for a full refund or replacement, provided the item is unused, in its original box with all plastic wraps, cables, user manuals, and accessories intact.
+                    </p>
+                    <p class="text-secondary leading-relaxed">
+                        Refunds are issued directly to your original payment method (Bank Transfer / EasyPaisa / JazzCash / NayaPay) or cash if delivered via COD within <strong>24 to 48 hours</strong> of verification.
+                    </p>
+                </section>
+
+                <section class="policy-section mb-5">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-x-circle-fill text-danger me-2"></i>What Cannot Be Accepted</h3>
+                    <div class="bg-light p-4 rounded-3 border-start border-danger border-4">
+                        <ul class="mb-0 text-secondary ps-3">
+                            <li class="mb-2">Items with physical damage, drops, dents, cuts, scratches, or burn marks.</li>
+                            <li class="mb-2">Products with original manufacturer seal or security sticker broken or damaged (unless reporting a technical factory defect).</li>
+                            <li class="mb-2">In-ear earbuds or earphones that have been opened and worn (for hygienic reasons, unless experiencing technical audio defects).</li>
+                            <li class="mb-0">Requests submitted after the {{ site_settings.get('returns_days', '7') }}-day delivery window.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="policy-section mb-5">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-shield-check text-warning me-2"></i>Official Warranty Claims</h3>
+                    <p class="text-secondary leading-relaxed">
+                        All tech accessories sold on SmartCart are 100% authentic and covered under manufacturer/importer warranty (ranging from <strong>6 to 12 months</strong> depending on the brand and model).
+                    </p>
+                    <p class="text-secondary leading-relaxed">
+                        <strong>Direct Claim Handling:</strong> Unlike typical online sellers, SmartCart assists you directly with warranty claims in Karachi. Simply message us on WhatsApp with your Order ID, and our team will guide you through fast resolution.
+                    </p>
+                </section>
+
+                <section class="policy-section mb-4">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-list-ol text-primary me-2"></i>How to Start a Return in 3 Easy Steps</h3>
+                    <div class="steps-list">
+                        <div class="d-flex align-items-start gap-3 mb-3 p-3 bg-white rounded border shadow-sm">
+                            <span class="badge bg-warning text-dark fs-6 rounded-circle p-2 px-3">1</span>
+                            <div>
+                                <h6 class="fw-bold mb-1">Message Our Karachi Support Team</h6>
+                                <p class="text-muted small mb-0">Contact us on WhatsApp at <strong>{{ contact_phone }}</strong> with your Order ID and photos/video of the item.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-3 mb-3 p-3 bg-white rounded border shadow-sm">
+                            <span class="badge bg-warning text-dark fs-6 rounded-circle p-2 px-3">2</span>
+                            <div>
+                                <h6 class="fw-bold mb-1">Same-Day Approval &amp; Pickup</h6>
+                                <p class="text-muted small mb-0">Our team confirms the request within 2 hours and arranges rider pickup from your Karachi address.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-3 p-3 bg-white rounded border shadow-sm">
+                            <span class="badge bg-warning text-dark fs-6 rounded-circle p-2 px-3">3</span>
+                            <div>
+                                <h6 class="fw-bold mb-1">Instant Exchange or Full Refund</h6>
+                                <p class="text-muted small mb-0">Receive your replacement item or instant refund transfer immediately upon verification.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Sidebar Quick Help -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 100px; background: #0f172a; color: #fff;">
+                    <h5 class="fw-bold text-warning mb-3"><i class="bi bi-headset me-2"></i>Need Help Now?</h5>
+                    <p class="text-light opacity-75 small mb-4">
+                        Our Karachi support team is available live to assist you with any questions regarding returns, replacements, or product warranties.
+                    </p>
+
+                    <div class="d-grid gap-2 mb-4">
+                        <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20have%20a%20question%20about%20returns." target="_blank" class="btn btn-success fw-bold py-2">
+                            <i class="bi bi-whatsapp me-2"></i>WhatsApp: {{ contact_phone }}
+                        </a>
+                        <a href="mailto:{{ contact_email }}" class="btn btn-outline-light py-2">
+                            <i class="bi bi-envelope me-2"></i>Email Support
+                        </a>
+                    </div>
+
+                    <div class="border-top border-secondary pt-3">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-muted small">
+                            <i class="bi bi-clock text-warning"></i>
+                            <span>{{ site_settings.get('store_hours', 'Monday – Saturday: 11:00 AM – 11:00 PM') }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 text-muted small">
+                            <i class="bi bi-geo-alt text-warning"></i>
+                            <span>{{ site_settings.get('store_address', 'Karachi, Pakistan') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

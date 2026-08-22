@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ site_settings.get('about_title', 'About SmartCart') }} | SmartCart{% endblock %}
+
+{% block content %}
+<div class="policy-page-wrapper">
+    <div class="policy-hero bg-dark text-white py-5 mb-5 border-bottom border-secondary">
+        <div class="container py-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-3">
+                    <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}" class="text-warning text-decoration-none"><i class="bi bi-house-door me-1"></i>Home</a></li>
+                    <li class="breadcrumb-item active text-light" aria-current="page">About Us</li>
+                </ol>
+            </nav>
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-warning text-dark px-3 py-2 fw-bold mb-3"><i class="bi bi-shop me-1"></i> AUTHENTIC TECH DESTINATION</span>
+                    <h1 class="display-5 fw-bold mb-3">{{ site_settings.get('about_title', 'About SmartCart') }}</h1>
+                    <p class="lead text-light opacity-85 mb-0">
+                        {{ site_settings.get('about_summary', 'Your trusted Karachi-based destination for 100% genuine tech, audio accessories, smartwatches, and gadgets.') }}
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                    <a href="{{ url_for('customer.index') }}" class="btn btn-warning btn-lg px-4 py-3 fw-bold shadow">
+                        <i class="bi bi-grid-fill me-2"></i>Explore Catalog
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container pb-5">
+        <div class="row g-5">
+            <div class="col-lg-8">
+                <section class="mb-5">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-stars text-warning me-2"></i>Our Mission</h3>
+                    <p class="text-secondary leading-relaxed">
+                        SmartCart was built with one clear mission: to provide technology enthusiasts, gamers, and everyday smartphone users in Karachi with guaranteed original products at honest, competitive prices.
+                    </p>
+                    <p class="text-secondary leading-relaxed">
+                        In an online market filled with replicas and counterfeit accessories, SmartCart stands out by working exclusively with genuine brand importers, offering direct local warranties, and standing behind every order with our signature <strong>7-Day Easy Return &amp; Replacement guarantee</strong>.
+                    </p>
+                </section>
+
+                <section class="mb-5">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-heart-fill text-danger me-2"></i>Why Customers Choose SmartCart</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-white border rounded-3 shadow-sm h-100">
+                                <h6 class="fw-bold text-dark"><i class="bi bi-patch-check-fill text-success me-2"></i>100% Authentic Products</h6>
+                                <p class="text-muted small mb-0">Never worry about copies or duplicates. Every product is authentic and sealed.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-white border rounded-3 shadow-sm h-100">
+                                <h6 class="fw-bold text-dark"><i class="bi bi-truck text-primary me-2"></i>Fast Karachi Delivery</h6>
+                                <p class="text-muted small mb-0">Same-day dispatch and rapid 24-hour delivery across all districts of Karachi.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-white border rounded-3 shadow-sm h-100">
+                                <h6 class="fw-bold text-dark"><i class="bi bi-arrow-repeat text-warning me-2"></i>7-Day Easy Exchange</h6>
+                                <p class="text-muted small mb-0">Hassle-free replacement on unused items with quick turnaround.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-white border rounded-3 shadow-sm h-100">
+                                <h6 class="fw-bold text-dark"><i class="bi bi-whatsapp text-success me-2"></i>Live WhatsApp Support</h6>
+                                <p class="text-muted small mb-0">Direct human assistance with order tracking and warranty assistance.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 100px; background: #0f172a; color: #fff;">
+                    <h5 class="fw-bold text-warning mb-3"><i class="bi bi-geo-alt me-2"></i>Karachi Hub</h5>
+                    <p class="text-light opacity-75 small mb-3">
+                        {{ site_settings.get('store_address', 'Karachi, Pakistan') }}
+                    </p>
+                    <div class="border-top border-secondary pt-3 mb-3">
+                        <span class="text-muted small d-block mb-1">Customer Support:</span>
+                        <a href="tel:{{ contact_phone }}" class="text-warning text-decoration-none fw-bold d-block mb-2">{{ contact_phone }}</a>
+                        <a href="mailto:{{ contact_email }}" class="text-light text-decoration-none small d-block mb-3">{{ contact_email }}</a>
+                    </div>
+                    <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" class="btn btn-success fw-bold w-100">
+                        <i class="bi bi-whatsapp me-2"></i>Chat on WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

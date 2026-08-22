@@ -52,26 +52,14 @@ def _auto_migrate(conn):
 
         # 2. Ensure default SiteSettings exist and Karachi delivery text is synced
         try:
-            default_settings = [
-                ('min_profit_margin_floor', '300'),
-                ('top_badge_1_text', '100% Authentic Products'),
-                ('top_badge_1_icon', 'bi-shield-check'),
-                ('top_badge_2_text', 'Delivery All Over Karachi'),
-                ('top_badge_2_icon', 'bi-truck'),
-                ('delivery_scope_text', 'Delivery All Over Karachi'),
-                ('hero_title', 'Welcome to SmartCart'),
-                ('hero_subtitle', 'Browse our full catalog - fast delivery all over Karachi.'),
-                ('checkout_notice', 'Orders are dispatched once payment is verified. Delivery available all over Karachi.'),
-                ('free_delivery_notice', 'FREE delivery on orders above Rs 2,000 in Karachi'),
-                ('footer_note', 'SmartCart - Premium Tech & Gadgets delivered across Karachi.'),
-            ]
-            for sk, sv in default_settings:
+            import sitesettings
+            for sk, sv in sitesettings.DEFAULTS.items():
                 cur.execute("""
                 MERGE INTO SiteSettings s
                 USING (SELECT :k AS setting_key FROM dual) d
                 ON (s.setting_key = d.setting_key)
                 WHEN NOT MATCHED THEN INSERT (setting_key, setting_value) VALUES (:k, :v)
-                """, {'k': sk, 'v': sv})
+                """, {'k': sk, 'v': str(sv)})
 
             # Update existing settings and banners if they say 'Nationwide'
             cur.execute("""

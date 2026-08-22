@@ -167,9 +167,30 @@
                             </a>
                         {% endif %}
 
-                        <div class="buy-box-secure mt-3">
-                            <p><i class="bi bi-shield-check"></i> Secure transaction</p>
-                            <p><i class="bi bi-arrow-return-left"></i> Easy returns</p>
+                        <div class="product-trust-box mt-3 p-3 rounded bg-light border">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-arrow-repeat text-warning fs-5"></i>
+                                <span class="small fw-semibold"><a href="{{ url_for('customer.returns_policy') }}" class="text-dark text-decoration-none">{{ site_settings.get('returns_days', '7') }}-Day Easy Return &amp; Replacement</a></span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-patch-check-fill text-success fs-5"></i>
+                                <span class="small fw-semibold text-dark">100% Genuine with Official Warranty</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-truck text-info fs-5"></i>
+                                <span class="small fw-semibold text-dark">{{ site_settings.get('delivery_scope_text', 'Delivery All Over Karachi') }}</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-cash-coin text-primary fs-5"></i>
+                                <span class="small fw-semibold text-dark">Cash on Delivery &amp; Bank Transfer</span>
+                            </div>
+                        </div>
+
+                        <!-- 1-Click WhatsApp Inquiry -->
+                        <div class="mt-3">
+                            <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I'm%20interested%20in%20buying%20*{{ product[1]|urlencode }}*%20(Price:%20Rs%20{{ product[2] }}).%20Is%20it%20available%20for%20delivery%20in%20Karachi?" target="_blank" class="btn btn-outline-success w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-whatsapp fs-5"></i>Ask about this on WhatsApp
+                            </a>
                         </div>
                     </div>
                 </div>

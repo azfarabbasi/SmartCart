@@ -1,25 +1,58 @@
 DEFAULTS = {
+    # 1. Contact & Social
     'contact_phone': '+923312344418',
     'contact_email': 'azfar.aa.abbasi@gmail.com',
     'whatsapp_number': '923312344418',
+    'store_address': 'Karachi, Pakistan',
+    'store_hours': 'Monday – Saturday: 11:00 AM – 11:00 PM',
+
+    # 2. Header Perks & Trust Badges
     'top_badge_1_text': '100% Authentic Products',
     'top_badge_1_icon': 'bi-shield-check',
     'top_badge_2_text': 'Delivery All Over Karachi',
     'top_badge_2_icon': 'bi-truck',
     'delivery_scope_text': 'Delivery All Over Karachi',
+
+    # 3. 4 Marketing Trust Value Pillars (Home & Product Pages)
+    'prop_1_title': '7-Day Easy Exchange',
+    'prop_1_sub': 'Hassle-free replacement on unused items',
+    'prop_1_icon': 'bi-arrow-repeat',
+    'prop_2_title': '100% Genuine with Warranty',
+    'prop_2_sub': 'Official tech brands with direct claim support',
+    'prop_2_icon': 'bi-patch-check-fill',
+    'prop_3_title': 'Express Delivery in Karachi',
+    'prop_3_sub': 'Same-day & next-day dispatch to your doorstep',
+    'prop_3_icon': 'bi-truck',
+    'prop_4_title': 'Instant WhatsApp Support',
+    'prop_4_sub': 'Real human assistance & quick order tracking',
+    'prop_4_icon': 'bi-chat-dots-fill',
+
+    # 4. Storefront Hero & Messages
     'hero_title': 'Welcome to SmartCart',
     'hero_subtitle': 'Browse our full catalog - fast delivery all over Karachi.',
-    'checkout_notice': "Orders are dispatched once payment is verified. Delivery available all over Karachi.",
     'free_delivery_notice': 'FREE delivery on orders above Rs 2,000 in Karachi',
+    'checkout_notice': 'Orders are dispatched once payment is verified. Delivery available all over Karachi.',
     'site_announcement': '',
-    'footer_note': 'SmartCart - Premium Tech & Gadgets delivered across Karachi.',
+    'footer_note': 'SmartCart - Premium Tech, Earbuds & Smart Gadgets delivered across Karachi.',
+
+    # 5. Policies & Informational Pages
+    'returns_policy_title': '7-Day Easy Returns & Warranty Policy',
+    'returns_policy_summary': 'What to do when something is not right — straightforward, customer-first service.',
+    'returns_days': '7',
+    'shipping_policy_title': 'Shipping & Delivery in Karachi',
+    'shipping_policy_summary': 'Fast, safe delivery across all areas of Karachi with live tracking and COD.',
+    'faq_title': 'Frequently Asked Questions',
+    'about_title': 'About SmartCart',
+    'about_summary': 'Your trusted Karachi-based destination for 100% genuine tech, audio accessories, and gadgets.',
+
+    # 6. Pricing, Margins & Banking
+    'min_profit_margin_floor': '300',
     'bank_name': '',
     'bank_account_title': '',
     'bank_account_number': '',
     'bank_iban': '',
     'cod_advance_amount': '300',
     'cashback_points': '400',
-    'min_profit_margin_floor': '300',
 }
 
 # Keys grouped for the admin settings form.
@@ -31,10 +64,19 @@ FIELD_GROUPS = [
         ('top_badge_2_icon', 'Right Trust Badge Bootstrap Icon (e.g. bi-truck, bi-geo-alt, bi-box-seam)', 'text'),
         ('delivery_scope_text', 'Delivery Region / Scope Label (e.g. Delivery All Over Karachi)', 'text'),
     ]),
-    ('Contact & Support Details', [
-        ('contact_phone', 'Customer Support Phone Number', 'text'),
-        ('contact_email', 'Customer Support Email Address', 'text'),
-        ('whatsapp_number', 'WhatsApp Support Number (digits only with country code, e.g. 923312344418)', 'text'),
+    ('4 Marketing Trust Pillars (Home & Product Pages)', [
+        ('prop_1_title', 'Pillar 1 Title (e.g. 7-Day Easy Exchange)', 'text'),
+        ('prop_1_sub', 'Pillar 1 Subtitle', 'text'),
+        ('prop_1_icon', 'Pillar 1 Icon (e.g. bi-arrow-repeat)', 'text'),
+        ('prop_2_title', 'Pillar 2 Title (e.g. 100% Genuine with Warranty)', 'text'),
+        ('prop_2_sub', 'Pillar 2 Subtitle', 'text'),
+        ('prop_2_icon', 'Pillar 2 Icon (e.g. bi-patch-check-fill)', 'text'),
+        ('prop_3_title', 'Pillar 3 Title (e.g. Express Delivery in Karachi)', 'text'),
+        ('prop_3_sub', 'Pillar 3 Subtitle', 'text'),
+        ('prop_3_icon', 'Pillar 3 Icon (e.g. bi-truck)', 'text'),
+        ('prop_4_title', 'Pillar 4 Title (e.g. Instant WhatsApp Support)', 'text'),
+        ('prop_4_sub', 'Pillar 4 Subtitle', 'text'),
+        ('prop_4_icon', 'Pillar 4 Icon (e.g. bi-chat-dots-fill)', 'text'),
     ]),
     ('Storefront Messages & Notices', [
         ('hero_title', 'Homepage Hero Title', 'text'),
@@ -43,6 +85,22 @@ FIELD_GROUPS = [
         ('checkout_notice', 'Checkout Page Notice / Delivery Policy', 'textarea'),
         ('site_announcement', 'Sitewide Announcement Banner (leave blank to hide)', 'textarea'),
         ('footer_note', 'Footer Copyright / Tagline Note', 'text'),
+    ]),
+    ('Customer Policy & Info Pages', [
+        ('returns_policy_title', 'Returns Page Title', 'text'),
+        ('returns_policy_summary', 'Returns Page Subtitle', 'textarea'),
+        ('returns_days', 'Return Window Period (Days, e.g. 7)', 'number'),
+        ('shipping_policy_title', 'Shipping Page Title', 'text'),
+        ('shipping_policy_summary', 'Shipping Page Subtitle', 'textarea'),
+        ('about_title', 'About Us Page Title', 'text'),
+        ('about_summary', 'About Us Store Story / Summary', 'textarea'),
+    ]),
+    ('Contact & Support Details', [
+        ('contact_phone', 'Customer Support Phone Number', 'text'),
+        ('contact_email', 'Customer Support Email Address', 'text'),
+        ('whatsapp_number', 'WhatsApp Support Number (digits only with country code, e.g. 923312344418)', 'text'),
+        ('store_address', 'Store Physical Address / Karachi Hub', 'text'),
+        ('store_hours', 'Operating Hours (e.g. Monday – Saturday: 11:00 AM – 11:00 PM)', 'text'),
     ]),
     ('Pricing & Margin Protection Floor', [
         ('min_profit_margin_floor', 'Minimum Profit Margin Floor (Rs per item) — Discounts & Loyalty points cannot reduce selling price below (Cost Price + this floor)', 'number'),

@@ -38,11 +38,11 @@
 .bi-arrow-left-right::before { content: "\f12b"; }
 .bi-arrow-left::before { content: "\f12f"; }
 .bi-arrow-repeat::before { content: "\f130"; }
-.bi-arrow-return-left::before { content: "\f131"; }
 .bi-arrow-right-circle::before { content: "\f134"; }
 .bi-arrow-right::before { content: "\f138"; }
 .bi-arrows-fullscreen::before { content: "\f14d"; }
 .bi-badge-ad::before { content: "\f161"; }
+.bi-bag-check::before { content: "\f171"; }
 .bi-bag::before { content: "\f179"; }
 .bi-box-arrow-in-right::before { content: "\f1be"; }
 .bi-box-arrow-left::before { content: "\f1c2"; }
@@ -61,6 +61,7 @@
 .bi-cart4::before { content: "\f245"; }
 .bi-cash-stack::before { content: "\f246"; }
 .bi-cash::before { content: "\f247"; }
+.bi-chat-dots-fill::before { content: "\f249"; }
 .bi-chat-left-quote::before { content: "\f250"; }
 .bi-chat-square-text::before { content: "\f264"; }
 .bi-check-circle-fill::before { content: "\f26a"; }
@@ -74,6 +75,7 @@
 .bi-cloud-arrow-up::before { content: "\f297"; }
 .bi-controller::before { content: "\f2d4"; }
 .bi-cpu::before { content: "\f2d6"; }
+.bi-credit-card-2-front::before { content: "\f2da"; }
 .bi-credit-card::before { content: "\f2dc"; }
 .bi-download::before { content: "\f30a"; }
 .bi-envelope-fill::before { content: "\f32c"; }
@@ -87,23 +89,28 @@
 .bi-folder2-open::before { content: "\f3d8"; }
 .bi-gear-wide-connected::before { content: "\f3e3"; }
 .bi-gear::before { content: "\f3e5"; }
+.bi-geo-alt-fill::before { content: "\f3e7"; }
 .bi-geo-alt::before { content: "\f3e8"; }
 .bi-gift::before { content: "\f3ec"; }
 .bi-grid-fill::before { content: "\f3fb"; }
 .bi-hand-thumbs-up::before { content: "\f407"; }
 .bi-headphones::before { content: "\f413"; }
+.bi-headset::before { content: "\f414"; }
 .bi-heart-fill::before { content: "\f415"; }
 .bi-heart::before { content: "\f417"; }
 .bi-hourglass-split::before { content: "\f41f"; }
 .bi-house-door-fill::before { content: "\f422"; }
+.bi-house-door::before { content: "\f423"; }
 .bi-image::before { content: "\f42a"; }
 .bi-images::before { content: "\f42b"; }
 .bi-info-circle-fill::before { content: "\f430"; }
 .bi-info-circle::before { content: "\f431"; }
 .bi-laptop::before { content: "\f456"; }
 .bi-lightbulb::before { content: "\f46b"; }
+.bi-lightning-charge-fill::before { content: "\f46c"; }
 .bi-lightning::before { content: "\f46f"; }
 .bi-link-45deg::before { content: "\f470"; }
+.bi-list-ol::before { content: "\f475"; }
 .bi-list::before { content: "\f479"; }
 .bi-lock-fill::before { content: "\f47a"; }
 .bi-megaphone-fill::before { content: "\f483"; }
@@ -123,11 +130,15 @@
 .bi-plus-circle-fill::before { content: "\f4f9"; }
 .bi-plus-circle::before { content: "\f4fa"; }
 .bi-printer::before { content: "\f501"; }
+.bi-question-circle-fill::before { content: "\f504"; }
+.bi-question-circle::before { content: "\f505"; }
 .bi-receipt-cutoff::before { content: "\f50e"; }
 .bi-receipt::before { content: "\f50f"; }
 .bi-search::before { content: "\f52a"; }
 .bi-shield-check::before { content: "\f52f"; }
+.bi-shield-lock-fill::before { content: "\f537"; }
 .bi-shield-lock::before { content: "\f538"; }
+.bi-shop::before { content: "\f543"; }
 .bi-slash-circle::before { content: "\f567"; }
 .bi-sliders::before { content: "\f56b"; }
 .bi-smartwatch::before { content: "\f56c"; }
@@ -152,6 +163,7 @@
 .bi-bank2::before { content: "\f62f"; }
 .bi-cash-coin::before { content: "\f632"; }
 .bi-check-lg::before { content: "\f633"; }
+.bi-coin::before { content: "\f634"; }
 .bi-plus-lg::before { content: "\f64d"; }
 .bi-x-lg::before { content: "\f659"; }
 .bi-graph-down-arrow::before { content: "\f672"; }
@@ -1025,6 +1037,82 @@ a:hover {
     font-size: 0.64rem;
     color: var(--gray-500);
     line-height: 1.1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3.5 MARKETING VALUE PILLARS STRIP
+   ═══════════════════════════════════════════════════════════ */
+.marketing-pillars-section {
+    margin-bottom: 1rem;
+}
+
+.pillar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pillar-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: var(--orange);
+    text-decoration: none;
+}
+
+.pillar-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
+.pillar-text h6 {
+    font-size: 0.78rem;
+    color: var(--gray-900);
+    line-height: 1.15;
+}
+
+.pillar-text small {
+    font-size: 0.65rem;
+    line-height: 1.1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   POLICY & INFO PAGES (Returns, Shipping, FAQ, About)
+   ═══════════════════════════════════════════════════════════ */
+.policy-page-wrapper {
+    background: #f8fafc;
+    min-height: 80vh;
+}
+
+.policy-hero {
+    background: linear-gradient(135deg, #0b1120 0%, #1e293b 100%);
+}
+
+.trust-highlight-card {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trust-highlight-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.highlight-icon-circle {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-trust-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -25,36 +25,46 @@
         <div class="footer-middle">
             <div class="container">
                 <div class="row">
-                    <div class="col-md-3">
-                        <h5>Get to Know Us</h5>
+                    <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                        <div class="footer-brand mb-3">
+                            <div class="footer-logo mb-2">
+                                <i class="bi bi-cart4 text-warning"></i>
+                                <span>Smart<span class="text-warning">Cart</span></span>
+                            </div>
+                            <p class="text-muted small mb-3">{{ site_settings.get('footer_note') or 'Your trusted destination for 100% authentic tech, earbuds, audio & accessories delivered across Karachi.' }}</p>
+                            <span class="badge bg-dark border border-secondary text-warning small py-1 px-2"><i class="bi bi-shield-check me-1"></i> 100% Genuine with Warranty</span>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                        <h5>Shop Catalog</h5>
                         <ul>
-                            <li><a href="#">About SmartCart</a></li>
-                            <li><a href="#">Careers</a></li>
+                            <li><a href="{{ url_for('customer.index') }}#productsGrid"><i class="bi bi-chevron-right me-1 text-warning small"></i> All Products</a></li>
+                            <li><a href="{{ url_for('customer.index') }}#categoriesSection"><i class="bi bi-chevron-right me-1 text-warning small"></i> Categories</a></li>
+                            <li><a href="{{ url_for('customer.index') }}#brandsSection"><i class="bi bi-chevron-right me-1 text-warning small"></i> Official Brands</a></li>
+                            <li><a href="{{ url_for('customer.index') }}#productsGrid"><i class="bi bi-chevron-right me-1 text-warning small"></i> Hot Deals</a></li>
                         </ul>
                     </div>
-                    <div class="col-md-3">
-                        <h5>Connect with Us</h5>
+                    <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                        <h5>Help &amp; Policies</h5>
                         <ul>
-                            <li><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp: +{{ whatsapp_number }}</a></li>
-                            <li><a href="mailto:{{ contact_email }}"><i class="bi bi-envelope"></i> {{ contact_email }}</a></li>
-                            <li><a href="tel:{{ contact_phone }}"><i class="bi bi-telephone"></i> {{ contact_phone }}</a></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-3">
-                        <h5>Make Money with Us</h5>
-                        <ul>
-                            <li><a href="#">Sell on SmartCart</a></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-3">
-                        <h5>Let Us Help You</h5>
-                        <ul>
+                            <li><a href="{{ url_for('customer.returns_policy') }}"><i class="bi bi-arrow-repeat me-1 text-warning small"></i> 7-Day Returns &amp; Warranty</a></li>
+                            <li><a href="{{ url_for('customer.shipping_policy') }}"><i class="bi bi-truck me-1 text-warning small"></i> Karachi Delivery Policy</a></li>
+                            <li><a href="{{ url_for('customer.faq') }}"><i class="bi bi-question-circle me-1 text-warning small"></i> FAQs &amp; Help Center</a></li>
+                            <li><a href="{{ url_for('customer.about') }}"><i class="bi bi-info-circle me-1 text-warning small"></i> About SmartCart</a></li>
                             {% if current_user %}
-                                <li><a href="{{ url_for('customer.order_history') }}">Your Orders</a></li>
-                                <li><a href="{{ url_for('customer.loyalty_history') }}">Loyalty Points</a></li>
-                            {% else %}
-                                <li><a href="{{ url_for('auth.login') }}">Sign In</a></li>
+                                <li><a href="{{ url_for('customer.order_history') }}"><i class="bi bi-box me-1 text-warning small"></i> Your Orders</a></li>
+                                <li><a href="{{ url_for('customer.loyalty_history') }}"><i class="bi bi-coin me-1 text-warning small"></i> Loyalty Points</a></li>
                             {% endif %}
+                        </ul>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                        <h5>Karachi Hub &amp; Support</h5>
+                        <ul>
+                            <li><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp text-success"></i> WhatsApp: {{ contact_phone }}</a></li>
+                            <li><a href="tel:{{ contact_phone }}"><i class="bi bi-telephone text-warning"></i> {{ contact_phone }}</a></li>
+                            <li><a href="mailto:{{ contact_email }}"><i class="bi bi-envelope text-warning"></i> {{ contact_email }}</a></li>
+                            <li class="text-muted small mt-2"><i class="bi bi-clock me-1 text-warning"></i> {{ site_settings.get('store_hours', 'Mon–Sat: 11AM – 11PM') }}</li>
+                            <li class="text-muted small"><i class="bi bi-geo-alt me-1 text-warning"></i> {{ site_settings.get('store_address', 'Karachi, Pakistan') }}</li>
                         </ul>
                     </div>
                 </div>
