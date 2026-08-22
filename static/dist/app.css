@@ -77,7 +77,6 @@
 .bi-cloud-arrow-up::before { content: "\f297"; }
 .bi-controller::before { content: "\f2d4"; }
 .bi-cpu::before { content: "\f2d6"; }
-.bi-credit-card-2-front::before { content: "\f2da"; }
 .bi-credit-card::before { content: "\f2dc"; }
 .bi-download::before { content: "\f30a"; }
 .bi-envelope-fill::before { content: "\f32c"; }
@@ -139,7 +138,6 @@
 .bi-search::before { content: "\f52a"; }
 .bi-shield-check::before { content: "\f52f"; }
 .bi-shield-exclamation::before { content: "\f530"; }
-.bi-shield-lock-fill::before { content: "\f537"; }
 .bi-shield-lock::before { content: "\f538"; }
 .bi-shield-slash-fill::before { content: "\f53c"; }
 .bi-shop::before { content: "\f543"; }

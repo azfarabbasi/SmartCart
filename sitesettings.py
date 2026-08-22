@@ -48,11 +48,38 @@ DEFAULTS = {
     'shipping_policy_summary': 'Delivery across all areas of Karachi within 4–5 days after order confirmation. Standard delivery fee is Rs 200.',
     'delivery_timeline_text': 'Within 4–5 days after order confirmation',
     'standard_delivery_fee': '200',
-    'faq_title': 'Frequently Asked Questions',
     'about_title': 'About SmartCart',
     'about_summary': 'Your trusted Karachi-based destination for 100% genuine tech, audio accessories, and gadgets.',
 
-    # 7. Pricing, Margins & Banking
+    # 7. Frequently Asked Questions (Live Editable FAQs 1 to 6)
+    'faq_title': 'Frequently Asked Questions',
+    'faq_subtitle': 'Got questions about delivery in Karachi, product authenticity, or 1-day exchange? Find quick answers below.',
+    
+    'faq_1_icon': 'bi-patch-check-fill',
+    'faq_1_q': 'Are all products listed on SmartCart 100% original & authentic?',
+    'faq_1_a': 'Yes, absolutely. We source all our electronics, audio devices, smartwatches, and accessories directly from authorized distributors and official brand importers (Ronin, Apple, Anker, Samsung, Sony, Razer, Audionic, Baseus). Every item is 100% brand new and covered by official local warranty.',
+    
+    'faq_2_icon': 'bi-box-seam',
+    'faq_2_q': 'Can I check my product on delivery and exchange if not compatible?',
+    'faq_2_a': 'Yes! You can check the product right at the time of delivery. Furthermore, within 1 day (24 hours), if you find the product is not compatible with your device, you can deliver it back to our warehouse in Gulistan-e-Jauhar, Karachi and exchange it with any other product from our store, provided the packaging and box are undamaged and the item is completely scratchless and unused.',
+    
+    'faq_3_icon': 'bi-truck',
+    'faq_3_q': 'Do you deliver all over Karachi? What is the delivery time and fee?',
+    'faq_3_a': 'Yes! We deliver across all areas of Karachi (Gulistan-e-Jauhar, Gulshan, DHA, Clifton, North Nazimabad, Malir, Bahria Town, Scheme 33, etc.). Delivery takes 4–5 days after order confirmation, and our standard flat delivery fee is Rs. 200.',
+    
+    'faq_4_icon': 'bi-credit-card-2-front',
+    'faq_4_q': 'What payment methods do you accept?',
+    'faq_4_a': 'We accept Direct Bank Transfer (NayaPay, Sadapay, HBL, Meezan Bank, etc.) with instant cashback loyalty points, and Cash on Delivery (COD) across Karachi with an advance booking deposit of Rs 300 (adjusted into your total invoice).',
+    
+    'faq_5_icon': 'bi-shield-lock-fill',
+    'faq_5_q': 'How do I claim product warranty in Karachi?',
+    'faq_5_a': "Warranty claims are managed directly with our Karachi customer support. You don't have to fill out complicated manufacturer forms; just send your Order ID and description of the technical issue to our WhatsApp team, and we will guide you through diagnosis or warranty replacement at our Gulistan-e-Jauhar location.",
+    
+    'faq_6_icon': 'bi-headset',
+    'faq_6_q': 'How can I track my order or contact support?',
+    'faq_6_a': 'You can message us directly on WhatsApp at +923312344418 with your Order ID for real-time status updates from our Karachi support team.',
+
+    # 8. Pricing, Margins & Banking
     'min_profit_margin_floor': '300',
     'bank_name': '',
     'bank_account_title': '',
@@ -106,6 +133,28 @@ FIELD_GROUPS = [
         ('returns_warehouse_location', 'Warehouse / Exchange Return Location (e.g. Gulistan-e-Jauhar, Karachi)', 'text'),
         ('returns_ineligible_items', 'What We Cannot Accept (1 item per line)', 'textarea'),
         ('warranty_exclusions_items', 'Not Covered by Warranty (1 item per line)', 'textarea'),
+    ]),
+    ('FAQ Settings & Questions (Admin Editable)', [
+        ('faq_title', 'FAQ Page Main Title', 'text'),
+        ('faq_subtitle', 'FAQ Page Subtitle / Introduction', 'textarea'),
+        ('faq_1_icon', 'FAQ 1 Bootstrap Icon (e.g. bi-patch-check-fill)', 'text'),
+        ('faq_1_q', 'FAQ 1 Question', 'text'),
+        ('faq_1_a', 'FAQ 1 Answer', 'textarea'),
+        ('faq_2_icon', 'FAQ 2 Bootstrap Icon (e.g. bi-box-seam)', 'text'),
+        ('faq_2_q', 'FAQ 2 Question', 'text'),
+        ('faq_2_a', 'FAQ 2 Answer', 'textarea'),
+        ('faq_3_icon', 'FAQ 3 Bootstrap Icon (e.g. bi-truck)', 'text'),
+        ('faq_3_q', 'FAQ 3 Question', 'text'),
+        ('faq_3_a', 'FAQ 3 Answer', 'textarea'),
+        ('faq_4_icon', 'FAQ 4 Bootstrap Icon (e.g. bi-credit-card-2-front)', 'text'),
+        ('faq_4_q', 'FAQ 4 Question', 'text'),
+        ('faq_4_a', 'FAQ 4 Answer', 'textarea'),
+        ('faq_5_icon', 'FAQ 5 Bootstrap Icon (e.g. bi-shield-lock-fill)', 'text'),
+        ('faq_5_q', 'FAQ 5 Question', 'text'),
+        ('faq_5_a', 'FAQ 5 Answer', 'textarea'),
+        ('faq_6_icon', 'FAQ 6 Bootstrap Icon (e.g. bi-headset)', 'text'),
+        ('faq_6_q', 'FAQ 6 Question (leave blank to hide)', 'text'),
+        ('faq_6_a', 'FAQ 6 Answer', 'textarea'),
     ]),
     ('Customer Info & About Us', [
         ('about_title', 'About Us Page Title', 'text'),
