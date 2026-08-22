@@ -62,9 +62,12 @@
         </div>
 
         <div class="row g-4">
-            <!-- Main Policy Card -->
+            <!-- Main Policy Column -->
             <div class="col-lg-8">
+                <!-- 5 Policy Guidelines -->
                 <div class="bg-white rounded-3 p-4 shadow-sm border mb-4">
+                    <h4 class="fw-bold text-dark mb-4"><i class="bi bi-card-checklist text-warning me-2"></i>Policy Guidelines</h4>
+
                     <!-- Point 1 -->
                     <div class="d-flex align-items-start gap-3 mb-4 pb-3 border-bottom">
                         <div class="bg-warning text-dark rounded-circle p-2 px-3 fw-bold fs-5">1</div>
@@ -128,6 +131,50 @@
                             </p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Box 1: What We Can't Accept -->
+                <div class="bg-white rounded-3 p-4 shadow-sm border mb-4 border-start border-danger border-4">
+                    <h5 class="fw-bold text-danger mb-3">
+                        <i class="bi bi-x-circle-fill me-2"></i>What We Can’t Accept
+                    </h5>
+                    <ul class="mb-0 text-secondary ps-3">
+                        {% set ineligibles = site_settings.get('returns_ineligible_items', '').strip().split('\n') %}
+                        {% if ineligibles and ineligibles[0] %}
+                            {% for item in ineligibles %}
+                                {% if item.strip() %}
+                                    <li class="mb-2">{{ item.strip() }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <li class="mb-2">Items with physical damage, scratches or liquid ingress</li>
+                            <li class="mb-2">Products with the packaging or seal destroyed</li>
+                            <li class="mb-2">Earphones and earbuds that have been used, for hygiene reasons — unless the item is faulty</li>
+                            <li class="mb-0">Items returned more than 1 day after delivery</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Box 2: Not Covered by Warranty -->
+                <div class="bg-white rounded-3 p-4 shadow-sm border border-start border-warning border-4">
+                    <h5 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-shield-slash-fill text-warning me-2"></i>Not Covered by Warranty
+                    </h5>
+                    <ul class="mb-0 text-secondary ps-3">
+                        {% set exclusions = site_settings.get('warranty_exclusions_items', '').strip().split('\n') %}
+                        {% if exclusions and exclusions[0] %}
+                            {% for item in exclusions %}
+                                {% if item.strip() %}
+                                    <li class="mb-2">{{ item.strip() }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <li class="mb-2">Physical damage, including cut or frayed cables</li>
+                            <li class="mb-2">Water or liquid damage</li>
+                            <li class="mb-2">Damage from use with a non-compliant charger or power source</li>
+                            <li class="mb-0">Normal battery capacity decline over time</li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
 

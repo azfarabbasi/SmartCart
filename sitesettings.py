@@ -40,6 +40,8 @@ DEFAULTS = {
     'returns_policy_summary': 'Check your parcel at the time of delivery. Within 1 day, exchange if incompatible with your device at our Gulistan-e-Jauhar warehouse.',
     'returns_days': '1',
     'returns_warehouse_location': 'Gulistan-e-Jauhar, Karachi',
+    'returns_ineligible_items': "Items with physical damage, scratches or liquid ingress\nProducts with the packaging or seal destroyed\nEarphones and earbuds that have been used, for hygiene reasons — unless the item is faulty\nItems returned more than 1 day after delivery",
+    'warranty_exclusions_items': "Physical damage, including cut or frayed cables\nWater or liquid damage\nDamage from use with a non-compliant charger or power source\nNormal battery capacity decline over time",
     'shipping_policy_title': 'Shipping & Delivery in Karachi',
     'shipping_policy_summary': 'Fast, safe delivery across all areas of Karachi with live tracking and COD.',
     'faq_title': 'Frequently Asked Questions',
@@ -92,6 +94,8 @@ FIELD_GROUPS = [
         ('returns_policy_summary', 'Policy Page Summary Subtitle', 'textarea'),
         ('returns_days', 'Exchange Window (Days, e.g. 1)', 'number'),
         ('returns_warehouse_location', 'Warehouse / Exchange Return Location (e.g. Gulistan-e-Jauhar, Karachi)', 'text'),
+        ('returns_ineligible_items', 'What We Cannot Accept (1 item per line)', 'textarea'),
+        ('warranty_exclusions_items', 'Not Covered by Warranty (1 item per line)', 'textarea'),
     ]),
     ('Customer Info Pages', [
         ('shipping_policy_title', 'Shipping Page Title', 'text'),

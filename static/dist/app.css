@@ -56,6 +56,7 @@
 .bi-calendar-month::before { content: "\f1ed"; }
 .bi-calendar-week::before { content: "\f1f3"; }
 .bi-camera::before { content: "\f220"; }
+.bi-card-checklist::before { content: "\f224"; }
 .bi-cart-plus::before { content: "\f23f"; }
 .bi-cart-x::before { content: "\f241"; }
 .bi-cart4::before { content: "\f245"; }
@@ -140,6 +141,7 @@
 .bi-shield-exclamation::before { content: "\f530"; }
 .bi-shield-lock-fill::before { content: "\f537"; }
 .bi-shield-lock::before { content: "\f538"; }
+.bi-shield-slash-fill::before { content: "\f53c"; }
 .bi-shop::before { content: "\f543"; }
 .bi-slash-circle::before { content: "\f567"; }
 .bi-sliders::before { content: "\f56b"; }
