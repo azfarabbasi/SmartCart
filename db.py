@@ -61,6 +61,28 @@ def _auto_migrate(conn):
                 WHEN NOT MATCHED THEN INSERT (setting_key, setting_value) VALUES (:k, :v)
                 """, {'k': sk, 'v': str(sv)})
 
+            # Update settings for 1-day exchange and Gulistan-e-Jauhar location
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = 'Check at Delivery & 1-Day Exchange'
+            WHERE setting_key = 'prop_1_title' AND setting_value LIKE '%7-Day%'
+            """)
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = 'Check on delivery. 24h device compatibility exchange'
+            WHERE setting_key = 'prop_1_sub' AND setting_value LIKE '%Hassle-free%'
+            """)
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = '1'
+            WHERE setting_key = 'returns_days' AND setting_value = '7'
+            """)
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = 'Check on Delivery & 1-Day Exchange Policy'
+            WHERE setting_key = 'returns_policy_title' AND setting_value LIKE '%7-Day%'
+            """)
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = 'Gulistan-e-Jauhar, Karachi, Pakistan'
+            WHERE setting_key = 'store_address' AND (setting_value IS NULL OR setting_value = 'Karachi, Pakistan')
+            """)
+
             # Update existing settings and banners if they say 'Nationwide'
             cur.execute("""
             UPDATE SiteSettings SET setting_value = 'Delivery All Over Karachi'

@@ -3,7 +3,7 @@ DEFAULTS = {
     'contact_phone': '+923312344418',
     'contact_email': 'azfar.aa.abbasi@gmail.com',
     'whatsapp_number': '923312344418',
-    'store_address': 'Karachi, Pakistan',
+    'store_address': 'Gulistan-e-Jauhar, Karachi, Pakistan',
     'store_hours': 'Monday – Saturday: 11:00 AM – 11:00 PM',
 
     # 2. Header Perks & Trust Badges
@@ -14,11 +14,11 @@ DEFAULTS = {
     'delivery_scope_text': 'Delivery All Over Karachi',
 
     # 3. 4 Marketing Trust Value Pillars (Home & Product Pages)
-    'prop_1_title': '7-Day Easy Exchange',
-    'prop_1_sub': 'Hassle-free replacement on unused items',
-    'prop_1_icon': 'bi-arrow-repeat',
+    'prop_1_title': 'Check at Delivery & 1-Day Exchange',
+    'prop_1_sub': 'Check on delivery. 24h device compatibility exchange',
+    'prop_1_icon': 'bi-box-seam',
     'prop_2_title': '100% Genuine with Warranty',
-    'prop_2_sub': 'Official tech brands with direct claim support',
+    'prop_2_sub': 'Official tech brands with warranty claim support',
     'prop_2_icon': 'bi-patch-check-fill',
     'prop_3_title': 'Express Delivery in Karachi',
     'prop_3_sub': 'Same-day & next-day dispatch to your doorstep',
@@ -31,14 +31,15 @@ DEFAULTS = {
     'hero_title': 'Welcome to SmartCart',
     'hero_subtitle': 'Browse our full catalog - fast delivery all over Karachi.',
     'free_delivery_notice': 'FREE delivery on orders above Rs 2,000 in Karachi',
-    'checkout_notice': 'Orders are dispatched once payment is verified. Delivery available all over Karachi.',
+    'checkout_notice': 'Orders are dispatched once payment is verified. Check parcel at delivery. Delivery available all over Karachi.',
     'site_announcement': '',
-    'footer_note': 'SmartCart - Premium Tech, Earbuds & Smart Gadgets delivered across Karachi.',
+    'footer_note': 'SmartCart - Premium Tech, Earbuds & Smart Gadgets. Warehouse at Gulistan-e-Jauhar, Karachi.',
 
-    # 5. Policies & Informational Pages
-    'returns_policy_title': '7-Day Easy Returns & Warranty Policy',
-    'returns_policy_summary': 'What to do when something is not right — straightforward, customer-first service.',
-    'returns_days': '7',
+    # 5. Return & Exchange Policy (Specific to Gulistan-e-Jauhar & 1-Day Exchange)
+    'returns_policy_title': 'Check on Delivery & 1-Day Exchange Policy',
+    'returns_policy_summary': 'Check your parcel at the time of delivery. Within 1 day, exchange if incompatible with your device at our Gulistan-e-Jauhar warehouse.',
+    'returns_days': '1',
+    'returns_warehouse_location': 'Gulistan-e-Jauhar, Karachi',
     'shipping_policy_title': 'Shipping & Delivery in Karachi',
     'shipping_policy_summary': 'Fast, safe delivery across all areas of Karachi with live tracking and COD.',
     'faq_title': 'Frequently Asked Questions',
@@ -65,9 +66,9 @@ FIELD_GROUPS = [
         ('delivery_scope_text', 'Delivery Region / Scope Label (e.g. Delivery All Over Karachi)', 'text'),
     ]),
     ('4 Marketing Trust Pillars (Home & Product Pages)', [
-        ('prop_1_title', 'Pillar 1 Title (e.g. 7-Day Easy Exchange)', 'text'),
+        ('prop_1_title', 'Pillar 1 Title (e.g. Check at Delivery & 1-Day Exchange)', 'text'),
         ('prop_1_sub', 'Pillar 1 Subtitle', 'text'),
-        ('prop_1_icon', 'Pillar 1 Icon (e.g. bi-arrow-repeat)', 'text'),
+        ('prop_1_icon', 'Pillar 1 Icon (e.g. bi-box-seam, bi-arrow-repeat)', 'text'),
         ('prop_2_title', 'Pillar 2 Title (e.g. 100% Genuine with Warranty)', 'text'),
         ('prop_2_sub', 'Pillar 2 Subtitle', 'text'),
         ('prop_2_icon', 'Pillar 2 Icon (e.g. bi-patch-check-fill)', 'text'),
@@ -86,10 +87,13 @@ FIELD_GROUPS = [
         ('site_announcement', 'Sitewide Announcement Banner (leave blank to hide)', 'textarea'),
         ('footer_note', 'Footer Copyright / Tagline Note', 'text'),
     ]),
-    ('Customer Policy & Info Pages', [
-        ('returns_policy_title', 'Returns Page Title', 'text'),
-        ('returns_policy_summary', 'Returns Page Subtitle', 'textarea'),
-        ('returns_days', 'Return Window Period (Days, e.g. 7)', 'number'),
+    ('Exchange & Return Policy (Admin Editable)', [
+        ('returns_policy_title', 'Policy Page Title', 'text'),
+        ('returns_policy_summary', 'Policy Page Summary Subtitle', 'textarea'),
+        ('returns_days', 'Exchange Window (Days, e.g. 1)', 'number'),
+        ('returns_warehouse_location', 'Warehouse / Exchange Return Location (e.g. Gulistan-e-Jauhar, Karachi)', 'text'),
+    ]),
+    ('Customer Info Pages', [
         ('shipping_policy_title', 'Shipping Page Title', 'text'),
         ('shipping_policy_summary', 'Shipping Page Subtitle', 'textarea'),
         ('about_title', 'About Us Page Title', 'text'),
@@ -99,7 +103,7 @@ FIELD_GROUPS = [
         ('contact_phone', 'Customer Support Phone Number', 'text'),
         ('contact_email', 'Customer Support Email Address', 'text'),
         ('whatsapp_number', 'WhatsApp Support Number (digits only with country code, e.g. 923312344418)', 'text'),
-        ('store_address', 'Store Physical Address / Karachi Hub', 'text'),
+        ('store_address', 'Store / Warehouse Physical Address', 'text'),
         ('store_hours', 'Operating Hours (e.g. Monday – Saturday: 11:00 AM – 11:00 PM)', 'text'),
     ]),
     ('Pricing & Margin Protection Floor', [

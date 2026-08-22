@@ -1,28 +1,28 @@
 {% extends "base.html" %}
-{% block title %}{{ site_settings.get('returns_policy_title', '7-Day Easy Returns & Warranty Policy') }} | SmartCart{% endblock %}
+{% block title %}{{ site_settings.get('returns_policy_title', 'Check on Delivery & 1-Day Exchange Policy') }} | SmartCart{% endblock %}
 
 {% block content %}
 <div class="policy-page-wrapper">
     <!-- Hero Banner -->
-    <div class="policy-hero bg-dark text-white py-5 mb-5 border-bottom border-secondary">
-        <div class="container py-3">
+    <div class="policy-hero bg-dark text-white py-5 mb-4 border-bottom border-secondary">
+        <div class="container py-2">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-3">
                     <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}" class="text-warning text-decoration-none"><i class="bi bi-house-door me-1"></i>Home</a></li>
-                    <li class="breadcrumb-item active text-light" aria-current="page">Returns &amp; Warranty</li>
+                    <li class="breadcrumb-item active text-light" aria-current="page">Delivery Check &amp; Exchange Policy</li>
                 </ol>
             </nav>
             <div class="row align-items-center">
                 <div class="col-lg-8">
-                    <span class="badge bg-warning text-dark px-3 py-2 fw-bold mb-3"><i class="bi bi-shield-check me-1"></i> CUSTOMER-FIRST POLICY</span>
-                    <h1 class="display-5 fw-bold mb-3">{{ site_settings.get('returns_policy_title', '7-Day Easy Returns & Warranty Policy') }}</h1>
-                    <p class="lead text-light opacity-85 mb-0">
-                        {{ site_settings.get('returns_policy_summary', 'What to do when something is not right — straightforward, customer-first service with zero hassle.') }}
+                    <span class="badge bg-warning text-dark px-3 py-2 fw-bold mb-3"><i class="bi bi-box-seam me-1"></i> VERIFY ON DELIVERY</span>
+                    <h1 class="display-6 fw-bold mb-2">{{ site_settings.get('returns_policy_title', 'Check on Delivery & 1-Day Exchange Policy') }}</h1>
+                    <p class="lead text-light opacity-85 mb-0 fs-6">
+                        {{ site_settings.get('returns_policy_summary', 'Check your product at delivery. Exchange within 1 day if not compatible with your device at our Gulistan-e-Jauhar warehouse.') }}
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
-                    <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20need%20assistance%20with%20a%20return%20or%20warranty%20claim." target="_blank" class="btn btn-success btn-lg px-4 py-3 shadow">
-                        <i class="bi bi-whatsapp me-2 fs-5"></i>Start Return on WhatsApp
+                    <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20want%20to%20claim%20an%20exchange/warranty%20for%20my%20order." target="_blank" class="btn btn-success btn-lg px-4 py-2 shadow">
+                        <i class="bi bi-whatsapp me-2"></i>Contact on WhatsApp
                     </a>
                 </div>
             </div>
@@ -30,134 +30,132 @@
     </div>
 
     <div class="container pb-5">
-        <!-- 4 Key Highlights Grid -->
-        <div class="row g-3 mb-5">
-            <div class="col-6 col-md-3">
-                <div class="trust-highlight-card text-center p-4 rounded-3 h-100 border">
-                    <div class="highlight-icon-circle bg-warning-subtle text-warning mb-3 mx-auto">
-                        <i class="bi bi-arrow-repeat fs-2"></i>
+        <!-- 3 Quick Highlight Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="trust-highlight-card p-3 rounded-3 h-100 border bg-white text-center">
+                    <div class="highlight-icon-circle bg-warning-subtle text-warning mb-2 mx-auto" style="width: 48px; height: 48px;">
+                        <i class="bi bi-eye-fill fs-4"></i>
                     </div>
-                    <h5 class="fw-bold mb-1">{{ site_settings.get('returns_days', '7') }}-Day Return Window</h5>
-                    <p class="text-muted small mb-0">Full refund or exchange on all unused items in original packaging.</p>
+                    <h6 class="fw-bold mb-1">Check at Time of Delivery</h6>
+                    <p class="text-muted small mb-0">Inspect your parcel at the time of delivery if something is wrong.</p>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="trust-highlight-card text-center p-4 rounded-3 h-100 border">
-                    <div class="highlight-icon-circle bg-success-subtle text-success mb-3 mx-auto">
-                        <i class="bi bi-patch-check-fill fs-2"></i>
+            <div class="col-md-4">
+                <div class="trust-highlight-card p-3 rounded-3 h-100 border bg-white text-center">
+                    <div class="highlight-icon-circle bg-info-subtle text-info mb-2 mx-auto" style="width: 48px; height: 48px;">
+                        <i class="bi bi-arrow-left-right fs-4"></i>
                     </div>
-                    <h5 class="fw-bold mb-1">100% Genuine Brands</h5>
-                    <p class="text-muted small mb-0">Authentic tech from Ronin, Apple, Anker, Samsung, Sony &amp; more.</p>
+                    <h6 class="fw-bold mb-1">{{ site_settings.get('returns_days', '1') }}-Day Device Compatibility Exchange</h6>
+                    <p class="text-muted small mb-0">Exchange with any other product if incompatible with your device.</p>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="trust-highlight-card text-center p-4 rounded-3 h-100 border">
-                    <div class="highlight-icon-circle bg-info-subtle text-info mb-3 mx-auto">
-                        <i class="bi bi-shield-lock-fill fs-2"></i>
+            <div class="col-md-4">
+                <div class="trust-highlight-card p-3 rounded-3 h-100 border bg-white text-center">
+                    <div class="highlight-icon-circle bg-success-subtle text-success mb-2 mx-auto" style="width: 48px; height: 48px;">
+                        <i class="bi bi-geo-alt-fill fs-4"></i>
                     </div>
-                    <h5 class="fw-bold mb-1">Official Local Warranty</h5>
-                    <p class="text-muted small mb-0">Direct warranty handled by us without cumbersome manufacturer loops.</p>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="trust-highlight-card text-center p-4 rounded-3 h-100 border">
-                    <div class="highlight-icon-circle bg-primary-subtle text-primary mb-3 mx-auto">
-                        <i class="bi bi-truck fs-2"></i>
-                    </div>
-                    <h5 class="fw-bold mb-1">{{ site_settings.get('delivery_scope_text', 'Delivery All Over Karachi') }}</h5>
-                    <p class="text-muted small mb-0">Same-day pickup &amp; replacement delivery available across Karachi.</p>
+                    <h6 class="fw-bold mb-1">{{ site_settings.get('returns_warehouse_location', 'Gulistan-e-Jauhar, Karachi') }}</h6>
+                    <p class="text-muted small mb-0">Deliver back to our warehouse for exchange or warranty claim.</p>
                 </div>
             </div>
         </div>
 
-        <div class="row g-5">
-            <!-- Main Policy Body -->
+        <div class="row g-4">
+            <!-- Main Policy Card -->
             <div class="col-lg-8">
-                <section class="policy-section mb-5">
-                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ site_settings.get('returns_days', '7') }}-Day Easy Return &amp; Exchange Policy</h3>
-                    <p class="text-secondary leading-relaxed">
-                        At SmartCart, customer satisfaction is our highest priority. You can return or exchange any product within <strong>{{ site_settings.get('returns_days', '7') }} days of delivery</strong> for a full refund or replacement, provided the item is unused, in its original box with all plastic wraps, cables, user manuals, and accessories intact.
-                    </p>
-                    <p class="text-secondary leading-relaxed">
-                        Refunds are issued directly to your original payment method (Bank Transfer / EasyPaisa / JazzCash / NayaPay) or cash if delivered via COD within <strong>24 to 48 hours</strong> of verification.
-                    </p>
-                </section>
-
-                <section class="policy-section mb-5">
-                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-x-circle-fill text-danger me-2"></i>What Cannot Be Accepted</h3>
-                    <div class="bg-light p-4 rounded-3 border-start border-danger border-4">
-                        <ul class="mb-0 text-secondary ps-3">
-                            <li class="mb-2">Items with physical damage, drops, dents, cuts, scratches, or burn marks.</li>
-                            <li class="mb-2">Products with original manufacturer seal or security sticker broken or damaged (unless reporting a technical factory defect).</li>
-                            <li class="mb-2">In-ear earbuds or earphones that have been opened and worn (for hygienic reasons, unless experiencing technical audio defects).</li>
-                            <li class="mb-0">Requests submitted after the {{ site_settings.get('returns_days', '7') }}-day delivery window.</li>
-                        </ul>
+                <div class="bg-white rounded-3 p-4 shadow-sm border mb-4">
+                    <!-- Point 1 -->
+                    <div class="d-flex align-items-start gap-3 mb-4 pb-3 border-bottom">
+                        <div class="bg-warning text-dark rounded-circle p-2 px-3 fw-bold fs-5">1</div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-2">Check Product at Time of Delivery</h5>
+                            <p class="text-secondary leading-relaxed mb-0">
+                                Customers can check the product right at the time of delivery with the courier rider. If there is any visible issue or something is wrong with the product, it can be checked immediately upon receipt.
+                            </p>
+                        </div>
                     </div>
-                </section>
 
-                <section class="policy-section mb-5">
-                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-shield-check text-warning me-2"></i>Official Warranty Claims</h3>
-                    <p class="text-secondary leading-relaxed">
-                        All tech accessories sold on SmartCart are 100% authentic and covered under manufacturer/importer warranty (ranging from <strong>6 to 12 months</strong> depending on the brand and model).
-                    </p>
-                    <p class="text-secondary leading-relaxed">
-                        <strong>Direct Claim Handling:</strong> Unlike typical online sellers, SmartCart assists you directly with warranty claims in Karachi. Simply message us on WhatsApp with your Order ID, and our team will guide you through fast resolution.
-                    </p>
-                </section>
-
-                <section class="policy-section mb-4">
-                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-list-ol text-primary me-2"></i>How to Start a Return in 3 Easy Steps</h3>
-                    <div class="steps-list">
-                        <div class="d-flex align-items-start gap-3 mb-3 p-3 bg-white rounded border shadow-sm">
-                            <span class="badge bg-warning text-dark fs-6 rounded-circle p-2 px-3">1</span>
-                            <div>
-                                <h6 class="fw-bold mb-1">Message Our Karachi Support Team</h6>
-                                <p class="text-muted small mb-0">Contact us on WhatsApp at <strong>{{ contact_phone }}</strong> with your Order ID and photos/video of the item.</p>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-start gap-3 mb-3 p-3 bg-white rounded border shadow-sm">
-                            <span class="badge bg-warning text-dark fs-6 rounded-circle p-2 px-3">2</span>
-                            <div>
-                                <h6 class="fw-bold mb-1">Same-Day Approval &amp; Pickup</h6>
-                                <p class="text-muted small mb-0">Our team confirms the request within 2 hours and arranges rider pickup from your Karachi address.</p>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-start gap-3 p-3 bg-white rounded border shadow-sm">
-                            <span class="badge bg-warning text-dark fs-6 rounded-circle p-2 px-3">3</span>
-                            <div>
-                                <h6 class="fw-bold mb-1">Instant Exchange or Full Refund</h6>
-                                <p class="text-muted small mb-0">Receive your replacement item or instant refund transfer immediately upon verification.</p>
+                    <!-- Point 2 -->
+                    <div class="d-flex align-items-start gap-3 mb-4 pb-3 border-bottom">
+                        <div class="bg-warning text-dark rounded-circle p-2 px-3 fw-bold fs-5">2</div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-2">Within 1 Day: Device Compatibility Exchange</h5>
+                            <p class="text-secondary leading-relaxed mb-2">
+                                If within <strong>1 day (24 hours)</strong> of receiving your order you find that the product is not compatible with your device (e.g. phone, laptop, or system), you can deliver it back to us and <strong>exchange it with any other product</strong> from our store catalog.
+                            </p>
+                            <div class="p-3 bg-light rounded-2 border">
+                                <strong class="text-dark d-block mb-1"><i class="bi bi-shield-exclamation text-warning me-1"></i> Conditions for Exchange:</strong>
+                                <ul class="mb-0 text-muted small ps-3">
+                                    <li>The product's packaging and box must <strong>NOT be damaged or torn</strong>.</li>
+                                    <li>The product must be completely <strong>scratchless, pristine, and unused</strong>.</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
-                </section>
+
+                    <!-- Point 3 -->
+                    <div class="d-flex align-items-start gap-3 mb-4 pb-3 border-bottom">
+                        <div class="bg-warning text-dark rounded-circle p-2 px-3 fw-bold fs-5">3</div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-hand-thumbs-up text-primary me-1"></i> Careful Unboxing Recommendation</h5>
+                            <div class="alert alert-warning mb-0 text-dark small border-warning">
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                                <strong>Important Tip:</strong> It is strongly recommended for the user to <strong>unbox with careful hands</strong> so that in case you want to claim an exchange, the box and packaging remain in original, undamaged condition.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Point 4 -->
+                    <div class="d-flex align-items-start gap-3 mb-4 pb-3 border-bottom">
+                        <div class="bg-warning text-dark rounded-circle p-2 px-3 fw-bold fs-5">4</div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Warehouse Drop-Off &amp; Return Location</h5>
+                            <p class="text-secondary leading-relaxed mb-0">
+                                For exchanges, customers can deliver the product back to our warehouse located at:
+                                <strong class="text-dark d-block mt-1"><i class="bi bi-pin-map-fill text-danger me-1"></i> {{ site_settings.get('store_address', 'Gulistan-e-Jauhar, Karachi, Pakistan') }}</strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Point 5 -->
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="bg-warning text-dark rounded-circle p-2 px-3 fw-bold fs-5">5</div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-shield-check text-success me-1"></i> Faulty Products &amp; Warranty Claims</h5>
+                            <p class="text-secondary leading-relaxed mb-0">
+                                In case of any faulty product or manufacturing defect, customers can claim official warranty according to the product's designated warranty duration by delivering it to our <strong>{{ site_settings.get('returns_warehouse_location', 'Gulistan-e-Jauhar, Karachi') }}</strong> location.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Sidebar Quick Help -->
+            <!-- Sidebar -->
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 100px; background: #0f172a; color: #fff;">
-                    <h5 class="fw-bold text-warning mb-3"><i class="bi bi-headset me-2"></i>Need Help Now?</h5>
-                    <p class="text-light opacity-75 small mb-4">
-                        Our Karachi support team is available live to assist you with any questions regarding returns, replacements, or product warranties.
+                    <h5 class="fw-bold text-warning mb-3"><i class="bi bi-headset me-2"></i>Karachi Support Hub</h5>
+                    <p class="text-light opacity-75 small mb-3">
+                        Have a question about checking your parcel, 1-day exchange, or warranty claim?
                     </p>
 
                     <div class="d-grid gap-2 mb-4">
-                        <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20have%20a%20question%20about%20returns." target="_blank" class="btn btn-success fw-bold py-2">
+                        <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I%20have%20a%20question%20about%20exchange%20or%20delivery%20at%20Gulistan-e-Jauhar." target="_blank" class="btn btn-success fw-bold py-2">
                             <i class="bi bi-whatsapp me-2"></i>WhatsApp: {{ contact_phone }}
                         </a>
-                        <a href="mailto:{{ contact_email }}" class="btn btn-outline-light py-2">
-                            <i class="bi bi-envelope me-2"></i>Email Support
+                        <a href="tel:{{ contact_phone }}" class="btn btn-outline-light py-2">
+                            <i class="bi bi-telephone me-2"></i>Call Us: {{ contact_phone }}
                         </a>
                     </div>
 
                     <div class="border-top border-secondary pt-3">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-muted small">
-                            <i class="bi bi-clock text-warning"></i>
-                            <span>{{ site_settings.get('store_hours', 'Monday – Saturday: 11:00 AM – 11:00 PM') }}</span>
+                        <div class="d-flex align-items-start gap-2 mb-2 text-muted small">
+                            <i class="bi bi-geo-alt text-warning mt-1"></i>
+                            <span><strong>Warehouse:</strong> {{ site_settings.get('store_address', 'Gulistan-e-Jauhar, Karachi, Pakistan') }}</span>
                         </div>
                         <div class="d-flex align-items-center gap-2 text-muted small">
-                            <i class="bi bi-geo-alt text-warning"></i>
-                            <span>{{ site_settings.get('store_address', 'Karachi, Pakistan') }}</span>
+                            <i class="bi bi-clock text-warning"></i>
+                            <span>{{ site_settings.get('store_hours', 'Monday – Saturday: 11:00 AM – 11:00 PM') }}</span>
                         </div>
                     </div>
                 </div>

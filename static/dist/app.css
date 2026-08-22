@@ -83,6 +83,7 @@
 .bi-exclamation-circle-fill::before { content: "\f332"; }
 .bi-exclamation-triangle-fill::before { content: "\f33a"; }
 .bi-exclamation-triangle::before { content: "\f33b"; }
+.bi-eye-fill::before { content: "\f33e"; }
 .bi-eye-slash::before { content: "\f340"; }
 .bi-eye::before { content: "\f341"; }
 .bi-file-earmark-text::before { content: "\f38b"; }
@@ -106,11 +107,11 @@
 .bi-info-circle-fill::before { content: "\f430"; }
 .bi-info-circle::before { content: "\f431"; }
 .bi-laptop::before { content: "\f456"; }
+.bi-lightbulb-fill::before { content: "\f468"; }
 .bi-lightbulb::before { content: "\f46b"; }
 .bi-lightning-charge-fill::before { content: "\f46c"; }
 .bi-lightning::before { content: "\f46f"; }
 .bi-link-45deg::before { content: "\f470"; }
-.bi-list-ol::before { content: "\f475"; }
 .bi-list::before { content: "\f479"; }
 .bi-lock-fill::before { content: "\f47a"; }
 .bi-megaphone-fill::before { content: "\f483"; }
@@ -136,6 +137,7 @@
 .bi-receipt::before { content: "\f50f"; }
 .bi-search::before { content: "\f52a"; }
 .bi-shield-check::before { content: "\f52f"; }
+.bi-shield-exclamation::before { content: "\f530"; }
 .bi-shield-lock-fill::before { content: "\f537"; }
 .bi-shield-lock::before { content: "\f538"; }
 .bi-shop::before { content: "\f543"; }
@@ -164,6 +166,7 @@
 .bi-cash-coin::before { content: "\f632"; }
 .bi-check-lg::before { content: "\f633"; }
 .bi-coin::before { content: "\f634"; }
+.bi-pin-map-fill::before { content: "\f64b"; }
 .bi-plus-lg::before { content: "\f64d"; }
 .bi-x-lg::before { content: "\f659"; }
 .bi-graph-down-arrow::before { content: "\f672"; }
