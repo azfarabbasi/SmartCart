@@ -1,0 +1,29 @@
+<nav class="mobile-bottom-nav d-md-none" aria-label="Mobile Navigation">
+    <a href="{{ url_for('customer.index') }}" class="mobile-nav-item {% if request.endpoint == 'customer.index' and not active_slug %}active{% endif %}">
+        <i class="bi bi-house-door-fill"></i>
+        <span>Shop</span>
+    </a>
+    <a href="{{ url_for('customer.index') }}#categoriesSection" class="mobile-nav-item {% if active_slug %}active{% endif %}">
+        <i class="bi bi-grid-fill"></i>
+        <span>Category</span>
+    </a>
+    <a href="{{ url_for('customer.index') }}#brandsSection" class="mobile-nav-item">
+        <i class="bi bi-tag-fill"></i>
+        <span>Brands</span>
+    </a>
+    <a href="{{ url_for('customer.view_wishlist') }}" class="mobile-nav-item {% if request.endpoint == 'customer.view_wishlist' %}active{% endif %}">
+        <i class="bi bi-heart-fill"></i>
+        <span>Wishlist</span>
+    </a>
+    {% if current_user %}
+        <a href="{{ url_for('customer.profile') }}" class="mobile-nav-item {% if request.endpoint in ['customer.profile', 'customer.order_history'] %}active{% endif %}">
+            <i class="bi bi-person-fill"></i>
+            <span>Me</span>
+        </a>
+    {% else %}
+        <a href="{{ url_for('auth.login', next=request.path) }}" class="mobile-nav-item {% if request.endpoint == 'auth.login' %}active{% endif %}">
+            <i class="bi bi-person-fill"></i>
+            <span>Sign In</span>
+        </a>
+    {% endif %}
+</nav>

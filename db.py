@@ -204,6 +204,130 @@ def _auto_migrate(conn):
             except Exception:
                 pass
 
+        # 9. Ensure Categories columns (icon_name, image_path, sort_order) exist
+        try:
+            cur.execute("SELECT icon_name FROM Categories WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Categories ADD (icon_name VARCHAR2(100) DEFAULT 'bi-tag')")
+                conn.commit()
+            except Exception:
+                pass
+        try:
+            cur.execute("SELECT image_path FROM Categories WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Categories ADD (image_path CLOB)")
+                conn.commit()
+            except Exception:
+                pass
+        try:
+            cur.execute("SELECT sort_order FROM Categories WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Categories ADD (sort_order NUMBER DEFAULT 0)")
+                conn.commit()
+            except Exception:
+                pass
+
+        # 10. Ensure Brands table and sequence exist
+        try:
+            cur.execute("SELECT 1 FROM Brands WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("""
+                CREATE TABLE Brands (
+                    brand_id     NUMBER PRIMARY KEY,
+                    brand_name   VARCHAR2(100) NOT NULL,
+                    subtitle     VARCHAR2(150),
+                    logo_path    CLOB,
+                    badge_text   VARCHAR2(10),
+                    badge_color  VARCHAR2(50) DEFAULT 'brand-bg-dark',
+                    search_query VARCHAR2(100),
+                    sort_order   NUMBER DEFAULT 0,
+                    is_active    NUMBER(1) DEFAULT 1,
+                    created_at   DATE DEFAULT SYSDATE
+                )
+                """)
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                cur.execute("CREATE SEQUENCE brands_seq START WITH 1 INCREMENT BY 1")
+                conn.commit()
+            except Exception:
+                pass
+
+            # Seed default brands if table just created or empty
+            try:
+                cur.execute("SELECT COUNT(*) FROM Brands")
+                if cur.fetchone()[0] == 0:
+                    seed_brands = [
+                        ('Ronin', 'Audio & Power', 'RO', 'brand-bg-dark', 'Ronin', 1),
+                        ('Anker', 'Fast Chargers', 'AK', 'brand-bg-blue', 'Anker', 2),
+                        ('Apple', 'Smart Tech', 'AP', 'brand-bg-gray', 'Apple', 3),
+                        ('Samsung', 'Galaxy & Audio', 'SM', 'brand-bg-navy', 'Samsung', 4),
+                        ('Sony', 'Audio Systems', 'SN', 'brand-bg-black', 'Sony', 5),
+                        ('Audionic', 'Speakers & TWS', 'AD', 'brand-bg-red', 'Audionic', 6),
+                        ('Razer', 'Pro Gaming', 'RZ', 'brand-bg-green', 'Razer', 7),
+                        ('Baseus', 'Smart Gadgets', 'BS', 'brand-bg-yellow', 'Baseus', 8),
+                    ]
+                    for bname, bsub, bbadge, bcolor, bsearch, bsort in seed_brands:
+                        cur.execute("""
+                        INSERT INTO Brands (brand_id, brand_name, subtitle, badge_text, badge_color, search_query, sort_order)
+                        VALUES (brands_seq.NEXTVAL, :bn, :bs, :bt, :bc, :bq, :so)
+                        """, {'bn': bname, 'bs': bsub, 'bt': bbadge, 'bc': bcolor, 'bq': bsearch, 'so': bsort})
+                    conn.commit()
+            except Exception:
+                pass
+
+        # 11. Ensure HeroBanners table and sequence exist
+        try:
+            cur.execute("SELECT 1 FROM HeroBanners WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("""
+                CREATE TABLE HeroBanners (
+                    banner_id      NUMBER PRIMARY KEY,
+                    badge_tag      VARCHAR2(100),
+                    title          VARCHAR2(150) NOT NULL,
+                    subtitle       VARCHAR2(255),
+                    cta_text       VARCHAR2(100) DEFAULT 'SHOP NOW',
+                    cta_link       VARCHAR2(255) DEFAULT '/#productsGrid',
+                    gradient_class VARCHAR2(100) DEFAULT 'promo-gradient-autumn',
+                    image_path     CLOB,
+                    sort_order     NUMBER DEFAULT 0,
+                    is_active      NUMBER(1) DEFAULT 1,
+                    created_at     DATE DEFAULT SYSDATE
+                )
+                """)
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                cur.execute("CREATE SEQUENCE banners_seq START WITH 1 INCREMENT BY 1")
+                conn.commit()
+            except Exception:
+                pass
+
+            # Seed default hero banners if empty
+            try:
+                cur.execute("SELECT COUNT(*) FROM HeroBanners")
+                if cur.fetchone()[0] == 0:
+                    seed_banners = [
+                        ('🔥 AUTUMN SALE', '80% OFF', 'Top Audio, Earbuds & Smart Tech', 'SHOP NOW', '/#productsGrid', 'promo-gradient-autumn', 1),
+                        ('🚚 FAST SHIPPING', 'FREE DELIVERY', 'On All Orders Above Rs 2,000 Nationwide', 'EXPLORE DEALS', '/#productsGrid', 'promo-gradient-ocean', 2),
+                        ('🛡️ 100% GENUINE', 'TOP TECH BRANDS', 'Ronin, Apple, Samsung, Anker, Sony & Razer', 'VIEW BRANDS', '#brandsSection', 'promo-gradient-violet', 3),
+                    ]
+                    for btag, btitle, bsub, bcta, bctl, bgrad, bsort in seed_banners:
+                        cur.execute("""
+                        INSERT INTO HeroBanners (banner_id, badge_tag, title, subtitle, cta_text, cta_link, gradient_class, sort_order)
+                        VALUES (banners_seq.NEXTVAL, :btg, :btt, :bsb, :bct, :bcl, :bgc, :bso)
+                        """, {'btg': btag, 'btt': btitle, 'bsb': bsub, 'bct': bcta, 'bcl': bctl, 'bgc': bgrad, 'bso': bsort})
+                    conn.commit()
+            except Exception:
+                pass
+
         # 7. Always keep place_order procedure up to date (recompile on startup)
         try:
             cur.execute("""

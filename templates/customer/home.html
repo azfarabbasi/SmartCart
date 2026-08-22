@@ -1,73 +1,222 @@
 {% extends "base.html" %}
-{% block title %}SmartCart - Shop{% endblock %}
+{% block title %}SmartCart - Modern Online Shopping{% endblock %}
 {% block content %}
-    <section class="hero-banner">
-        <div class="hero-content">
-            <h1>{{ site_settings.get('hero_title', 'Welcome to SmartCart') }}</h1>
-            <p>{{ site_settings.get('hero_subtitle', '') }}</p>
+
+    <!-- ═══ 1. SHEIN-STYLE HERO PROMO / DEALS CAROUSEL ═══ -->
+    <section class="promo-hero-section">
+        <div class="container-fluid px-2 px-md-3">
+            <div id="promoHeroCarousel" class="carousel slide promo-hero-slider" data-bs-ride="carousel" data-bs-interval="4500">
+                {% if hero_banners %}
+                    <div class="carousel-indicators promo-dots">
+                        {% for banner in hero_banners %}
+                            <button type="button" data-bs-target="#promoHeroCarousel" data-bs-slide-to="{{ loop.index0 }}" class="{{ 'active' if loop.first else '' }}" aria-current="{{ 'true' if loop.first else 'false' }}" aria-label="Slide {{ loop.index }}"></button>
+                        {% endfor %}
+                    </div>
+
+                    <div class="carousel-inner promo-slider-inner">
+                        {% for banner in hero_banners %}
+                            <div class="carousel-item {{ 'active' if loop.first else '' }}">
+                                <div class="promo-banner-card {{ banner[6]|default('promo-gradient-autumn') }}" {% if banner[7] %}style="background-image: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.65)), url('{{ banner[7] }}'); background-size: cover; background-position: center;"{% endif %}>
+                                    <div class="promo-content-wrap">
+                                        {% if banner[1] %}
+                                            <span class="promo-badge-tag">{{ banner[1] }}</span>
+                                        {% endif %}
+                                        <h2 class="promo-main-heading">{{ banner[2] }}</h2>
+                                        {% if banner[3] %}
+                                            <p class="promo-sub-text">{{ banner[3] }}</p>
+                                        {% endif %}
+                                        <a href="{{ banner[5]|default('/#productsGrid') }}" class="btn btn-warning btn-sm promo-cta-btn">
+                                            {{ banner[4]|default('SHOP NOW') }} <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <!-- Default Static Fallback Banner if DB Empty -->
+                    <div class="carousel-inner promo-slider-inner">
+                        <div class="carousel-item active">
+                            <div class="promo-banner-card promo-gradient-autumn">
+                                <div class="promo-content-wrap">
+                                    <span class="promo-badge-tag"><i class="bi bi-fire text-warning me-1"></i> FLASH SALE</span>
+                                    <h1 class="promo-main-heading">80<span class="promo-heading-sub">%<br><small>OFF</small></span></h1>
+                                    <p class="promo-sub-text">Top Audio, Earbuds &amp; Smart Tech</p>
+                                    <a href="{{ url_for('customer.index') }}#productsGrid" class="btn btn-warning btn-sm promo-cta-btn">
+                                        SHOP NOW <i class="bi bi-arrow-right ms-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <button class="carousel-control-prev promo-arrow-btn d-none d-md-flex" type="button" data-bs-target="#promoHeroCarousel" data-bs-slide="prev" aria-label="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="carousel-control-next promo-arrow-btn d-none d-md-flex" type="button" data-bs-target="#promoHeroCarousel" data-bs-slide="next" aria-label="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
         </div>
     </section>
 
-    <section class="products-section">
-        <div class="container-fluid">
+    <!-- ═══ 2. HORIZONTAL SLIDING CATEGORIES WITH IMAGES ═══ -->
+    <section class="categories-strip-section" id="categoriesSection">
+        <div class="container-fluid px-2 px-md-3">
+            <div class="section-title-strip">
+                <h3><i class="bi bi-grid-fill text-warning me-2"></i>Categories</h3>
+                <span class="swipe-hint d-md-none"><i class="bi bi-arrow-left-right me-1"></i>Swipe</span>
+            </div>
+
+            <div class="category-slider-strip">
+                <!-- All category -->
+                <a href="{{ url_for('customer.index') }}" class="cat-circle-card {% if not active_slug %}active{% endif %}">
+                    <div class="cat-circle-avatar cat-bg-all">
+                        <i class="bi bi-stars"></i>
+                    </div>
+                    <span class="cat-circle-name">All Items</span>
+                </a>
+
+                {% for cat in nav_categories|default([]) %}
+                    <a href="{{ url_for('customer.category', slug=cat.slug) }}" class="cat-circle-card {% if active_slug == cat.slug %}active{% endif %}">
+                        {% if cat.image %}
+                            <img src="{{ cat.image }}" alt="{{ cat.name }}" class="cat-circle-avatar" style="object-fit: cover; border: 2px solid var(--accent);">
+                        {% else %}
+                            <div class="cat-circle-avatar cat-bg-{{ loop.index % 6 }}">
+                                <i class="bi {{ cat.icon|default('bi-tag') }}"></i>
+                            </div>
+                        {% endif %}
+                        <span class="cat-circle-name">{{ cat.name }}</span>
+                    </a>
+                {% endfor %}
+
+                <!-- Quick Deal Link -->
+                <a href="{{ url_for('customer.index') }}#productsGrid" class="cat-circle-card">
+                    <div class="cat-circle-avatar cat-bg-hot">
+                        <i class="bi bi-fire"></i>
+                    </div>
+                    <span class="cat-circle-name">Hot Deals</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ 3. FEATURED BRANDS & COMPANIES SHOWCASE ═══ -->
+    <section class="brands-showcase-section" id="brandsSection">
+        <div class="container-fluid px-2 px-md-3">
+            <div class="section-title-strip">
+                <div>
+                    <h3 class="mb-0"><i class="bi bi-building-check text-warning me-2"></i>Official Brands</h3>
+                    <small class="text-muted">Click any company to view their products</small>
+                </div>
+            </div>
+
+            <div class="brands-slider-strip">
+                {% if brands %}
+                    {% for b in brands %}
+                        <a href="{{ url_for('customer.search', q=b[6]|default(b[1])) }}" class="brand-pill-card">
+                            {% if b[3] %}
+                                <img src="{{ b[3] }}" alt="{{ b[1] }}" class="brand-badge-circle border border-secondary" style="object-fit: cover; background: #fff;">
+                            {% else %}
+                                <div class="brand-badge-circle {{ b[5]|default('brand-bg-dark') }}">{{ b[4]|default(b[1][:2]|upper) }}</div>
+                            {% endif %}
+                            <div class="brand-meta">
+                                <span class="brand-title">{{ b[1] }}</span>
+                                <span class="brand-sub">{{ b[2]|default('') }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <!-- Fallback if empty -->
+                    <a href="{{ url_for('customer.search', q='Ronin') }}" class="brand-pill-card">
+                        <div class="brand-badge-circle brand-bg-dark">RO</div>
+                        <div class="brand-meta"><span class="brand-title">Ronin</span><span class="brand-sub">Audio &amp; Power</span></div>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ 4. PRODUCTS SECTION (2-COLUMN PORTRAIT SHEIN GRID) ═══ -->
+    <section class="products-section" id="productsGrid">
+        <div class="container-fluid px-2 px-md-3">
             <div class="section-header">
                 <h2>{{ heading }}</h2>
-                <span class="results-count">{{ products|length }} results</span>
+                <span class="results-count">{{ products|length }} items</span>
             </div>
 
             {% if products %}
                 <div class="products-grid">
                     {% for product in products %}
                         <div class="product-card">
-                            <a href="{{ url_for('customer.product_detail', product_id=product[0]) }}" class="product-image">
-                                {% if product[5] %}
-                                    <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}">
+                            <div class="product-image-container position-relative">
+                                <a href="{{ url_for('customer.product_detail', product_id=product[0]) }}" class="product-image">
+                                    {% if product[5] %}
+                                        <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" loading="lazy">
+                                    {% else %}
+                                        <div class="no-image"><i class="bi bi-image"></i></div>
+                                    {% endif %}
+                                </a>
+
+                                <!-- Floating Wishlist Button on Image Top-Right -->
+                                {% if current_user %}
+                                    <form action="{{ url_for('customer.add_to_wishlist') }}" method="POST" class="card-wishlist-form">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="product_id" value="{{ product[0] }}">
+                                        <button type="submit" class="card-wishlist-btn" title="Add to Wishlist" aria-label="Add to Wishlist">
+                                            <i class="bi bi-heart"></i>
+                                        </button>
+                                    </form>
                                 {% else %}
-                                    <div class="no-image"><i class="bi bi-image"></i></div>
+                                    <a href="{{ url_for('auth.login', next=request.path) }}" class="card-wishlist-btn" title="Sign in to Wishlist" aria-label="Sign in to Wishlist">
+                                        <i class="bi bi-heart"></i>
+                                    </a>
                                 {% endif %}
-                            </a>
+
+                                {% if product[8] %}
+                                    <span class="card-badge-top-left">Free Delivery</span>
+                                {% endif %}
+                            </div>
+
                             <div class="product-info">
                                 <a href="{{ url_for('customer.product_detail', product_id=product[0]) }}" class="product-title">{{ product[1] }}</a>
+                                
                                 <div class="product-price">
                                     <span class="currency">Rs</span>
                                     <span class="amount">{{ "{:,.2f}".format(product[2]) }}</span>
                                 </div>
-                                <p class="product-category"><i class="bi bi-tag"></i> {{ product[6] }}</p>
-                                <div class="product-stock {% if product[3] > 0 %}in-stock{% else %}out-of-stock{% endif %}">
-                                    {% if product[3] > 5 %}
-                                        <i class="bi bi-check-circle-fill"></i> In Stock
-                                    {% elif product[3] > 0 %}
-                                        <i class="bi bi-exclamation-circle-fill"></i> Only {{ product[3] }} left
-                                    {% else %}
-                                        <i class="bi bi-x-circle-fill"></i> Out of Stock
-                                    {% endif %}
+
+                                <div class="product-meta-row">
+                                    <span class="product-category"><i class="bi bi-tag"></i> {{ product[6] }}</span>
+                                    <span class="product-stock-tag {% if product[3] > 0 %}in-stock{% else %}out-of-stock{% endif %}">
+                                        {% if product[3] > 5 %}
+                                            In Stock
+                                        {% elif product[3] > 0 %}
+                                            {{ product[3] }} left
+                                        {% else %}
+                                            Out of Stock
+                                        {% endif %}
+                                    </span>
                                 </div>
-                                {% if product[7] or product[8] %}
-                                    <p class="product-delivery">
-                                        {% if product[8] %}<span class="badge bg-success">Free Delivery</span>{% endif %}
-                                        {% if product[7] %}<i class="bi bi-truck"></i> {{ product[7] }}{% endif %}
-                                    </p>
-                                {% endif %}
-                                <div class="product-actions">
-                                    {% if current_user %}
-                                        <form action="{{ url_for('customer.add_to_cart') }}" method="POST" class="d-inline">
+
+                                <div class="product-actions mt-auto pt-2">
+                                    {% if product[3] <= 0 %}
+                                        <button type="button" class="btn btn-secondary btn-sm w-100 disabled" disabled>
+                                            <i class="bi bi-slash-circle me-1"></i> Out of Stock
+                                        </button>
+                                    {% elif current_user %}
+                                        <form action="{{ url_for('customer.add_to_cart') }}" method="POST" class="w-100">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="product_id" value="{{ product[0] }}">
                                             <input type="hidden" name="quantity" value="1">
-                                            <button type="submit" class="btn btn-warning btn-sm" {% if product[3] <= 0 %}disabled{% endif %}>
-                                                <i class="bi bi-cart-plus"></i> Add to Cart
-                                            </button>
-                                        </form>
-                                        <form action="{{ url_for('customer.add_to_wishlist') }}" method="POST" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <input type="hidden" name="product_id" value="{{ product[0] }}">
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                                <i class="bi bi-heart"></i>
+                                            <button type="submit" class="btn btn-warning btn-sm w-100 py-1 fw-semibold">
+                                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
                                             </button>
                                         </form>
                                     {% else %}
-                                        <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-warning btn-sm">
-                                            <i class="bi bi-box-arrow-in-right"></i> Login to Add to Cart
+                                        <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-warning btn-sm w-100 py-1 fw-semibold">
+                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
                                         </a>
                                     {% endif %}
                                 </div>

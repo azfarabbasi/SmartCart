@@ -77,7 +77,14 @@ def create_app():
 
     @app.context_processor
     def inject_asset_version():
-        return {'asset_version': app.config['ASSET_VERSION']}
+        if app.config.get('DEBUG'):
+            try:
+                version_file = os.path.join(app.static_folder, 'dist', 'version.txt')
+                with open(version_file, encoding='utf-8') as fh:
+                    return {'asset_version': fh.read().strip()}
+            except OSError:
+                pass
+        return {'asset_version': app.config.get('ASSET_VERSION', 'dev')}
 
     @app.context_processor
     def inject_site_settings():
@@ -106,16 +113,38 @@ def create_app():
         if 'nav_categories' not in g:
             try:
                 cur = db.get_db().cursor()
-                # DISTINCT by name: the catalog can hold several rows sharing a
-                # display name, and the nav should show that category once.
-                cur.execute(
-                    "SELECT category_name FROM ("
-                    "  SELECT DISTINCT category_name FROM Categories ORDER BY category_name"
-                    ") WHERE ROWNUM <= 12"
-                )
-                g.nav_categories = [
-                    {'name': row[0], 'slug': slugify(row[0])} for row in cur.fetchall()
-                ]
+                try:
+                    cur.execute(
+                        "SELECT category_id, category_name, icon_name, image_path, sort_order FROM ("
+                        "  SELECT category_id, category_name, icon_name, image_path, sort_order FROM Categories "
+                        "  ORDER BY NVL(sort_order, 0), category_name"
+                        ") WHERE ROWNUM <= 20"
+                    )
+                    rows = cur.fetchall()
+                    seen_names = set()
+                    g.nav_categories = []
+                    for row in rows:
+                        name_key = (row[1] or '').strip().lower()
+                        if name_key and name_key not in seen_names:
+                            seen_names.add(name_key)
+                            g.nav_categories.append({
+                                'id': row[0],
+                                'name': row[1],
+                                'slug': slugify(row[1]),
+                                'icon': row[2] or 'bi-tag',
+                                'image': row[3],
+                                'sort_order': row[4] or 0,
+                            })
+                except Exception:
+                    cur.execute(
+                        "SELECT category_name FROM ("
+                        "  SELECT DISTINCT category_name FROM Categories ORDER BY category_name"
+                        ") WHERE ROWNUM <= 20"
+                    )
+                    g.nav_categories = [
+                        {'name': row[0], 'slug': slugify(row[0]), 'icon': 'bi-tag', 'image': None, 'sort_order': 0}
+                        for row in cur.fetchall()
+                    ]
             except Exception:
                 g.nav_categories = []
         return {'nav_categories': g.nav_categories}
@@ -160,4 +189,4 @@ logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
 if __name__ == '__main__':
-    app.run(debug=app.config['DEBUG'])
+    app.run(host='0.0.0.0', port=5000, debug=app.config['DEBUG'])

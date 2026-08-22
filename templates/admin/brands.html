@@ -1,0 +1,271 @@
+{% extends "admin/base.html" %}
+{% block title %}Official Brands Management - Admin | SmartCart{% endblock %}
+{% block page_title %}Official Brands &amp; Companies{% endblock %}
+{% block content %}
+    <div class="row g-4">
+        <!-- ═══ ADD BRAND FORM ═══ -->
+        <div class="col-lg-4">
+            <div class="admin-card">
+                <div class="card-header bg-transparent pb-0 border-0">
+                    <h5 class="mb-0 text-white"><i class="bi bi-plus-circle-fill text-warning me-2"></i>Add New Brand</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.add_brand') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="mb-3">
+                            <label class="form-label text-light">Brand / Company Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="brand_name" required minlength="2" placeholder="e.g. Ronin, Apple, Anker, JBL">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-light">Tagline / Subtitle</label>
+                            <input type="text" class="form-control" name="subtitle" placeholder="e.g. Audio & Power, Smart Tech">
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label text-light">Badge Text</label>
+                                <input type="text" class="form-control" name="badge_text" maxlength="4" placeholder="e.g. RO, AK">
+                                <div class="form-text text-muted">2-letter badge if no logo.</div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-light">Badge Color</label>
+                                <select class="form-select" name="badge_color">
+                                    <option value="brand-bg-dark" selected>⬛ Dark Slate</option>
+                                    <option value="brand-bg-blue">🟦 Sky Blue</option>
+                                    <option value="brand-bg-gray">⬜ Titanium Gray</option>
+                                    <option value="brand-bg-navy">🔷 Royal Navy</option>
+                                    <option value="brand-bg-black">⚫ Midnight Black</option>
+                                    <option value="brand-bg-red">🟥 Crimson Red</option>
+                                    <option value="brand-bg-green">🟩 Forest Green</option>
+                                    <option value="brand-bg-yellow">🟨 Cyber Gold</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-light">Search Keyword</label>
+                            <input type="text" class="form-control" name="search_query" placeholder="e.g. Ronin (defaults to brand name)">
+                            <div class="form-text text-muted">Products matching this query will be displayed when customers tap this brand.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-light">Brand Logo <small class="text-muted">(Optional)</small></label>
+                            <input type="file" class="form-control mb-2" name="logo_file" accept="image/*">
+                            <input type="url" class="form-control" name="logo_url" placeholder="Or enter logo image URL">
+                        </div>
+
+                        <div class="row g-2 mb-3 align-items-center">
+                            <div class="col-6">
+                                <label class="form-label text-light">Display Order</label>
+                                <input type="number" class="form-control" name="sort_order" value="0" min="0">
+                            </div>
+                            <div class="col-6 pt-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_active" value="1" id="activeAddCheck" checked>
+                                    <label class="form-check-label text-light" for="activeAddCheck">Active</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold">
+                            <i class="bi bi-plus-lg me-2"></i>Add Brand
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ BRANDS LIST ═══ -->
+        <div class="col-lg-8">
+            <div class="admin-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-white"><i class="bi bi-building-check text-warning me-2"></i>Listed Brands</h5>
+                    <span class="badge bg-warning text-dark">{{ brands|length }} brands</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table admin-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Brand</th>
+                                <th>Subtitle</th>
+                                <th>Catalog Matches</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if brands %}
+                                {% for b in brands %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary">#{{ b[7]|default(0) }}</span></td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% if b[3] %}
+                                                    <img src="{{ b[3] }}" alt="{{ b[1] }}" class="rounded-circle border border-warning" style="width: 36px; height: 36px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="brand-badge-circle {{ b[5]|default('brand-bg-dark') }}" style="width: 36px; height: 36px; font-size: 0.8rem;">
+                                                        {{ b[4]|default(b[1][:2]|upper) }}
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <strong class="text-white d-block">{{ b[1] }}</strong>
+                                                    <small class="text-muted">Query: <code>{{ b[6]|default(b[1]) }}</code></small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="text-light small">{{ b[2]|default('—') }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark">{{ b[9]|default(0) }} matched</span>
+                                        </td>
+                                        <td>
+                                            <form method="POST" action="{{ url_for('admin.toggle_brand', brand_id=b[0]) }}" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm {% if b[8] %}btn-success{% else %}btn-secondary{% endif %} rounded-pill px-2 py-0" title="Click to toggle status">
+                                                    {% if b[8] %}Active{% else %}Hidden{% endif %}
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editBrandModal{{ b[0] }}">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteBrandModal{{ b[0] }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-5">
+                                        <i class="bi bi-building fs-1 d-block mb-2"></i>
+                                        No brands added yet.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ EDIT & DELETE MODALS ═══ -->
+    {% if brands %}
+        {% for b in brands %}
+            <!-- Edit Brand Modal -->
+            <div class="modal fade" id="editBrandModal{{ b[0] }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content bg-dark text-light border-secondary">
+                        <div class="modal-header border-secondary">
+                            <h5 class="modal-title">
+                                <i class="bi bi-pencil-square text-warning me-2"></i>Edit Brand: {{ b[1] }}
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="POST" action="{{ url_for('admin.edit_brand', brand_id=b[0]) }}" enctype="multipart/form-data">
+                            <div class="modal-body">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Brand Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="brand_name" value="{{ b[1] }}" required minlength="2">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Subtitle / Tagline</label>
+                                    <input type="text" class="form-control" name="subtitle" value="{{ b[2]|default('') }}">
+                                </div>
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label text-light">Badge Text</label>
+                                        <input type="text" class="form-control" name="badge_text" value="{{ b[4]|default('') }}" maxlength="4">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-light">Badge Color</label>
+                                        <select class="form-select" name="badge_color">
+                                            <option value="brand-bg-dark" {% if b[5] == 'brand-bg-dark' %}selected{% endif %}>⬛ Dark Slate</option>
+                                            <option value="brand-bg-blue" {% if b[5] == 'brand-bg-blue' %}selected{% endif %}>🟦 Sky Blue</option>
+                                            <option value="brand-bg-gray" {% if b[5] == 'brand-bg-gray' %}selected{% endif %}>⬜ Titanium Gray</option>
+                                            <option value="brand-bg-navy" {% if b[5] == 'brand-bg-navy' %}selected{% endif %}>🔷 Royal Navy</option>
+                                            <option value="brand-bg-black" {% if b[5] == 'brand-bg-black' %}selected{% endif %}>⚫ Midnight Black</option>
+                                            <option value="brand-bg-red" {% if b[5] == 'brand-bg-red' %}selected{% endif %}>🟥 Crimson Red</option>
+                                            <option value="brand-bg-green" {% if b[5] == 'brand-bg-green' %}selected{% endif %}>🟩 Forest Green</option>
+                                            <option value="brand-bg-yellow" {% if b[5] == 'brand-bg-yellow' %}selected{% endif %}>🟨 Cyber Gold</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Search Query</label>
+                                    <input type="text" class="form-control" name="search_query" value="{{ b[6]|default(b[1]) }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Brand Logo</label>
+                                    {% if b[3] %}
+                                        <div class="mb-2 d-flex align-items-center gap-3 p-2 bg-black rounded border border-secondary">
+                                            <img src="{{ b[3] }}" alt="{{ b[1] }}" class="rounded-circle" style="width: 44px; height: 44px; object-fit: cover;">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remove_logo" value="1" id="removeLogo{{ b[0] }}">
+                                                <label class="form-check-label text-danger small" for="removeLogo{{ b[0] }}">Remove current logo</label>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    <input type="file" class="form-control mb-2" name="logo_file" accept="image/*">
+                                    <input type="url" class="form-control" name="logo_url" placeholder="Or enter logo URL">
+                                </div>
+
+                                <div class="row g-2 mb-3 align-items-center">
+                                    <div class="col-6">
+                                        <label class="form-label text-light">Display Order</label>
+                                        <input type="number" class="form-control" name="sort_order" value="{{ b[7]|default(0) }}" min="0">
+                                    </div>
+                                    <div class="col-6 pt-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="is_active" value="1" id="activeEdit{{ b[0] }}" {% if b[8] %}checked{% endif %}>
+                                            <label class="form-check-label text-light" for="activeEdit{{ b[0] }}">Active on storefront</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-secondary">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-warning">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Brand Modal -->
+            <div class="modal fade" id="deleteBrandModal{{ b[0] }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content bg-dark text-light border-secondary">
+                        <div class="modal-header border-secondary">
+                            <h5 class="modal-title"><i class="bi bi-trash text-danger me-2"></i>Delete Brand: {{ b[1] }}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to remove <strong>{{ b[1] }}</strong> from the listed brands?</p>
+                            <p class="text-muted small mb-0">Products under this brand will NOT be deleted.</p>
+                        </div>
+                        <div class="modal-footer border-secondary">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <form method="POST" action="{{ url_for('admin.delete_brand', brand_id=b[0]) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">Delete Brand</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endblock %}

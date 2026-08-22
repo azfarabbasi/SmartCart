@@ -91,11 +91,36 @@ def _category_ids_for_slug(cur, slug):
     return [cid for cid, _ in matches], matches[0][1]
 
 
+def _get_active_banners(cur):
+    try:
+        cur.execute(
+            "SELECT banner_id, badge_tag, title, subtitle, cta_text, cta_link, "
+            "       gradient_class, image_path FROM HeroBanners "
+            "WHERE is_active = 1 ORDER BY NVL(sort_order, 0), banner_id"
+        )
+        return cur.fetchall()
+    except Exception:
+        return []
+
+
+def _get_active_brands(cur):
+    try:
+        cur.execute(
+            "SELECT brand_id, brand_name, subtitle, logo_path, badge_text, badge_color, search_query "
+            "FROM Brands WHERE is_active = 1 ORDER BY NVL(sort_order, 0), brand_name"
+        )
+        return cur.fetchall()
+    except Exception:
+        return []
+
+
 def _render_catalog(cur, products, heading, search='', active_slug=None):
     return render_template(
         'customer/home.html',
         products=products,
         categories=_all_categories(cur),
+        hero_banners=_get_active_banners(cur),
+        brands=_get_active_brands(cur),
         heading=heading,
         search=search,
         active_slug=active_slug,

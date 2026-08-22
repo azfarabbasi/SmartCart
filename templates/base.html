@@ -71,6 +71,7 @@
     </footer>
 
     {% include 'partials/_whatsapp_button.html' %}
+    {% include 'partials/_mobile_bottom_nav.html' %}
 
     <script src="{{ url_for('static', filename='dist/app.js') }}?v={{ asset_version }}"></script>
     {% block extra_scripts %}{% endblock %}

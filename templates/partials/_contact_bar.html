@@ -1,13 +1,13 @@
-<div class="contact-bar">
-    <div class="container-fluid d-flex justify-content-between align-items-center flex-wrap">
-        <div class="contact-bar-info">
-            <a href="tel:{{ contact_phone }}"><i class="bi bi-telephone-fill"></i> {{ contact_phone }}</a>
-            <a href="mailto:{{ contact_email }}"><i class="bi bi-envelope-fill"></i> {{ contact_email }}</a>
+<div class="contact-bar d-none d-md-block">
+    <div class="container-fluid px-3 px-lg-4 d-flex justify-content-between align-items-center">
+        <div class="contact-bar-info d-flex align-items-center gap-3">
+            <a href="tel:{{ contact_phone }}"><i class="bi bi-telephone-fill me-1 text-warning"></i> {{ contact_phone }}</a>
+            <span class="contact-sep">|</span>
+            <a href="mailto:{{ contact_email }}"><i class="bi bi-envelope-fill me-1 text-warning"></i> {{ contact_email }}</a>
         </div>
-        <div class="contact-bar-whatsapp">
-            <a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener">
-                <i class="bi bi-whatsapp"></i> For any help or query contact at WhatsApp: +{{ whatsapp_number }}
-            </a>
+        <div class="contact-bar-perks d-flex align-items-center gap-3">
+            <span><i class="bi bi-shield-check me-1 text-warning"></i> 100% Authentic Products</span>
+            <span><i class="bi bi-truck me-1 text-warning"></i> Fast Nationwide Delivery</span>
         </div>
     </div>
 </div>

@@ -16,6 +16,12 @@
             <li class="{{ 'active' if request.endpoint == 'admin.categories' }}">
                 <a href="{{ url_for('admin.categories') }}"><i class="bi bi-tags"></i><span>Categories</span></a>
             </li>
+            <li class="{{ 'active' if request.endpoint in ('admin.brands', 'admin.add_brand', 'admin.edit_brand') }}">
+                <a href="{{ url_for('admin.brands') }}"><i class="bi bi-building-check"></i><span>Official Brands</span></a>
+            </li>
+            <li class="{{ 'active' if request.endpoint in ('admin.banners', 'admin.add_banner', 'admin.edit_banner') }}">
+                <a href="{{ url_for('admin.banners') }}"><i class="bi bi-badge-ad"></i><span>Promotions &amp; Ads</span></a>
+            </li>
             <li class="{{ 'active' if request.endpoint in ('admin.orders', 'admin.order_detail') }}">
                 <a href="{{ url_for('admin.orders') }}"><i class="bi bi-clipboard-check"></i><span>Orders</span></a>
             </li>

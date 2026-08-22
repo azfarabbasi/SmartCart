@@ -1,50 +1,98 @@
 {% extends "admin/base.html" %}
-{% block title %}Categories - Admin | SmartCart{% endblock %}
-{% block page_title %}Categories{% endblock %}
+{% block title %}Categories Management - Admin | SmartCart{% endblock %}
+{% block page_title %}Categories Management{% endblock %}
 {% block content %}
-    <div class="row">
+    <div class="row g-4">
+        <!-- ═══ ADD CATEGORY CARD ═══ -->
         <div class="col-lg-4">
             <div class="admin-card">
-                <div class="card-header">
-                    <h5><i class="bi bi-plus-circle me-2"></i>Add Category</h5>
+                <div class="card-header bg-transparent pb-0 border-0">
+                    <h5 class="mb-0 text-white"><i class="bi bi-plus-circle-fill text-warning me-2"></i>Add New Category</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('admin.add_category') }}">
+                    <form method="POST" action="{{ url_for('admin.add_category') }}" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
                         <div class="mb-3">
-                            <label for="category_name" class="form-label">Category Name</label>
-                            <input type="text" class="form-control" id="category_name" name="category_name" required minlength="2" placeholder="Enter category name">
+                            <label for="category_name" class="form-label text-light">Category Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="category_name" name="category_name" required minlength="2" placeholder="e.g. Electronics, Gaming, Audio">
                         </div>
-                        <button type="submit" class="btn btn-warning w-100">
-                            <i class="bi bi-plus-lg me-2"></i>Add Category
+
+                        <div class="mb-3">
+                            <label for="icon_name" class="form-label text-light">Category Icon</label>
+                            <select class="form-select" id="icon_name" name="icon_name">
+                                <option value="bi-tag" selected>🏷️ Default Tag (bi-tag)</option>
+                                <option value="bi-laptop">💻 Electronics & Laptops (bi-laptop)</option>
+                                <option value="bi-controller">🎮 Gaming & Consoles (bi-controller)</option>
+                                <option value="bi-tv">📺 Home Appliances & TVs (bi-tv)</option>
+                                <option value="bi-headphones">🎧 Audio & Earbuds (bi-headphones)</option>
+                                <option value="bi-phone">📱 Mobile Phones (bi-phone)</option>
+                                <option value="bi-smartwatch">⌚ Smartwatches (bi-smartwatch)</option>
+                                <option value="bi-bag-heart">👗 Fashion & Apparel (bi-bag-heart)</option>
+                                <option value="bi-fire">🔥 Deals & Hot Items (bi-fire)</option>
+                                <option value="bi-stars">✨ Featured & New (bi-stars)</option>
+                                <option value="bi-camera">📷 Cameras & Optics (bi-camera)</option>
+                                <option value="bi-cpu">⚡ Tech Accessories (bi-cpu)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-light">Category Image / Avatar <small class="text-muted">(Optional)</small></label>
+                            <input type="file" class="form-control mb-2" name="image_file" accept="image/*">
+                            <div class="text-center text-muted small my-1">OR image URL:</div>
+                            <input type="url" class="form-control" name="image_url" placeholder="https://example.com/category.jpg">
+                            <div class="form-text text-muted">Used for the visual circular sliding category strip on the mobile storefront.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="sort_order" class="form-label text-light">Display Order</label>
+                            <input type="number" class="form-control" id="sort_order" name="sort_order" value="0" min="0">
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold">
+                            <i class="bi bi-plus-lg me-2"></i>Create Category
                         </button>
                     </form>
                 </div>
             </div>
         </div>
 
+        <!-- ═══ ALL CATEGORIES LIST ═══ -->
         <div class="col-lg-8">
             <div class="admin-card">
-                <div class="card-header">
-                    <h5>All Categories</h5>
-                    <span class="badge bg-primary">{{ categories|length }} categories</span>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-white"><i class="bi bi-tags text-warning me-2"></i>Existing Categories</h5>
+                    <span class="badge bg-warning text-dark">{{ categories|length }} categories</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table admin-table align-middle">
                         <thead>
                             <tr>
-                                <th>ID</th>
+                                <th>Order</th>
+                                <th>Image / Icon</th>
                                 <th>Category Name</th>
                                 <th>Products</th>
-                                <th>Actions</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if categories %}
                                 {% for cat in categories %}
                                     <tr>
-                                        <td><strong>#{{ cat[0] }}</strong></td>
-                                        <td><span class="category-badge"><i class="bi bi-tag me-2"></i>{{ cat[1] }}</span></td>
+                                        <td><span class="badge bg-secondary">#{{ cat[5]|default(0) }}</span></td>
+                                        <td>
+                                            {% if cat[4] %}
+                                                <img src="{{ cat[4] }}" alt="{{ cat[1] }}" class="rounded-circle border border-warning" style="width: 38px; height: 38px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="rounded-circle bg-dark border border-secondary text-warning d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                                    <i class="bi {{ cat[3]|default('bi-tag') }} fs-6"></i>
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong class="text-white">{{ cat[1] }}</strong>
+                                            <div class="small text-muted">ID: {{ cat[0] }} &bull; Icon: <code>{{ cat[3]|default('bi-tag') }}</code></div>
+                                        </td>
                                         <td>
                                             {% if cat[2] > 0 %}
                                                 <span class="badge bg-info text-dark">{{ cat[2] }} product{{ 's' if cat[2] != 1 else '' }}</span>
@@ -52,7 +100,10 @@
                                                 <span class="badge bg-secondary">0 products</span>
                                             {% endif %}
                                         </td>
-                                        <td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editCategoryModal{{ cat[0] }}">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </button>
                                             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCategoryModal{{ cat[0] }}">
                                                 <i class="bi bi-trash"></i> Delete
                                             </button>
@@ -61,7 +112,7 @@
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">
+                                    <td colspan="5" class="text-center text-muted py-5">
                                         <i class="bi bi-tags fs-1 d-block mb-2"></i>
                                         No categories found. Add your first category.
                                     </td>
@@ -74,17 +125,83 @@
         </div>
     </div>
 
-    <!-- Modals for Category Delete -->
+    <!-- ═══ MODALS FOR EDIT CATEGORY ═══ -->
     {% if categories %}
         {% for cat in categories %}
+            <div class="modal fade" id="editCategoryModal{{ cat[0] }}" tabindex="-1" aria-labelledby="editCatLabel{{ cat[0] }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content bg-dark text-light border-secondary">
+                        <div class="modal-header border-secondary">
+                            <h5 class="modal-title" id="editCatLabel{{ cat[0] }}">
+                                <i class="bi bi-pencil-square text-warning me-2"></i>Edit Category: {{ cat[1] }}
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="POST" action="{{ url_for('admin.edit_category', category_id=cat[0]) }}" enctype="multipart/form-data">
+                            <div class="modal-body">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Category Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="category_name" value="{{ cat[1] }}" required minlength="2">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Category Icon</label>
+                                    <select class="form-select" name="icon_name">
+                                        <option value="bi-tag" {% if cat[3] == 'bi-tag' %}selected{% endif %}>🏷️ Default Tag (bi-tag)</option>
+                                        <option value="bi-laptop" {% if cat[3] == 'bi-laptop' %}selected{% endif %}>💻 Electronics & Laptops (bi-laptop)</option>
+                                        <option value="bi-controller" {% if cat[3] == 'bi-controller' %}selected{% endif %}>🎮 Gaming & Consoles (bi-controller)</option>
+                                        <option value="bi-tv" {% if cat[3] == 'bi-tv' %}selected{% endif %}>📺 Home Appliances & TVs (bi-tv)</option>
+                                        <option value="bi-headphones" {% if cat[3] == 'bi-headphones' %}selected{% endif %}>🎧 Audio & Earbuds (bi-headphones)</option>
+                                        <option value="bi-phone" {% if cat[3] == 'bi-phone' %}selected{% endif %}>📱 Mobile Phones (bi-phone)</option>
+                                        <option value="bi-smartwatch" {% if cat[3] == 'bi-smartwatch' %}selected{% endif %}>⌚ Smartwatches (bi-smartwatch)</option>
+                                        <option value="bi-bag-heart" {% if cat[3] == 'bi-bag-heart' %}selected{% endif %}>👗 Fashion & Apparel (bi-bag-heart)</option>
+                                        <option value="bi-fire" {% if cat[3] == 'bi-fire' %}selected{% endif %}>🔥 Deals & Hot Items (bi-fire)</option>
+                                        <option value="bi-stars" {% if cat[3] == 'bi-stars' %}selected{% endif %}>✨ Featured & New (bi-stars)</option>
+                                        <option value="bi-camera" {% if cat[3] == 'bi-camera' %}selected{% endif %}>📷 Cameras & Optics (bi-camera)</option>
+                                        <option value="bi-cpu" {% if cat[3] == 'bi-cpu' %}selected{% endif %}>⚡ Tech Accessories (bi-cpu)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Update Image / Avatar</label>
+                                    {% if cat[4] %}
+                                        <div class="mb-2 d-flex align-items-center gap-3 p-2 bg-black rounded border border-secondary">
+                                            <img src="{{ cat[4] }}" alt="{{ cat[1] }}" class="rounded-circle" style="width: 44px; height: 44px; object-fit: cover;">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remove_image" value="1" id="removeImg{{ cat[0] }}">
+                                                <label class="form-check-label text-danger small" for="removeImg{{ cat[0] }}">Remove current image</label>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    <input type="file" class="form-control mb-2" name="image_file" accept="image/*">
+                                    <input type="url" class="form-control" name="image_url" placeholder="Or enter new image URL">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Display Order</label>
+                                    <input type="number" class="form-control" name="sort_order" value="{{ cat[5]|default(0) }}" min="0">
+                                </div>
+                            </div>
+                            <div class="modal-footer border-secondary">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-warning">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Category Modal -->
             <div class="modal fade" id="deleteCategoryModal{{ cat[0] }}" tabindex="-1" aria-labelledby="delModalLabel{{ cat[0] }}" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
+                    <div class="modal-content bg-dark text-light border-secondary">
+                        <div class="modal-header border-secondary">
                             <h5 class="modal-title" id="delModalLabel{{ cat[0] }}">
                                 <i class="bi bi-exclamation-triangle text-warning me-2"></i>Delete Category: {{ cat[1] }}
                             </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         
                         <div class="modal-body text-start">
@@ -98,70 +215,52 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="action" value="delete">
                                         <button type="submit" class="btn btn-danger">
-                                            <i class="bi bi-trash me-1"></i>Delete Category
+                                            <i class="bi bi-trash me-1"></i>Confirm Delete
                                         </button>
                                     </form>
                                 </div>
                             {% else %}
-                                <div class="alert alert-warning py-2 mb-3">
+                                <div class="alert alert-warning">
                                     <i class="bi bi-info-circle me-1"></i>
-                                    <strong>{{ cat[1] }}</strong> currently has <strong>{{ cat[2] }} product(s)</strong> assigned to it.
+                                    This category contains <strong>{{ cat[2] }} product{{ 's' if cat[2] != 1 else '' }}</strong>. Please choose how to proceed:
                                 </div>
-                                <p class="mb-3">Choose how you want to handle these products:</p>
 
-                                <div class="d-grid gap-2">
-                                    <!-- Option 1: Move to Uncategorized -->
-                                    <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="action" value="move">
-                                        <button type="submit" class="btn btn-outline-warning w-100 text-start p-3">
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-arrow-right-circle fs-4 me-3 text-warning"></i>
-                                                <div>
-                                                    <div class="fw-bold">1. Move Products to "Uncategorized"</div>
-                                                    <small class="text-muted d-block">Moves all {{ cat[2] }} product(s) to the Uncategorized category and removes this category.</small>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </form>
-
-                                    <!-- Option 2: Cascade Delete -->
-                                    <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}"
-                                          onsubmit="return confirm('⚠️ Are you sure you want to permanently delete {{ cat[1] }} and ALL its {{ cat[2] }} product(s)?');">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="action" value="cascade">
-                                        <button type="submit" class="btn btn-outline-danger w-100 text-start p-3">
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-trash3 fs-4 me-3 text-danger"></i>
-                                                <div>
-                                                    <div class="fw-bold">2. Delete Category AND All Products</div>
-                                                    <small class="text-muted d-block">Permanently removes the category and its products.</small>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </form>
-
-                                    <!-- Option 3: Manual Reassign -->
-                                    <a href="{{ url_for('admin.products') }}" class="btn btn-outline-info w-100 text-start p-3">
-                                        <div class="d-flex align-items-center">
-                                            <i class="bi bi-pencil-square fs-4 me-3 text-info"></i>
-                                            <div>
-                                                <div class="fw-bold">3. Reassign Products Manually</div>
-                                                <small class="text-muted d-block">Go to Products page to change their categories manually.</small>
+                                <div class="accordion" id="accordionDelete{{ cat[0] }}">
+                                    <div class="accordion-item bg-black border-secondary">
+                                        <h2 class="accordion-header" id="headingMove{{ cat[0] }}">
+                                            <button class="accordion-button collapsed bg-dark text-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMove{{ cat[0] }}">
+                                                <i class="bi bi-arrow-right-circle text-info me-2"></i>Option 1: Move products to "Uncategorized" &amp; Delete
+                                            </button>
+                                        </h2>
+                                        <div id="collapseMove{{ cat[0] }}" class="accordion-collapse collapse" data-bs-parent="#accordionDelete{{ cat[0] }}">
+                                            <div class="accordion-body">
+                                                <p class="small text-muted mb-3">All {{ cat[2] }} products will be reassigned to the "Uncategorized" category.</p>
+                                                <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <input type="hidden" name="action" value="move">
+                                                    <button type="submit" class="btn btn-info btn-sm w-100">Move &amp; Delete Category</button>
+                                                </form>
                                             </div>
                                         </div>
-                                    </a>
+                                    </div>
 
-                                    <!-- Option 4: Cancel -->
-                                    <button type="button" class="btn btn-outline-secondary w-100 text-start p-3" data-bs-dismiss="modal">
-                                        <div class="d-flex align-items-center">
-                                            <i class="bi bi-x-circle fs-4 me-3 text-secondary"></i>
-                                            <div>
-                                                <div class="fw-bold">4. Cancel</div>
-                                                <small class="text-muted d-block">Keep this category unchanged.</small>
+                                    <div class="accordion-item bg-black border-secondary mt-2">
+                                        <h2 class="accordion-header" id="headingCascade{{ cat[0] }}">
+                                            <button class="accordion-button collapsed bg-dark text-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCascade{{ cat[0] }}">
+                                                <i class="bi bi-trash3 text-danger me-2"></i>Option 2: Delete Category AND All {{ cat[2] }} Products
+                                            </button>
+                                        </h2>
+                                        <div id="collapseCascade{{ cat[0] }}" class="accordion-collapse collapse" data-bs-parent="#accordionDelete{{ cat[0] }}">
+                                            <div class="accordion-body">
+                                                <p class="small text-danger mb-3">Warning: This will permanently delete this category and all its products!</p>
+                                                <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <input type="hidden" name="action" value="cascade">
+                                                    <button type="submit" class="btn btn-danger btn-sm w-100">Permanently Delete All</button>
+                                                </form>
                                             </div>
                                         </div>
-                                    </button>
+                                    </div>
                                 </div>
                             {% endif %}
                         </div>

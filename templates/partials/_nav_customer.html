@@ -1,94 +1,135 @@
 <header class="main-header">
-    <div class="header-top">
-        <div class="container-fluid">
-            <div class="row align-items-center">
-                <div class="col-auto">
-                    <a href="{{ url_for('customer.index') }}" class="logo">
-                        <i class="bi bi-cart4"></i>
-                        <span>Smart<span class="text-warning">Cart</span></span>
+    <div class="header-main-bar">
+        <div class="container-fluid px-3 px-lg-4">
+            <!-- ═══ DESKTOP HEADER (MD & UP) ═══ -->
+            <div class="header-desktop-layout d-none d-md-flex align-items-center justify-content-between">
+                <!-- Left: Logo & Contact -->
+                <div class="header-desktop-left d-flex align-items-center gap-3">
+                    <a href="{{ url_for('customer.index') }}" class="shein-brand-logo">
+                        <i class="bi bi-cart4 brand-icon"></i>
+                        <span class="brand-name">Smart<span class="brand-accent">Cart</span></span>
+                    </a>
+                    <a href="mailto:{{ contact_email }}" class="shein-icon-btn" title="Contact Us via Email">
+                        <i class="bi bi-envelope"></i>
                     </a>
                 </div>
 
-                <div class="col">
-                    <form action="{{ url_for('customer.search') }}" method="GET" class="search-form">
-                        <div class="input-group">
-                            <select name="category" class="form-select search-category">
-                                <option value="">All Categories</option>
-                                {% for cat in nav_categories|default([]) %}
-                                    <option value="{{ cat.slug }}" {% if active_slug == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <input type="text" name="q" class="form-control search-input" placeholder="Search SmartCart" value="{{ search|default('') }}">
-                            <button type="submit" class="btn btn-warning search-btn">
-                                <i class="bi bi-search"></i>
+                <!-- Center: Search Pill -->
+                <div class="header-desktop-center flex-grow-1 mx-4" style="max-width: 580px;">
+                    <form action="{{ url_for('customer.search') }}" method="GET" class="shein-search-form m-0">
+                        <div class="shein-search-pill">
+                            <i class="bi bi-search search-icon-left"></i>
+                            <input type="text" name="q" class="shein-search-input" placeholder="Search products, brands, deals..." value="{{ search|default('') }}" autocomplete="off">
+                            {% if search %}
+                                <a href="{{ url_for('customer.index') }}" class="search-clear-btn" title="Clear search"><i class="bi bi-x-circle-fill"></i></a>
+                            {% endif %}
+                            <button type="submit" class="shein-search-submit-btn" aria-label="Search">
+                                <i class="bi bi-arrow-right"></i>
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <div class="col-auto">
-                    <div class="header-actions">
+                <!-- Right: Desktop Action Pills -->
+                <div class="header-desktop-right d-flex align-items-center gap-2">
+                    <a href="{{ url_for('customer.view_wishlist') }}" class="shein-pill-btn" title="Wishlist">
+                        <i class="bi bi-heart"></i>
+                        <span>Wishlist</span>
+                    </a>
+
+                    {% if current_user %}
+                        <div class="dropdown user-dropdown-shein">
+                            <button class="shein-pill-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle"></i>
+                                <span>{{ current_user.name.split(' ')[0] }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shein-dropdown-menu">
+                                <li class="dropdown-header">
+                                    <strong>{{ current_user.name }}</strong>
+                                    <div class="small text-muted">{{ current_user.email }}</div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('customer.profile') }}"><i class="bi bi-person me-2"></i>Profile</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('customer.order_history') }}"><i class="bi bi-box me-2"></i>My Orders</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('customer.view_wishlist') }}"><i class="bi bi-heart me-2"></i>Wishlist</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('customer.loyalty_history') }}"><i class="bi bi-gift me-2"></i>Loyalty Points</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('auth.login', next=request.path) }}" class="shein-pill-btn" title="Sign In">
+                            <i class="bi bi-person"></i>
+                            <span>Sign In</span>
+                        </a>
+                    {% endif %}
+
+                    <a href="{{ url_for('customer.view_cart') }}" class="shein-pill-btn cart-pill-btn" title="Shopping Cart">
+                        <i class="bi bi-bag"></i>
+                        <span>Cart</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- ═══ MOBILE HEADER (PHONE / TABLET SM) ═══ -->
+            <div class="header-mobile-layout d-md-none">
+                <!-- Mobile Top Row: Logo/Email Left, Icons Right -->
+                <div class="mobile-top-bar d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="mailto:{{ contact_email }}" class="shein-icon-btn" title="Email Contact">
+                            <i class="bi bi-envelope"></i>
+                        </a>
+                        <a href="{{ url_for('customer.index') }}" class="shein-brand-logo">
+                            <i class="bi bi-cart4 brand-icon"></i>
+                            <span class="brand-name">Smart<span class="brand-accent">Cart</span></span>
+                        </a>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{{ url_for('customer.view_wishlist') }}" class="shein-icon-btn" title="Wishlist">
+                            <i class="bi bi-heart"></i>
+                        </a>
                         {% if current_user %}
-                            <div class="dropdown user-dropdown">
-                                <a href="#" class="header-action" data-bs-toggle="dropdown">
-                                    <i class="bi bi-person"></i>
-                                    <div class="action-text">
-                                        <small>Hello, {{ current_user.name }}</small>
-                                        <span>Account & Lists <i class="bi bi-caret-down-fill"></i></span>
-                                    </div>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><h6 class="dropdown-header">Your Account</h6></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('customer.profile') }}"><i class="bi bi-person-circle me-2"></i>My Profile</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('customer.order_history') }}"><i class="bi bi-box me-2"></i>Your Orders</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('customer.view_wishlist') }}"><i class="bi bi-heart me-2"></i>Your Wishlist</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('customer.loyalty_history') }}"><i class="bi bi-gift me-2"></i>Loyalty Points</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
-                                </ul>
-                            </div>
-
-                            <a href="{{ url_for('customer.order_history') }}" class="header-action">
-                                <i class="bi bi-box"></i>
-                                <div class="action-text">
-                                    <small>Returns</small>
-                                    <span>& Orders</span>
-                                </div>
-                            </a>
-
-                            <a href="{{ url_for('customer.view_wishlist') }}" class="header-action">
-                                <i class="bi bi-heart"></i>
-                                <div class="action-text">
-                                    <small>Your</small>
-                                    <span>Wishlist</span>
-                                </div>
-                            </a>
-
-                            <a href="{{ url_for('customer.view_cart') }}" class="header-action cart-action">
-                                <i class="bi bi-cart3"></i>
-                                <span>Cart</span>
+                            <a href="{{ url_for('customer.profile') }}" class="shein-icon-btn" title="Account">
+                                <i class="bi bi-person-circle"></i>
                             </a>
                         {% else %}
-                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-sm me-2">
-                                <i class="bi bi-box-arrow-in-right"></i> Login
-                            </a>
-                            <a href="{{ url_for('auth.register') }}" class="btn btn-warning btn-sm">
-                                <i class="bi bi-person-plus"></i> Register
+                            <a href="{{ url_for('auth.login', next=request.path) }}" class="shein-icon-btn" title="Sign In">
+                                <i class="bi bi-person"></i>
                             </a>
                         {% endif %}
+                        <a href="{{ url_for('customer.view_cart') }}" class="shein-icon-btn" title="Cart">
+                            <i class="bi bi-bag"></i>
+                        </a>
                     </div>
+                </div>
+
+                <!-- Mobile Full-Width Search Row -->
+                <div class="mobile-search-bar">
+                    <form action="{{ url_for('customer.search') }}" method="GET" class="shein-search-form m-0">
+                        <div class="shein-search-pill">
+                            <i class="bi bi-search search-icon-left"></i>
+                            <input type="text" name="q" class="shein-search-input" placeholder="Search products, brands, deals..." value="{{ search|default('') }}" autocomplete="off">
+                            {% if search %}
+                                <a href="{{ url_for('customer.index') }}" class="search-clear-btn" title="Clear search"><i class="bi bi-x-circle-fill"></i></a>
+                            {% endif %}
+                            <button type="submit" class="shein-search-submit-btn" aria-label="Search">
+                                <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <nav class="header-nav">
-        <div class="container-fluid">
-            <ul class="nav-links">
-                <li><a href="{{ url_for('customer.index') }}" class="{{ 'active' if not active_slug }}">All</a></li>
+    <!-- Sub-Nav: Horizontal Scrollable Category Tabs (Desktop Only) -->
+    <nav class="shein-subnav-bar d-none d-md-block">
+        <div class="container-fluid px-3 px-lg-4">
+            <ul class="shein-nav-pills">
+                <li><a href="{{ url_for('customer.index') }}" class="nav-pill-item {{ 'active' if not active_slug }}">All</a></li>
                 {% for cat in nav_categories|default([]) %}
                     <li><a href="{{ url_for('customer.category', slug=cat.slug) }}"
-                           class="{{ 'active' if active_slug == cat.slug }}">{{ cat.name }}</a></li>
+                           class="nav-pill-item {{ 'active' if active_slug == cat.slug }}">{{ cat.name }}</a></li>
                 {% endfor %}
             </ul>
         </div>

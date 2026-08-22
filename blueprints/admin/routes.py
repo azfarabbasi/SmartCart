@@ -14,7 +14,7 @@ from auth_tokens import current_user_id
 from db import get_db
 from extensions import limiter
 from security import log_admin_action
-from uploads import process_upload, save_upload, validate_upload
+from uploads import convert_image_to_base64, process_upload, save_upload, validate_upload
 from validators import (validate_cost_price, validate_coupon_discount,
                          validate_discount_percent, validate_price,
                          validate_required_text, validate_stock)
@@ -434,6 +434,23 @@ def delete_product(product_id):
     return redirect(url_for('admin.products'))
 
 
+def _handle_image_input(req, file_field_name='image_file', url_field_name='image_url', max_dim=800):
+    """Returns Base64 string or URL, or (None, err) if error occurred."""
+    file = req.files.get(file_field_name)
+    if file and file.filename:
+        ok, err = validate_upload(file, 'image')
+        if not ok:
+            return None, err
+        raw_bytes = file.read()
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
+        b64 = convert_image_to_base64(raw_bytes, ext=ext, max_dimension=max_dim)
+        return b64, None
+    url = req.form.get(url_field_name, '').strip()
+    if url:
+        return url, None
+    return None, None
+
+
 # ── CATEGORIES ───────────────────────────────────────────────────
 @admin_bp.route('/categories')
 @admin_required
@@ -441,8 +458,9 @@ def categories():
     cur = get_db().cursor()
     cur.execute(
         "SELECT c.category_id, c.category_name, "
-        "       (SELECT COUNT(*) FROM Products p WHERE p.category_id = c.category_id) AS product_count "
-        "FROM Categories c ORDER BY c.category_name"
+        "       (SELECT COUNT(*) FROM Products p WHERE p.category_id = c.category_id) AS product_count, "
+        "       c.icon_name, c.image_path, c.sort_order "
+        "FROM Categories c ORDER BY NVL(c.sort_order, 0), c.category_name"
     )
     return render_template('admin/categories.html', categories=cur.fetchall())
 
@@ -451,18 +469,78 @@ def categories():
 @admin_required
 def add_category():
     name = request.form.get('category_name', '').strip()
+    icon_name = request.form.get('icon_name', '').strip() or 'bi-tag'
+    try:
+        sort_order = int(request.form.get('sort_order', 0) or 0)
+    except ValueError:
+        sort_order = 0
     ok, err = validate_required_text(name, 'Category name', min_len=2, max_len=100)
     if not ok:
         flash(err, 'error')
         return redirect(url_for('admin.categories'))
+
+    img_data, img_err = _handle_image_input(request, 'image_file', 'image_url', max_dim=600)
+    if img_err:
+        flash(img_err, 'error')
+        return redirect(url_for('admin.categories'))
+
     cur = get_db().cursor()
     cur.execute(
-        "INSERT INTO Categories (category_id, category_name) VALUES (categories_seq.NEXTVAL, :n)", {'n': name},
+        "INSERT INTO Categories (category_id, category_name, icon_name, image_path, sort_order) "
+        "VALUES (categories_seq.NEXTVAL, :n, :icon, :img, :so)",
+        {'n': name, 'icon': icon_name, 'img': img_data, 'so': sort_order},
     )
     cur.execute("SELECT categories_seq.CURRVAL FROM dual")
     log_admin_action(cur, current_user_id(), 'category.create', 'Category', cur.fetchone()[0], f'name={name}')
     get_db().commit()
-    flash('Category added.', 'success')
+    flash('Category added successfully.', 'success')
+    return redirect(url_for('admin.categories'))
+
+
+@admin_bp.route('/categories/edit/<int:category_id>', methods=['POST'])
+@admin_required
+def edit_category(category_id):
+    name = request.form.get('category_name', '').strip()
+    icon_name = request.form.get('icon_name', '').strip() or 'bi-tag'
+    try:
+        sort_order = int(request.form.get('sort_order', 0) or 0)
+    except ValueError:
+        sort_order = 0
+    remove_image = request.form.get('remove_image') == '1'
+
+    ok, err = validate_required_text(name, 'Category name', min_len=2, max_len=100)
+    if not ok:
+        flash(err, 'error')
+        return redirect(url_for('admin.categories'))
+
+    img_data, img_err = _handle_image_input(request, 'image_file', 'image_url', max_dim=600)
+    if img_err:
+        flash(img_err, 'error')
+        return redirect(url_for('admin.categories'))
+
+    cur = get_db().cursor()
+    if remove_image:
+        cur.execute(
+            "UPDATE Categories SET category_name = :n, icon_name = :icon, image_path = NULL, sort_order = :so "
+            "WHERE category_id = :cid",
+            {'n': name, 'icon': icon_name, 'so': sort_order, 'cid': category_id},
+        )
+    elif img_data:
+        cur.execute(
+            "UPDATE Categories SET category_name = :n, icon_name = :icon, image_path = :img, sort_order = :so "
+            "WHERE category_id = :cid",
+            {'n': name, 'icon': icon_name, 'img': img_data, 'so': sort_order, 'cid': category_id},
+        )
+    else:
+        cur.execute(
+            "UPDATE Categories SET category_name = :n, icon_name = :icon, sort_order = :so "
+            "WHERE category_id = :cid",
+            {'n': name, 'icon': icon_name, 'so': sort_order, 'cid': category_id},
+        )
+
+    log_admin_action(cur, current_user_id(), 'category.edit', 'Category', category_id, f'name={name}')
+    get_db().commit()
+    flash('Category updated successfully.', 'success')
     return redirect(url_for('admin.categories'))
 
 
@@ -549,6 +627,282 @@ def category_product_count(category_id):
     cur.execute("SELECT category_name FROM Categories WHERE category_id = :cid", {'cid': category_id})
     row = cur.fetchone()
     return {'count': count, 'name': row[0] if row else ''}
+
+
+# ── BRANDS / COMPANIES ────────────────────────────────────────────
+@admin_bp.route('/brands')
+@admin_required
+def brands():
+    cur = get_db().cursor()
+    cur.execute(
+        "SELECT b.brand_id, b.brand_name, b.subtitle, b.logo_path, b.badge_text, "
+        "       b.badge_color, b.search_query, b.sort_order, b.is_active, "
+        "       (SELECT COUNT(*) FROM Products p WHERE LOWER(p.name) LIKE '%' || LOWER(b.brand_name) || '%' OR LOWER(p.description) LIKE '%' || LOWER(b.brand_name) || '%') AS prod_count "
+        "FROM Brands b ORDER BY NVL(b.sort_order, 0), b.brand_name"
+    )
+    return render_template('admin/brands.html', brands=cur.fetchall())
+
+
+@admin_bp.route('/brands/add', methods=['POST'])
+@admin_required
+def add_brand():
+    name = request.form.get('brand_name', '').strip()
+    subtitle = request.form.get('subtitle', '').strip()
+    badge_text = request.form.get('badge_text', '').strip() or (name[:2].upper() if len(name) >= 2 else name.upper())
+    badge_color = request.form.get('badge_color', 'brand-bg-dark').strip()
+    search_query = request.form.get('search_query', '').strip() or name
+    try:
+        sort_order = int(request.form.get('sort_order', 0) or 0)
+    except ValueError:
+        sort_order = 0
+    is_active = 1 if request.form.get('is_active') == '1' else 0
+
+    ok, err = validate_required_text(name, 'Brand name', min_len=2, max_len=100)
+    if not ok:
+        flash(err, 'error')
+        return redirect(url_for('admin.brands'))
+
+    logo_data, img_err = _handle_image_input(request, 'logo_file', 'logo_url', max_dim=400)
+    if img_err:
+        flash(img_err, 'error')
+        return redirect(url_for('admin.brands'))
+
+    cur = get_db().cursor()
+    cur.execute("""
+    INSERT INTO Brands (brand_id, brand_name, subtitle, logo_path, badge_text, badge_color, search_query, sort_order, is_active)
+    VALUES (brands_seq.NEXTVAL, :bn, :bs, :lp, :bt, :bc, :sq, :so, :ia)
+    """, {
+        'bn': name, 'bs': subtitle, 'lp': logo_data, 'bt': badge_text,
+        'bc': badge_color, 'sq': search_query, 'so': sort_order, 'ia': is_active
+    })
+    cur.execute("SELECT brands_seq.CURRVAL FROM dual")
+    brand_id = cur.fetchone()[0]
+    log_admin_action(cur, current_user_id(), 'brand.create', 'Brand', brand_id, f'name={name}')
+    get_db().commit()
+    flash(f'Brand "{name}" added successfully.', 'success')
+    return redirect(url_for('admin.brands'))
+
+
+@admin_bp.route('/brands/edit/<int:brand_id>', methods=['POST'])
+@admin_required
+def edit_brand(brand_id):
+    name = request.form.get('brand_name', '').strip()
+    subtitle = request.form.get('subtitle', '').strip()
+    badge_text = request.form.get('badge_text', '').strip() or (name[:2].upper() if len(name) >= 2 else name.upper())
+    badge_color = request.form.get('badge_color', 'brand-bg-dark').strip()
+    search_query = request.form.get('search_query', '').strip() or name
+    try:
+        sort_order = int(request.form.get('sort_order', 0) or 0)
+    except ValueError:
+        sort_order = 0
+    is_active = 1 if request.form.get('is_active') == '1' else 0
+    remove_logo = request.form.get('remove_logo') == '1'
+
+    ok, err = validate_required_text(name, 'Brand name', min_len=2, max_len=100)
+    if not ok:
+        flash(err, 'error')
+        return redirect(url_for('admin.brands'))
+
+    logo_data, img_err = _handle_image_input(request, 'logo_file', 'logo_url', max_dim=400)
+    if img_err:
+        flash(img_err, 'error')
+        return redirect(url_for('admin.brands'))
+
+    cur = get_db().cursor()
+    if remove_logo:
+        cur.execute("""
+        UPDATE Brands SET brand_name = :bn, subtitle = :bs, logo_path = NULL, badge_text = :bt,
+                          badge_color = :bc, search_query = :sq, sort_order = :so, is_active = :ia
+        WHERE brand_id = :bid
+        """, {
+            'bn': name, 'bs': subtitle, 'bt': badge_text, 'bc': badge_color,
+            'sq': search_query, 'so': sort_order, 'ia': is_active, 'bid': brand_id
+        })
+    elif logo_data:
+        cur.execute("""
+        UPDATE Brands SET brand_name = :bn, subtitle = :bs, logo_path = :lp, badge_text = :bt,
+                          badge_color = :bc, search_query = :sq, sort_order = :so, is_active = :ia
+        WHERE brand_id = :bid
+        """, {
+            'bn': name, 'bs': subtitle, 'lp': logo_data, 'bt': badge_text, 'bc': badge_color,
+            'sq': search_query, 'so': sort_order, 'ia': is_active, 'bid': brand_id
+        })
+    else:
+        cur.execute("""
+        UPDATE Brands SET brand_name = :bn, subtitle = :bs, badge_text = :bt,
+                          badge_color = :bc, search_query = :sq, sort_order = :so, is_active = :ia
+        WHERE brand_id = :bid
+        """, {
+            'bn': name, 'bs': subtitle, 'bt': badge_text, 'bc': badge_color,
+            'sq': search_query, 'so': sort_order, 'ia': is_active, 'bid': brand_id
+        })
+
+    log_admin_action(cur, current_user_id(), 'brand.edit', 'Brand', brand_id, f'name={name}')
+    get_db().commit()
+    flash(f'Brand "{name}" updated successfully.', 'success')
+    return redirect(url_for('admin.brands'))
+
+
+@admin_bp.route('/brands/toggle/<int:brand_id>', methods=['POST'])
+@admin_required
+def toggle_brand(brand_id):
+    cur = get_db().cursor()
+    cur.execute("UPDATE Brands SET is_active = 1 - is_active WHERE brand_id = :bid", {'bid': brand_id})
+    log_admin_action(cur, current_user_id(), 'brand.toggle', 'Brand', brand_id)
+    get_db().commit()
+    flash('Brand visibility updated.', 'success')
+    return redirect(url_for('admin.brands'))
+
+
+@admin_bp.route('/brands/delete/<int:brand_id>', methods=['POST'])
+@admin_required
+def delete_brand(brand_id):
+    cur = get_db().cursor()
+    cur.execute("DELETE FROM Brands WHERE brand_id = :bid", {'bid': brand_id})
+    log_admin_action(cur, current_user_id(), 'brand.delete', 'Brand', brand_id)
+    get_db().commit()
+    flash('Brand deleted successfully.', 'success')
+    return redirect(url_for('admin.brands'))
+
+
+# ── HERO ADS & BANNERS ────────────────────────────────────────────
+@admin_bp.route('/banners')
+@admin_required
+def banners():
+    cur = get_db().cursor()
+    cur.execute(
+        "SELECT banner_id, badge_tag, title, subtitle, cta_text, cta_link, "
+        "       gradient_class, image_path, sort_order, is_active "
+        "FROM HeroBanners ORDER BY NVL(sort_order, 0), banner_id"
+    )
+    return render_template('admin/banners.html', banners=cur.fetchall())
+
+
+@admin_bp.route('/banners/add', methods=['POST'])
+@admin_required
+def add_banner():
+    badge_tag = request.form.get('badge_tag', '').strip()
+    title = request.form.get('title', '').strip()
+    subtitle = request.form.get('subtitle', '').strip()
+    cta_text = request.form.get('cta_text', 'SHOP NOW').strip() or 'SHOP NOW'
+    cta_link = request.form.get('cta_link', '/#productsGrid').strip() or '/#productsGrid'
+    gradient_class = request.form.get('gradient_class', 'promo-gradient-autumn').strip()
+    try:
+        sort_order = int(request.form.get('sort_order', 0) or 0)
+    except ValueError:
+        sort_order = 0
+    is_active = 1 if request.form.get('is_active') == '1' else 0
+
+    ok, err = validate_required_text(title, 'Banner title / headline', min_len=2, max_len=150)
+    if not ok:
+        flash(err, 'error')
+        return redirect(url_for('admin.banners'))
+
+    img_data, img_err = _handle_image_input(request, 'banner_image', 'image_url', max_dim=1200)
+    if img_err:
+        flash(img_err, 'error')
+        return redirect(url_for('admin.banners'))
+
+    cur = get_db().cursor()
+    cur.execute("""
+    INSERT INTO HeroBanners (banner_id, badge_tag, title, subtitle, cta_text, cta_link, gradient_class, image_path, sort_order, is_active)
+    VALUES (banners_seq.NEXTVAL, :btg, :btt, :bsb, :bct, :bcl, :bgc, :bimg, :bso, :bia)
+    """, {
+        'btg': badge_tag, 'btt': title, 'bsb': subtitle, 'bct': cta_text,
+        'bcl': cta_link, 'bgc': gradient_class, 'bimg': img_data, 'bso': sort_order, 'bia': is_active
+    })
+    cur.execute("SELECT banners_seq.CURRVAL FROM dual")
+    banner_id = cur.fetchone()[0]
+    log_admin_action(cur, current_user_id(), 'banner.create', 'HeroBanner', banner_id, f'title={title}')
+    get_db().commit()
+    flash('Promotional banner ad created successfully.', 'success')
+    return redirect(url_for('admin.banners'))
+
+
+@admin_bp.route('/banners/edit/<int:banner_id>', methods=['POST'])
+@admin_required
+def edit_banner(banner_id):
+    badge_tag = request.form.get('badge_tag', '').strip()
+    title = request.form.get('title', '').strip()
+    subtitle = request.form.get('subtitle', '').strip()
+    cta_text = request.form.get('cta_text', 'SHOP NOW').strip() or 'SHOP NOW'
+    cta_link = request.form.get('cta_link', '/#productsGrid').strip() or '/#productsGrid'
+    gradient_class = request.form.get('gradient_class', 'promo-gradient-autumn').strip()
+    try:
+        sort_order = int(request.form.get('sort_order', 0) or 0)
+    except ValueError:
+        sort_order = 0
+    is_active = 1 if request.form.get('is_active') == '1' else 0
+    remove_image = request.form.get('remove_image') == '1'
+
+    ok, err = validate_required_text(title, 'Banner title / headline', min_len=2, max_len=150)
+    if not ok:
+        flash(err, 'error')
+        return redirect(url_for('admin.banners'))
+
+    img_data, img_err = _handle_image_input(request, 'banner_image', 'image_url', max_dim=1200)
+    if img_err:
+        flash(img_err, 'error')
+        return redirect(url_for('admin.banners'))
+
+    cur = get_db().cursor()
+    if remove_image:
+        cur.execute("""
+        UPDATE HeroBanners SET badge_tag = :btg, title = :btt, subtitle = :bsb, cta_text = :bct,
+                               cta_link = :bcl, gradient_class = :bgc, image_path = NULL,
+                               sort_order = :bso, is_active = :bia
+        WHERE banner_id = :bid
+        """, {
+            'btg': badge_tag, 'btt': title, 'bsb': subtitle, 'bct': cta_text,
+            'bcl': cta_link, 'bgc': gradient_class, 'bso': sort_order, 'bia': is_active, 'bid': banner_id
+        })
+    elif img_data:
+        cur.execute("""
+        UPDATE HeroBanners SET badge_tag = :btg, title = :btt, subtitle = :bsb, cta_text = :bct,
+                               cta_link = :bcl, gradient_class = :bgc, image_path = :bimg,
+                               sort_order = :bso, is_active = :bia
+        WHERE banner_id = :bid
+        """, {
+            'btg': badge_tag, 'btt': title, 'bsb': subtitle, 'bct': cta_text,
+            'bcl': cta_link, 'bgc': gradient_class, 'bimg': img_data, 'bso': sort_order, 'bia': is_active, 'bid': banner_id
+        })
+    else:
+        cur.execute("""
+        UPDATE HeroBanners SET badge_tag = :btg, title = :btt, subtitle = :bsb, cta_text = :bct,
+                               cta_link = :bcl, gradient_class = :bgc,
+                               sort_order = :bso, is_active = :bia
+        WHERE banner_id = :bid
+        """, {
+            'btg': badge_tag, 'btt': title, 'bsb': subtitle, 'bct': cta_text,
+            'bcl': cta_link, 'bgc': gradient_class, 'bso': sort_order, 'bia': is_active, 'bid': banner_id
+        })
+
+    log_admin_action(cur, current_user_id(), 'banner.edit', 'HeroBanner', banner_id, f'title={title}')
+    get_db().commit()
+    flash('Promotional banner ad updated successfully.', 'success')
+    return redirect(url_for('admin.banners'))
+
+
+@admin_bp.route('/banners/toggle/<int:banner_id>', methods=['POST'])
+@admin_required
+def toggle_banner(banner_id):
+    cur = get_db().cursor()
+    cur.execute("UPDATE HeroBanners SET is_active = 1 - is_active WHERE banner_id = :bid", {'bid': banner_id})
+    log_admin_action(cur, current_user_id(), 'banner.toggle', 'HeroBanner', banner_id)
+    get_db().commit()
+    flash('Banner active status updated.', 'success')
+    return redirect(url_for('admin.banners'))
+
+
+@admin_bp.route('/banners/delete/<int:banner_id>', methods=['POST'])
+@admin_required
+def delete_banner(banner_id):
+    cur = get_db().cursor()
+    cur.execute("DELETE FROM HeroBanners WHERE banner_id = :bid", {'bid': banner_id})
+    log_admin_action(cur, current_user_id(), 'banner.delete', 'HeroBanner', banner_id)
+    get_db().commit()
+    flash('Promotional banner deleted successfully.', 'success')
+    return redirect(url_for('admin.banners'))
 
 
 # ── ORDERS ───────────────────────────────────────────────────────
