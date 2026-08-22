@@ -6,8 +6,8 @@
             <a href="mailto:{{ contact_email }}"><i class="bi bi-envelope-fill me-1 text-warning"></i> {{ contact_email }}</a>
         </div>
         <div class="contact-bar-perks d-flex align-items-center gap-3">
-            <span><i class="bi bi-shield-check me-1 text-warning"></i> 100% Authentic Products</span>
-            <span><i class="bi bi-truck me-1 text-warning"></i> Fast Nationwide Delivery</span>
+            <span><i class="bi {{ site_settings.get('top_badge_1_icon') or 'bi-shield-check' }} me-1 text-warning"></i> {{ site_settings.get('top_badge_1_text') or '100% Authentic Products' }}</span>
+            <span><i class="bi {{ site_settings.get('top_badge_2_icon') or 'bi-truck' }} me-1 text-warning"></i> {{ site_settings.get('top_badge_2_text') or 'Delivery All Over Karachi' }}</span>
         </div>
     </div>
 </div>

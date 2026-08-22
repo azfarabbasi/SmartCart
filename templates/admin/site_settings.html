@@ -1,35 +1,114 @@
 {% extends "admin/base.html" %}
 {% block title %}Site Settings - Admin | SmartCart{% endblock %}
-{% block page_title %}Site Settings{% endblock %}
+{% block page_title %}Site Settings &amp; Content Management{% endblock %}
 {% block content %}
-    <p class="text-muted">Everything shown here controls live content on the website &mdash; contact details, bank
-        transfer info, payment amounts, and site messages. Changes take effect immediately, no redeploy needed.</p>
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-dark border-secondary d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-gear-wide-connected text-warning fs-5 me-2"></i>
+                    <span>All texts, header trust badges, delivery policies, contact numbers, and payment details are live editable below.</span>
+                </div>
+                <span class="badge bg-warning text-dark">Instant Live Sync</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Top Bar Badge Preview -->
+    <div class="admin-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-white"><i class="bi bi-eye text-warning me-2"></i>Top Bar Header Preview</h5>
+            <small class="text-muted">Live view as customers see on Desktop</small>
+        </div>
+        <div class="card-body p-3 bg-black rounded-bottom">
+            <div class="d-flex flex-wrap justify-content-between align-items-center p-2 rounded bg-dark border border-secondary" style="font-size: 0.85rem;">
+                <div class="d-flex align-items-center gap-3 text-muted">
+                    <span><i class="bi bi-telephone-fill text-warning me-1"></i> <span id="previewPhone">{{ settings.get('contact_phone', '+923312344418') }}</span></span>
+                    <span>|</span>
+                    <span><i class="bi bi-envelope-fill text-warning me-1"></i> <span id="previewEmail">{{ settings.get('contact_email', 'azfar.aa.abbasi@gmail.com') }}</span></span>
+                </div>
+                <div class="d-flex align-items-center gap-3 text-light">
+                    <span>
+                        <i class="bi {{ settings.get('top_badge_1_icon', 'bi-shield-check') }} text-warning me-1" id="previewBadge1Icon"></i>
+                        <strong id="previewBadge1Text">{{ settings.get('top_badge_1_text', '100% Authentic Products') }}</strong>
+                    </span>
+                    <span>
+                        <i class="bi {{ settings.get('top_badge_2_icon', 'bi-truck') }} text-warning me-1" id="previewBadge2Icon"></i>
+                        <strong id="previewBadge2Text">{{ settings.get('top_badge_2_text', 'Delivery All Over Karachi') }}</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <form method="POST" action="{{ url_for('admin.site_settings') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        {% for group_name, fields in field_groups %}
-            <div class="admin-card mb-4">
-                <div class="card-header"><h5>{{ group_name }}</h5></div>
-                <div class="card-body">
-                    {% for key, label, kind in fields %}
-                        <div class="mb-3">
-                            <label class="form-label" for="{{ key }}">{{ label }}</label>
-                            {% if kind == 'textarea' %}
-                                <textarea class="form-control" id="{{ key }}" name="{{ key }}" rows="2">{{ settings.get(key, '') }}</textarea>
-                            {% elif kind == 'number' %}
-                                <input type="number" step="1" min="0" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ settings.get(key, '') }}">
-                            {% else %}
-                                <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ settings.get(key, '') }}">
-                            {% endif %}
+        <div class="row g-4">
+            {% for group_name, fields in field_groups %}
+                <div class="col-lg-6">
+                    <div class="admin-card h-100">
+                        <div class="card-header border-secondary">
+                            <h5 class="mb-0 text-white">
+                                {% if 'Header' in group_name %}
+                                    <i class="bi bi-badge-ad text-warning me-2"></i>
+                                {% elif 'Contact' in group_name %}
+                                    <i class="bi bi-telephone-outbound text-warning me-2"></i>
+                                {% elif 'Storefront' in group_name or 'Messages' in group_name %}
+                                    <i class="bi bi-chat-left-quote text-warning me-2"></i>
+                                {% elif 'Pricing' in group_name or 'Margin' in group_name %}
+                                    <i class="bi bi-shield-lock text-warning me-2"></i>
+                                {% elif 'Bank' in group_name %}
+                                    <i class="bi bi-bank text-warning me-2"></i>
+                                {% elif 'Payment' in group_name %}
+                                    <i class="bi bi-cash-coin text-warning me-2"></i>
+                                {% else %}
+                                    <i class="bi bi-sliders text-warning me-2"></i>
+                                {% endif %}
+                                {{ group_name }}
+                            </h5>
                         </div>
-                    {% endfor %}
+                        <div class="card-body">
+                            {% for key, label, kind in fields %}
+                                <div class="mb-3">
+                                    <label class="form-label text-light fw-medium" for="{{ key }}">{{ label }}</label>
+                                    {% if kind == 'textarea' %}
+                                        <textarea class="form-control" id="{{ key }}" name="{{ key }}" rows="2">{{ settings.get(key, '') }}</textarea>
+                                    {% elif kind == 'number' %}
+                                        <input type="number" step="1" min="0" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ settings.get(key, '') }}">
+                                    {% else %}
+                                        <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ settings.get(key, '') }}">
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        {% endfor %}
+            {% endfor %}
+        </div>
 
-        <button type="submit" class="btn btn-warning">
-            <i class="bi bi-check-lg me-2"></i>Save All Settings
-        </button>
+        <div class="mt-4 p-3 bg-dark rounded border border-secondary d-flex justify-content-between align-items-center">
+            <span class="text-muted small">All changes take effect immediately on the live storefront and customer pages.</span>
+            <button type="submit" class="btn btn-warning px-4 py-2 fw-semibold">
+                <i class="bi bi-check-lg me-2"></i>Save All Settings
+            </button>
+        </div>
     </form>
+
+    <script>
+        // Live update header preview on typing
+        document.addEventListener('DOMContentLoaded', function() {
+            const b1Text = document.getElementById('top_badge_1_text');
+            const b2Text = document.getElementById('top_badge_2_text');
+            const b1Icon = document.getElementById('top_badge_1_icon');
+            const b2Icon = document.getElementById('top_badge_2_icon');
+            const pPhone = document.getElementById('contact_phone');
+            const pEmail = document.getElementById('contact_email');
+
+            if (b1Text) b1Text.addEventListener('input', e => document.getElementById('previewBadge1Text').innerText = e.target.value);
+            if (b2Text) b2Text.addEventListener('input', e => document.getElementById('previewBadge2Text').innerText = e.target.value);
+            if (pPhone) pPhone.addEventListener('input', e => document.getElementById('previewPhone').innerText = e.target.value);
+            if (pEmail) pEmail.addEventListener('input', e => document.getElementById('previewEmail').innerText = e.target.value);
+        });
+    </script>
 {% endblock %}

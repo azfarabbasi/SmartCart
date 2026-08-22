@@ -61,6 +61,7 @@
 .bi-cart4::before { content: "\f245"; }
 .bi-cash-stack::before { content: "\f246"; }
 .bi-cash::before { content: "\f247"; }
+.bi-chat-left-quote::before { content: "\f250"; }
 .bi-chat-square-text::before { content: "\f264"; }
 .bi-check-circle-fill::before { content: "\f26a"; }
 .bi-check-circle::before { content: "\f26b"; }
@@ -84,6 +85,7 @@
 .bi-eye::before { content: "\f341"; }
 .bi-file-earmark-text::before { content: "\f38b"; }
 .bi-folder2-open::before { content: "\f3d8"; }
+.bi-gear-wide-connected::before { content: "\f3e3"; }
 .bi-gear::before { content: "\f3e5"; }
 .bi-geo-alt::before { content: "\f3e8"; }
 .bi-gift::before { content: "\f3ec"; }
@@ -127,6 +129,7 @@
 .bi-shield-check::before { content: "\f52f"; }
 .bi-shield-lock::before { content: "\f538"; }
 .bi-slash-circle::before { content: "\f567"; }
+.bi-sliders::before { content: "\f56b"; }
 .bi-smartwatch::before { content: "\f56c"; }
 .bi-speedometer2::before { content: "\f580"; }
 .bi-star-fill::before { content: "\f586"; }
@@ -136,6 +139,7 @@
 .bi-tag::before { content: "\f5b0"; }
 .bi-tags::before { content: "\f5b2"; }
 .bi-telephone-fill::before { content: "\f5b4"; }
+.bi-telephone-outbound::before { content: "\f5bc"; }
 .bi-telephone::before { content: "\f5c1"; }
 .bi-trash::before { content: "\f5de"; }
 .bi-truck::before { content: "\f5ea"; }
