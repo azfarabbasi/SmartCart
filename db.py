@@ -83,14 +83,36 @@ def _auto_migrate(conn):
             WHERE setting_key = 'store_address' AND (setting_value IS NULL OR setting_value = 'Karachi, Pakistan')
             """)
 
+            # Update settings for 4-5 days delivery and Rs 200 fee
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = 'Delivery All Over Karachi'
+            WHERE setting_key = 'prop_3_title' AND setting_value LIKE '%Express%'
+            """)
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = 'Within 4–5 days after order confirmation (Rs 200)'
+            WHERE setting_key = 'prop_3_sub' AND setting_value LIKE '%Same-day%'
+            """)
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = 'Delivery across all areas of Karachi within 4–5 days after order confirmation. Standard delivery fee is Rs 200.'
+            WHERE setting_key = 'shipping_policy_summary'
+            """)
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = 'Within 4–5 days after order confirmation'
+            WHERE setting_key = 'delivery_timeline_text'
+            """)
+            cur.execute("""
+            UPDATE SiteSettings SET setting_value = '200'
+            WHERE setting_key = 'standard_delivery_fee'
+            """)
+
             # Update existing settings and banners if they say 'Nationwide'
             cur.execute("""
             UPDATE SiteSettings SET setting_value = 'Delivery All Over Karachi'
             WHERE setting_key = 'top_badge_2_text' AND setting_value LIKE '%Nationwide%'
             """)
             cur.execute("""
-            UPDATE HeroBanners SET subtitle = 'On All Orders Above Rs 2,000 in Karachi'
-            WHERE subtitle LIKE '%Nationwide%'
+            UPDATE HeroBanners SET subtitle = 'Delivery All Over Karachi (4–5 Days, Rs 200)'
+            WHERE subtitle LIKE '%Nationwide%' OR subtitle LIKE '%Above Rs 2,000%'
             """)
             conn.commit()
         except Exception:

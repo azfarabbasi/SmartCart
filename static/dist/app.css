@@ -72,6 +72,7 @@
 .bi-chevron-right::before { content: "\f285"; }
 .bi-clipboard-check::before { content: "\f28b"; }
 .bi-clipboard-x::before { content: "\f28f"; }
+.bi-clock-history::before { content: "\f292"; }
 .bi-clock::before { content: "\f293"; }
 .bi-cloud-arrow-up::before { content: "\f297"; }
 .bi-controller::before { content: "\f2d4"; }
@@ -110,7 +111,6 @@
 .bi-laptop::before { content: "\f456"; }
 .bi-lightbulb-fill::before { content: "\f468"; }
 .bi-lightbulb::before { content: "\f46b"; }
-.bi-lightning-charge-fill::before { content: "\f46c"; }
 .bi-lightning::before { content: "\f46f"; }
 .bi-link-45deg::before { content: "\f470"; }
 .bi-list::before { content: "\f479"; }

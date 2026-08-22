@@ -11,7 +11,7 @@ DEFAULTS = {
     'top_badge_1_icon': 'bi-shield-check',
     'top_badge_2_text': 'Delivery All Over Karachi',
     'top_badge_2_icon': 'bi-truck',
-    'delivery_scope_text': 'Delivery All Over Karachi',
+    'delivery_scope_text': 'Delivery All Over Karachi (4–5 Days, Rs 200)',
 
     # 3. 4 Marketing Trust Value Pillars (Home & Product Pages)
     'prop_1_title': 'Check at Delivery & 1-Day Exchange',
@@ -20,8 +20,8 @@ DEFAULTS = {
     'prop_2_title': '100% Genuine with Warranty',
     'prop_2_sub': 'Official tech brands with warranty claim support',
     'prop_2_icon': 'bi-patch-check-fill',
-    'prop_3_title': 'Express Delivery in Karachi',
-    'prop_3_sub': 'Same-day & next-day dispatch to your doorstep',
+    'prop_3_title': 'Delivery All Over Karachi',
+    'prop_3_sub': 'Within 4–5 days after order confirmation (Rs 200)',
     'prop_3_icon': 'bi-truck',
     'prop_4_title': 'Instant WhatsApp Support',
     'prop_4_sub': 'Real human assistance & quick order tracking',
@@ -29,9 +29,9 @@ DEFAULTS = {
 
     # 4. Storefront Hero & Messages
     'hero_title': 'Welcome to SmartCart',
-    'hero_subtitle': 'Browse our full catalog - fast delivery all over Karachi.',
-    'free_delivery_notice': 'FREE delivery on orders above Rs 2,000 in Karachi',
-    'checkout_notice': 'Orders are dispatched once payment is verified. Check parcel at delivery. Delivery available all over Karachi.',
+    'hero_subtitle': 'Browse our full catalog - delivery all over Karachi within 4–5 days.',
+    'free_delivery_notice': 'Standard delivery fee is Rs 200 across Karachi',
+    'checkout_notice': 'Delivery within 4–5 days after order confirmation. Standard delivery fee is Rs 200. Check parcel at delivery.',
     'site_announcement': '',
     'footer_note': 'SmartCart - Premium Tech, Earbuds & Smart Gadgets. Warehouse at Gulistan-e-Jauhar, Karachi.',
 
@@ -42,13 +42,17 @@ DEFAULTS = {
     'returns_warehouse_location': 'Gulistan-e-Jauhar, Karachi',
     'returns_ineligible_items': "Items with physical damage, scratches or liquid ingress\nProducts with the packaging or seal destroyed\nEarphones and earbuds that have been used, for hygiene reasons — unless the item is faulty\nItems returned more than 1 day after delivery",
     'warranty_exclusions_items': "Physical damage, including cut or frayed cables\nWater or liquid damage\nDamage from use with a non-compliant charger or power source\nNormal battery capacity decline over time",
+
+    # 6. Shipping & Delivery Details
     'shipping_policy_title': 'Shipping & Delivery in Karachi',
-    'shipping_policy_summary': 'Fast, safe delivery across all areas of Karachi with live tracking and COD.',
+    'shipping_policy_summary': 'Delivery across all areas of Karachi within 4–5 days after order confirmation. Standard delivery fee is Rs 200.',
+    'delivery_timeline_text': 'Within 4–5 days after order confirmation',
+    'standard_delivery_fee': '200',
     'faq_title': 'Frequently Asked Questions',
     'about_title': 'About SmartCart',
     'about_summary': 'Your trusted Karachi-based destination for 100% genuine tech, audio accessories, and gadgets.',
 
-    # 6. Pricing, Margins & Banking
+    # 7. Pricing, Margins & Banking
     'min_profit_margin_floor': '300',
     'bank_name': '',
     'bank_account_title': '',
@@ -74,8 +78,8 @@ FIELD_GROUPS = [
         ('prop_2_title', 'Pillar 2 Title (e.g. 100% Genuine with Warranty)', 'text'),
         ('prop_2_sub', 'Pillar 2 Subtitle', 'text'),
         ('prop_2_icon', 'Pillar 2 Icon (e.g. bi-patch-check-fill)', 'text'),
-        ('prop_3_title', 'Pillar 3 Title (e.g. Express Delivery in Karachi)', 'text'),
-        ('prop_3_sub', 'Pillar 3 Subtitle', 'text'),
+        ('prop_3_title', 'Pillar 3 Title (e.g. Delivery All Over Karachi)', 'text'),
+        ('prop_3_sub', 'Pillar 3 Subtitle (e.g. Within 4–5 days after order confirmation)', 'text'),
         ('prop_3_icon', 'Pillar 3 Icon (e.g. bi-truck)', 'text'),
         ('prop_4_title', 'Pillar 4 Title (e.g. Instant WhatsApp Support)', 'text'),
         ('prop_4_sub', 'Pillar 4 Subtitle', 'text'),
@@ -84,10 +88,16 @@ FIELD_GROUPS = [
     ('Storefront Messages & Notices', [
         ('hero_title', 'Homepage Hero Title', 'text'),
         ('hero_subtitle', 'Homepage Hero Subtitle', 'text'),
-        ('free_delivery_notice', 'Free Delivery Promotion Notice', 'text'),
+        ('free_delivery_notice', 'Delivery Fee Promotion Notice (e.g. Standard delivery fee is Rs 200)', 'text'),
         ('checkout_notice', 'Checkout Page Notice / Delivery Policy', 'textarea'),
         ('site_announcement', 'Sitewide Announcement Banner (leave blank to hide)', 'textarea'),
         ('footer_note', 'Footer Copyright / Tagline Note', 'text'),
+    ]),
+    ('Shipping & Karachi Delivery Policy (Admin Editable)', [
+        ('shipping_policy_title', 'Shipping Page Title', 'text'),
+        ('shipping_policy_summary', 'Shipping Page Subtitle', 'textarea'),
+        ('delivery_timeline_text', 'Delivery Timeline (e.g. Within 4–5 days after order confirmation)', 'text'),
+        ('standard_delivery_fee', 'Standard Delivery Fee in Karachi (Rs, e.g. 200)', 'number'),
     ]),
     ('Exchange & Return Policy (Admin Editable)', [
         ('returns_policy_title', 'Policy Page Title', 'text'),
@@ -97,9 +107,7 @@ FIELD_GROUPS = [
         ('returns_ineligible_items', 'What We Cannot Accept (1 item per line)', 'textarea'),
         ('warranty_exclusions_items', 'Not Covered by Warranty (1 item per line)', 'textarea'),
     ]),
-    ('Customer Info Pages', [
-        ('shipping_policy_title', 'Shipping Page Title', 'text'),
-        ('shipping_policy_summary', 'Shipping Page Subtitle', 'textarea'),
+    ('Customer Info & About Us', [
         ('about_title', 'About Us Page Title', 'text'),
         ('about_summary', 'About Us Store Story / Summary', 'textarea'),
     ]),
