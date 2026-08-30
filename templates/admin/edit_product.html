@@ -153,35 +153,35 @@
                                     <label class="form-label small text-muted fw-semibold">Current Colors ({{ colors|length }})</label>
                                     <div class="d-flex flex-column gap-2">
                                         {% for c in colors %}
-                                            <div class="color-variant-row p-3 rounded border position-relative" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1) !important;">
+                                            <div class="color-variant-row p-3 rounded-3 border position-relative bg-white shadow-sm" style="border-color: #e2e8f0 !important;">
                                                 <input type="hidden" name="existing_color_id" value="{{ c[0] }}">
                                                 <div class="row align-items-center g-3">
                                                     <div class="col-md-3">
-                                                        <label class="form-label small fw-semibold mb-1">Color Name</label>
+                                                        <label class="form-label small fw-bold text-dark mb-1">Color Name</label>
                                                         <input type="text" name="existing_color_name" class="form-control form-control-sm" value="{{ c[1] }}" required>
                                                     </div>
                                                     <div class="col-md-2">
-                                                        <label class="form-label small fw-semibold mb-1">Swatch</label>
+                                                        <label class="form-label small fw-bold text-dark mb-1">Swatch</label>
                                                         <div class="d-flex align-items-center gap-2">
                                                             <input type="color" name="existing_color_code" class="form-control form-control-color form-control-sm existing-color-picker" value="{{ c[2] if c[2] else '#000000' }}">
-                                                            <span class="small font-monospace existing-hex-label">{{ c[2] if c[2] else '#000000' }}</span>
+                                                            <span class="small font-monospace existing-hex-label fw-bold text-dark">{{ c[2] if c[2] else '#000000' }}</span>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-2">
-                                                        <label class="form-label small fw-semibold mb-1">Stock</label>
+                                                        <label class="form-label small fw-bold text-dark mb-1">Stock</label>
                                                         <input type="number" name="existing_color_stock" class="form-control form-control-sm" value="{{ c[4] if c[4] is not none else 0 }}" min="0">
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <label class="form-label small fw-semibold mb-1">Color Image</label>
+                                                        <label class="form-label small fw-bold text-dark mb-1">Color Image</label>
                                                         <div class="d-flex align-items-center gap-2">
-                                                            <div class="color-img-preview-box rounded border d-flex align-items-center justify-content-center overflow-hidden" style="width: 42px; height: 42px; background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.2) !important; flex-shrink: 0;">
+                                                            <div class="color-img-preview-box rounded border d-flex align-items-center justify-content-center overflow-hidden bg-light" style="width: 42px; height: 42px; flex-shrink: 0;">
                                                                 {% if c[3] %}
                                                                     <img src="{{ media_url(c[3]) }}" style="width:100%; height:100%; object-fit:contain;">
                                                                 {% else %}
                                                                     <i class="bi bi-image text-muted"></i>
                                                                 {% endif %}
                                                             </div>
-                                                            <input type="file" class="form-control form-control-sm existing-color-file" accept="image/*">
+                                                            <input type="file" name="existing_color_image" class="form-control form-control-sm existing-color-file" accept="image/*">
                                                             <input type="hidden" name="existing_color_image_base64" class="existing-color-b64" value="{{ c[3] if c[3] else '' }}">
                                                         </div>
                                                     </div>
@@ -527,33 +527,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createColorVariantRow(nameVal, codeVal, stockVal, imgVal) {
         var row = document.createElement('div');
-        row.className = 'color-variant-row p-3 rounded border position-relative';
-        row.style.cssText = 'background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1) !important;';
+        row.className = 'color-variant-row p-3 rounded-3 border position-relative bg-white shadow-sm';
+        row.style.cssText = 'border-color: #e2e8f0 !important;';
 
         row.innerHTML = `
             <div class="row align-items-center g-3">
                 <div class="col-md-3">
-                    <label class="form-label small fw-semibold mb-1">New Color Name</label>
-                    <input type="text" name="color_name" class="form-control form-control-sm color-name-input" placeholder="e.g. Black, White, Navy Blue" value="${nameVal || ''}" required>
+                    <label class="form-label small fw-bold text-dark mb-1">New Color Name</label>
+                    <input type="text" name="color_name" class="form-control form-control-sm color-name-input" placeholder="e.g. Black, White, Navy Blue" value="${nameVal || ''}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-semibold mb-1">Swatch Color</label>
+                    <label class="form-label small fw-bold text-dark mb-1">Swatch Color</label>
                     <div class="d-flex align-items-center gap-2">
                         <input type="color" name="color_code" class="form-control form-control-color form-control-sm" value="${codeVal || '#000000'}" title="Choose color">
-                        <span class="small font-monospace color-hex-label">${codeVal || '#000000'}</span>
+                        <span class="small font-monospace color-hex-label fw-bold text-dark">${codeVal || '#000000'}</span>
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-semibold mb-1">Color Stock</label>
+                    <label class="form-label small fw-bold text-dark mb-1">Color Stock</label>
                     <input type="number" name="color_stock" class="form-control form-control-sm" placeholder="0" value="${stockVal || 0}" min="0">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label small fw-semibold mb-1">Color Image (Specific View)</label>
+                    <label class="form-label small fw-bold text-dark mb-1">Color Image (Specific View)</label>
                     <div class="d-flex align-items-center gap-2">
-                        <div class="color-img-preview-box rounded border d-flex align-items-center justify-content-center overflow-hidden" style="width: 42px; height: 42px; background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.2) !important; flex-shrink: 0;">
+                        <div class="color-img-preview-box rounded border d-flex align-items-center justify-content-center overflow-hidden bg-light" style="width: 42px; height: 42px; flex-shrink: 0;">
                             ${imgVal ? `<img src="${imgVal}" style="width:100%; height:100%; object-fit:contain;">` : `<i class="bi bi-image text-muted"></i>`}
                         </div>
-                        <input type="file" class="form-control form-control-sm color-file-input" accept="image/*">
+                        <input type="file" name="color_image" class="form-control form-control-sm color-file-input" accept="image/*">
                         <input type="hidden" name="color_image_base64" class="color-b64-input" value="${imgVal || ''}">
                     </div>
                 </div>

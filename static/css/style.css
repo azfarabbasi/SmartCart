@@ -3814,32 +3814,57 @@ a:hover {
    PRODUCT ENHANCEMENTS: COLOR SWATCHES, SPECS & STICKY PURCHASE BAR
    ========================================================================== */
 .color-swatch-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #d1d5db !important;
+    color: #111827 !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .color-swatch-btn:hover {
     transform: translateY(-2px);
-    border-color: rgba(255, 193, 7, 0.6) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border-color: #f59e0b !important;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+    background: #fffbeb !important;
 }
 
 .color-swatch-btn.active {
-    border-color: #ffc107 !important;
-    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
-    background: rgba(255, 193, 7, 0.08) !important;
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25), 0 4px 12px rgba(0, 0, 0, 0.08);
+    background: #fffbeb !important;
+}
+
+.color-swatch-btn .swatch-name {
+    color: #0f172a !important;
+    font-weight: 600;
 }
 
 .highlight-pill {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
     transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .highlight-pill:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
     transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+.product-specs-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.product-specs-card table {
+    color: #0f172a !important;
 }
 
 .product-specs-card table tr:hover td {
-    background: rgba(255, 255, 255, 0.05);
+    background: #f1f5f9 !important;
 }
 
 .sticky-purchase-bar {
