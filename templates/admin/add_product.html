@@ -15,7 +15,7 @@
                     <div class="col-lg-8">
                         <div class="mb-3">
                             <label for="name" class="form-label">Product Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="name" name="name" required minlength="2" placeholder="Enter product name">
+                            <input type="text" class="form-control" id="name" name="name" required minlength="2" placeholder="e.g. Ronin R-4025 Revive 20000mAh 22.5W Fast Charging Power Bank">
                         </div>
 
                         <div class="row">
@@ -29,7 +29,7 @@
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="stock" class="form-label">Stock Units <span class="text-danger">*</span></label>
+                                <label for="stock" class="form-label">Total Stock Units <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" id="stock" name="stock" required min="0" placeholder="0">
                             </div>
                         </div>
@@ -68,16 +68,82 @@
                             </div>
                         </div>
 
+                        <!-- Description -->
                         <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="5" placeholder="Enter product description"></textarea>
+                            <label for="description" class="form-label">Product Overview / Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" placeholder="Enter engaging product description or promotional text..."></textarea>
+                        </div>
+
+                        <!-- Key Feature Highlights (Pills/Badges) -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="highlights" class="form-label mb-0 fw-semibold"><i class="bi bi-stars text-warning me-1"></i>Key Feature Highlights (Badges)</label>
+                                <span class="badge bg-dark border text-muted">Comma or Line-separated</span>
+                            </div>
+                            <textarea class="form-control" id="highlights" name="highlights" rows="2" placeholder="e.g. 22.5W Fast Charging, 20000mAh High Capacity, Digital LED Display, 1-Year Official Warranty"></textarea>
+                            <small class="text-muted">Displays as quick-glance feature pill badges right below the title.</small>
+                        </div>
+
+                        <!-- Smart Technical Specifications with Real-Time Formatted Preview -->
+                        <div class="card p-3 mb-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6 class="mb-0 fw-bold"><i class="bi bi-cpu-fill text-warning me-2"></i>Technical Specifications (Smart Copy-Paste)</h6>
+                                    <small class="text-muted">Paste raw specifications from Ronin, Samsung, Apple, Daraz, etc. It parses automatically into clean formatted specs!</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-warning" id="insertSampleSpecsBtn">
+                                    <i class="bi bi-magic me-1"></i>Insert Sample Specs
+                                </button>
+                            </div>
+
+                            <textarea class="form-control mb-3 font-monospace" id="technical_specs" name="technical_specs" rows="7" placeholder="Paste specs here, for example:&#10;Model: R-4025 (Revive)&#10;Capacity: 20,000mAh (74Wh)&#10;Fast Charging: 22.5W USB-A & 20W PD Type-C&#10;Input Ports: Type-C 18W, Lightning 18W&#10;Output Ports: 2x USB-A, 1x Type-C&#10;Display: Smart Digital LED Display&#10;Weight: 421g&#10;Warranty: 1 Year Official Replacement Warranty"></textarea>
+
+                            <!-- Live Formatted Specs Preview -->
+                            <div class="mt-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-semibold text-warning"><i class="bi bi-eye me-1"></i>Live Formatted Specs Preview:</span>
+                                    <span id="specCountBadge" class="badge bg-secondary">0 items detected</span>
+                                </div>
+                                <div id="specsLivePreview" class="p-3 rounded border" style="background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.1) !important; min-height: 100px;">
+                                    <div class="text-center text-muted py-3">
+                                        <i class="bi bi-file-earmark-code fs-3 d-block mb-1 opacity-50"></i>
+                                        <span>Type or paste specifications above to see the live formatted table preview</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- What's in the Box -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="box_contents" class="form-label mb-0 fw-semibold"><i class="bi bi-box-seam me-1"></i>What's In The Box (Package Contents)</label>
+                                <span class="badge bg-dark border text-muted">Comma or Line-separated</span>
+                            </div>
+                            <input type="text" class="form-control" id="box_contents" name="box_contents" placeholder="e.g. 1x Power Bank, 1x Type-C Fast Charging Cable, 1x Warranty Card, 1x User Manual">
+                        </div>
+
+                        <!-- Color Variants Manager -->
+                        <div class="card p-3 mb-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="mb-0 fw-bold"><i class="bi bi-palette-fill text-warning me-2"></i>Color Variants &amp; Color-Specific Images</h6>
+                                    <small class="text-muted">Add color choices (e.g. Black, White) with custom swatch colors and dedicated images.</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-warning" id="addColorVariantBtn">
+                                    <i class="bi bi-plus-lg me-1"></i>Add Color
+                                </button>
+                            </div>
+
+                            <div id="colorVariantsContainer" class="d-flex flex-column gap-3">
+                                <!-- Color rows added dynamically -->
+                            </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-8 mb-3">
                                 <label for="delivery_time_text" class="form-label">Delivery Time</label>
                                 <input type="text" class="form-control" id="delivery_time_text" name="delivery_time_text"
-                                       placeholder="e.g. Delivery in 2-3 business days" maxlength="100">
+                                       placeholder="e.g. Delivery All Over Karachi (4–5 Days)" maxlength="100">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label d-block">Delivery Charges</label>
@@ -85,23 +151,23 @@
                                     <input class="form-check-input" type="checkbox" id="free_delivery" name="free_delivery" value="1">
                                     <label class="form-check-label" for="free_delivery">Free Delivery (offer)</label>
                                 </div>
-                                <small class="text-muted">Off = delivery charges apply</small>
+                                <small class="text-muted">Off = Rs 200 delivery fee applies</small>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-lg-4">
-                        <!-- Thumbnail Image Card -->
+                        <!-- Main Thumbnail Image Card -->
                         <div class="card p-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label mb-0 fw-semibold"><i class="bi bi-image me-1"></i>Thumbnail Image</label>
-                                <span id="imageStatusBadge" class="badge bg-secondary">JPG / PNG / HEIC / WEBP</span>
+                                <label class="form-label mb-0 fw-semibold"><i class="bi bi-image me-1"></i>Main Cover Image</label>
+                                <span id="imageStatusBadge" class="badge bg-secondary">JPG / PNG / WEBP</span>
                             </div>
 
                             <div class="image-upload-area p-3 text-center border rounded mb-2" id="imageUploadArea" style="min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.15); border: 2px dashed rgba(255,255,255,0.2) !important; border-radius: 8px; cursor: pointer;">
                                 <div class="upload-placeholder" id="uploadPlaceholder">
                                     <i class="bi bi-cloud-arrow-up fs-1 text-warning d-block mb-1"></i>
-                                    <p class="mb-1 fw-semibold">Click or Drag & Drop Image</p>
+                                    <p class="mb-1 fw-semibold">Click or Drag &amp; Drop Image</p>
                                     <small class="text-muted">JPG, JPEG, PNG, HEIC, WEBP, GIF</small>
                                 </div>
 
@@ -129,7 +195,7 @@
                                 <span class="badge bg-secondary">Max {{ max_media }}</span>
                             </div>
                             <input type="file" class="form-control" id="media" name="media" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif,image/*,video/*" multiple data-max-media="{{ max_media }}">
-                            <small class="text-muted d-block mt-1">Images (JPG, PNG, HEIC) or videos up to 50MB.</small>
+                            <small class="text-muted d-block mt-1">Additional product views or demo videos.</small>
                             <div id="galleryLivePreview" class="d-flex flex-wrap gap-2 mt-2"></div>
                         </div>
                     </div>
@@ -137,11 +203,11 @@
 
                 <hr>
 
-                <div class="form-actions">
+                <div class="form-actions d-flex gap-2 justify-content-end">
                     <a href="{{ url_for('admin.products') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-x-lg me-2"></i>Cancel
                     </a>
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn btn-warning px-4 fw-bold">
                         <i class="bi bi-check-lg me-2"></i>Add Product
                     </button>
                 </div>
@@ -153,7 +219,7 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Profit Calculation
+    // 1. Profit Calculation
     var costInput = document.getElementById('cost_price');
     var priceInput = document.getElementById('price');
     var profitDisplay = document.getElementById('unitProfitDisplay');
@@ -182,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
         calculateProfit();
     }
 
-    // Thumbnail Image Handling (Instant Base64 Converter & Preview)
+    // 2. Main Image Upload
     var imageUploadArea = document.getElementById('imageUploadArea');
     var imageField = document.getElementById('image');
     var imagePreview = document.getElementById('imagePreview');
@@ -207,7 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Drag & Drop
         imageUploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
             imageUploadArea.style.borderColor = '#ffc107';
@@ -241,20 +306,13 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.onload = function(e) {
             var b64 = e.target.result;
             imageBase64.value = b64;
-
             if (imagePreview) {
                 imagePreview.src = b64;
                 imagePreview.classList.remove('d-none');
             }
-            if (previewContainer) {
-                previewContainer.classList.remove('d-none');
-            }
-            if (uploadPlaceholder) {
-                uploadPlaceholder.classList.add('d-none');
-            }
-            if (removeBtn) {
-                removeBtn.classList.remove('d-none');
-            }
+            if (previewContainer) previewContainer.classList.remove('d-none');
+            if (uploadPlaceholder) uploadPlaceholder.classList.add('d-none');
+            if (removeBtn) removeBtn.classList.remove('d-none');
             if (imageStatusBadge) {
                 imageStatusBadge.textContent = 'Base64 Ready (' + (file.size / 1024).toFixed(1) + ' KB)';
                 imageStatusBadge.className = 'badge bg-success';
@@ -272,21 +330,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 imagePreview.src = '';
                 imagePreview.classList.add('d-none');
             }
-            if (previewContainer) {
-                previewContainer.classList.add('d-none');
-            }
-            if (uploadPlaceholder) {
-                uploadPlaceholder.classList.remove('d-none');
-            }
+            if (previewContainer) previewContainer.classList.add('d-none');
+            if (uploadPlaceholder) uploadPlaceholder.classList.remove('d-none');
             removeBtn.classList.add('d-none');
             if (imageStatusBadge) {
-                imageStatusBadge.textContent = 'JPG / PNG / HEIC / WEBP';
+                imageStatusBadge.textContent = 'JPG / PNG / WEBP';
                 imageStatusBadge.className = 'badge bg-secondary';
             }
         });
     }
 
-    // Gallery Live Previews
+    // 3. Gallery Previews
     var mediaField = document.getElementById('media');
     var galleryLivePreview = document.getElementById('galleryLivePreview');
     if (mediaField && galleryLivePreview) {
@@ -305,6 +359,249 @@ document.addEventListener('DOMContentLoaded', function() {
                         reader.readAsDataURL(file);
                     }
                 });
+            }
+        });
+    }
+
+    // 4. Color Variants Dynamic Manager
+    var colorVariantsContainer = document.getElementById('colorVariantsContainer');
+    var addColorVariantBtn = document.getElementById('addColorVariantBtn');
+
+    function createColorVariantRow(nameVal, codeVal, stockVal, imgVal) {
+        var row = document.createElement('div');
+        row.className = 'color-variant-row p-3 rounded border position-relative';
+        row.style.cssText = 'background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1) !important;';
+
+        var uniqueId = 'c_' + Math.random().toString(36).substr(2, 9);
+
+        row.innerHTML = `
+            <div class="row align-items-center g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Color Name</label>
+                    <input type="text" name="color_name" class="form-control form-control-sm color-name-input" placeholder="e.g. Black, White, Navy Blue" value="${nameVal || ''}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Swatch Color</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="color" name="color_code" class="form-control form-control-color form-control-sm" value="${codeVal || '#000000'}" title="Choose color">
+                        <span class="small font-monospace color-hex-label">${codeVal || '#000000'}</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Color Stock</label>
+                    <input type="number" name="color_stock" class="form-control form-control-sm" placeholder="0" value="${stockVal || 0}" min="0">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">Color Image (Specific View)</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="color-img-preview-box rounded border d-flex align-items-center justify-content-center overflow-hidden" style="width: 42px; height: 42px; background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.2) !important; flex-shrink: 0;">
+                            ${imgVal ? `<img src="${imgVal}" style="width:100%; height:100%; object-fit:contain;">` : `<i class="bi bi-image text-muted"></i>`}
+                        </div>
+                        <input type="file" class="form-control form-control-sm color-file-input" accept="image/*">
+                        <input type="hidden" name="color_image_base64" class="color-b64-input" value="${imgVal || ''}">
+                    </div>
+                </div>
+                <div class="col-md-1 text-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-color-btn" title="Remove Color">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Swatch hex label listener
+        var colorPicker = row.querySelector('input[type="color"]');
+        var hexLabel = row.querySelector('.color-hex-label');
+        if (colorPicker && hexLabel) {
+            colorPicker.addEventListener('input', function() {
+                hexLabel.textContent = this.value;
+            });
+        }
+
+        // Color Image upload preview
+        var fileInput = row.querySelector('.color-file-input');
+        var b64Input = row.querySelector('.color-b64-input');
+        var previewBox = row.querySelector('.color-img-preview-box');
+        if (fileInput && b64Input && previewBox) {
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        b64Input.value = e.target.result;
+                        previewBox.innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:contain;">`;
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+
+        // Remove row listener
+        var removeColorBtn = row.querySelector('.remove-color-btn');
+        if (removeColorBtn) {
+            removeColorBtn.addEventListener('click', function() {
+                row.remove();
+            });
+        }
+
+        colorVariantsContainer.appendChild(row);
+    }
+
+    if (addColorVariantBtn) {
+        addColorVariantBtn.addEventListener('click', function() {
+            createColorVariantRow('', '#000000', 0, '');
+        });
+    }
+
+    // 5. Smart Technical Specifications Parser & Real-Time Live Preview
+    var specsTextarea = document.getElementById('technical_specs');
+    var specsLivePreview = document.getElementById('specsLivePreview');
+    var specCountBadge = document.getElementById('specCountBadge');
+    var insertSampleSpecsBtn = document.getElementById('insertSampleSpecsBtn');
+
+    var iconMap = [
+        { regex: /(battery|capacity|mah|cell|wh\b)/i, icon: 'bi-battery-charging', color: '#10b981' },
+        { regex: /(charging|fast charge|power|watt|output|input|pd\b|qc\b|22\.5w|20w|65w|100w|voltage|ampere)/i, icon: 'bi-lightning-charge-fill', color: '#f59e0b' },
+        { regex: /(port|usb|type-c|type c|lightning|micro usb|jack|pin|slot)/i, icon: 'bi-usb-symbol', color: '#3b82f6' },
+        { regex: /(dimension|size|length|width|height|thickness|mm\b|cm\b)/i, icon: 'bi-aspect-ratio', color: '#8b5cf6' },
+        { regex: /(weight|gram|g\b|kg\b|mass)/i, icon: 'bi-speedometer2', color: '#ec4899' },
+        { regex: /(display|screen|indicator|led|lcd|digital|percentage)/i, icon: 'bi-display', color: '#06b6d4' },
+        { regex: /(bluetooth|wireless|connectivity|range|version|5\.\d|wifi|tws)/i, icon: 'bi-bluetooth', color: '#2563eb' },
+        { regex: /(audio|sound|driver|bass|anc|noise|frequency|speaker|mic)/i, icon: 'bi-soundwave', color: '#6366f1' },
+        { regex: /(time|playtime|backup|standby|hours|endurance)/i, icon: 'bi-clock-history', color: '#14b8a6' },
+        { regex: /(warranty|guarantee|official|replacement|claim)/i, icon: 'bi-shield-check', color: '#10b981' },
+        { regex: /(material|build|casing|finish|body|aluminium)/i, icon: 'bi-layers-fill', color: '#64748b' },
+        { regex: /(compatib|devices|support|phone|iphone|android)/i, icon: 'bi-phone', color: '#0284c7' },
+        { regex: /(model|sku|series|brand|code)/i, icon: 'bi-tag', color: '#f97316' },
+    ];
+
+    function getIconForKey(key) {
+        for (var i = 0; i < iconMap.length; i++) {
+            if (iconMap[i].regex.test(key)) {
+                return iconMap[i];
+            }
+        }
+        return { icon: 'bi-check2-circle', color: '#eab308' };
+    }
+
+    function renderLiveSpecs() {
+        var text = specsTextarea.value.trim();
+        if (!text) {
+            specsLivePreview.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-file-earmark-code fs-3 d-block mb-1 opacity-50"></i>
+                    <span>Type or paste specifications above to see the live formatted table preview</span>
+                </div>
+            `;
+            specCountBadge.textContent = '0 items detected';
+            return;
+        }
+
+        var lines = text.split('\n');
+        var items = [];
+
+        lines.forEach(function(line) {
+            var clean = line.trim().replace(/^[•\-\*#>\s]+/, '').trim();
+            if (!clean) return;
+
+            var key = null, val = null;
+            if (clean.indexOf('\t') !== -1) {
+                var p = clean.split('\t');
+                key = p[0].trim();
+                val = p.slice(1).join('\t').trim();
+            } else if (clean.indexOf(':') !== -1) {
+                var m = clean.match(/^\*{0,2}([^:*]+)\*{0,2}\s*:\s*(.+)$/);
+                if (m) {
+                    key = m[1].trim();
+                    val = m[2].trim();
+                }
+            } else if (clean.indexOf(' - ') !== -1) {
+                var p2 = clean.split(' - ');
+                key = p2[0].trim();
+                val = p2.slice(1).join(' - ').trim();
+            } else if (clean.indexOf(' | ') !== -1) {
+                var p3 = clean.split(' | ');
+                key = p3[0].trim();
+                val = p3.slice(1).join(' | ').trim();
+            }
+
+            if (key && val) {
+                var iconObj = getIconForKey(key);
+                items.push({
+                    key: key.replace(/\*\*/g, '').trim(),
+                    val: val.replace(/\*\*/g, '').trim(),
+                    icon: iconObj.icon,
+                    color: iconObj.color
+                });
+            } else {
+                var iconObj2 = getIconForKey(clean);
+                items.push({
+                    key: 'Feature',
+                    val: clean.replace(/\*\*/g, '').trim(),
+                    icon: iconObj2.icon,
+                    color: iconObj2.color
+                });
+            }
+        });
+
+        specCountBadge.textContent = items.length + ' specifications';
+
+        var html = '<div class="table-responsive"><table class="table table-sm table-borderless align-middle mb-0" style="color: inherit;"><tbody>';
+        items.forEach(function(it, idx) {
+            var bg = idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
+            html += `
+                <tr style="background: ${bg}; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="width: 38%; padding: 8px 12px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 26px; height: 26px; background: ${it.color}20; color: ${it.color};">
+                                <i class="bi ${it.icon} small"></i>
+                            </span>
+                            <span class="fw-semibold text-light">${it.key}</span>
+                        </div>
+                    </td>
+                    <td style="padding: 8px 12px; color: rgba(255,255,255,0.85); font-weight: 500;">
+                        ${it.val}
+                    </td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table></div>';
+        specsLivePreview.innerHTML = html;
+    }
+
+    if (specsTextarea) {
+        specsTextarea.addEventListener('input', renderLiveSpecs);
+        renderLiveSpecs();
+    }
+
+    if (insertSampleSpecsBtn) {
+        insertSampleSpecsBtn.addEventListener('click', function() {
+            var sample = "Model: R-4025 (Revive)\n" +
+                         "Capacity: 20,000mAh (74Wh)\n" +
+                         "Rated Capacity: 12,800mAh (at 5V)\n" +
+                         "Battery Type: Lithium-Polymer\n" +
+                         "Fast Charging: 22.5W Fast Charging & 20W Power Delivery (PD)\n" +
+                         "Input Ports: Type-C 18W (5V/2.5A), Lightning 18W (5V/2A)\n" +
+                         "Output Ports: 2x USB-A (22.5W Max), 1x Type-C (20W PD)\n" +
+                         "Display: Smart Digital LED Percentage Display\n" +
+                         "Dimensions: 142 x 69 x 30 mm\n" +
+                         "Weight: 421g\n" +
+                         "Warranty: 1 Year Official Replacement Warranty\n" +
+                         "Compatibility: iPhone, Samsung, Xiaomi, iPad, Earbuds & USB Devices";
+            specsTextarea.value = sample;
+            renderLiveSpecs();
+
+            var highlightsField = document.getElementById('highlights');
+            if (highlightsField && !highlightsField.value) {
+                highlightsField.value = "22.5W Fast Charging, 20,000mAh High Capacity, Digital LED Display, 1-Year Official Warranty";
+            }
+            var boxField = document.getElementById('box_contents');
+            if (boxField && !boxField.value) {
+                boxField.value = "1x Ronin R-4025 Power Bank, 1x Type-C Fast Charging Cable, 1x Warranty Card, 1x User Manual";
+            }
+
+            if (colorVariantsContainer.children.length === 0) {
+                createColorVariantRow('Black', '#111111', 50, '');
+                createColorVariantRow('White', '#f3f4f6', 50, '');
             }
         });
     }

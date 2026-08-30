@@ -13,6 +13,16 @@ def _output_type_handler(cursor, metadata):
         return cursor.var(oracledb.DB_TYPE_LONG_RAW, arraysize=cursor.arraysize)
 
 
+def _input_type_handler(cursor, value, arraysize):
+    # Auto-bind strings > 4000 chars (such as Base64 data URLs) as CLOB
+    # to prevent Oracle ORA-01461 / ORA-01480 / string data too large errors.
+    if isinstance(value, str) and len(value) > 4000:
+        return cursor.var(oracledb.DB_TYPE_CLOB, arraysize=arraysize)
+    if isinstance(value, (bytes, bytearray)) and len(value) > 4000:
+        return cursor.var(oracledb.DB_TYPE_BLOB, arraysize=arraysize)
+
+
+
 def init_pool(app):
     global _pool
     # Use thick mode only when ORACLE_CLIENT_LIB_DIR is set (local dev).
@@ -40,7 +50,7 @@ _migrated = False
 def _auto_migrate(conn):
     try:
         cur = conn.cursor()
-        # 1. Ensure cost_price column exists on Products
+        # 1. Ensure cost_price, delivery_time_text, free_delivery, description columns exist on Products
         try:
             cur.execute("SELECT cost_price FROM Products WHERE ROWNUM = 1")
         except Exception:
@@ -49,6 +59,109 @@ def _auto_migrate(conn):
                 conn.commit()
             except Exception:
                 pass
+
+        try:
+            cur.execute("SELECT delivery_time_text FROM Products WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Products ADD (delivery_time_text VARCHAR2(100))")
+                conn.commit()
+            except Exception:
+                pass
+
+        try:
+            cur.execute("SELECT free_delivery FROM Products WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Products ADD (free_delivery NUMBER(1) DEFAULT 0 NOT NULL)")
+                conn.commit()
+            except Exception:
+                pass
+
+        try:
+            cur.execute("ALTER TABLE Products MODIFY (description VARCHAR2(4000))")
+            conn.commit()
+        except Exception:
+            pass
+
+        # Ensure technical_specs, highlights, and box_contents exist on Products
+        try:
+            cur.execute("SELECT technical_specs FROM Products WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Products ADD (technical_specs CLOB)")
+                conn.commit()
+            except Exception:
+                pass
+
+        try:
+            cur.execute("SELECT highlights FROM Products WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Products ADD (highlights VARCHAR2(1000))")
+                conn.commit()
+            except Exception:
+                pass
+
+        try:
+            cur.execute("SELECT box_contents FROM Products WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Products ADD (box_contents VARCHAR2(1000))")
+                conn.commit()
+            except Exception:
+                pass
+
+        # Ensure ProductColors table and sequence exist
+        try:
+            cur.execute("SELECT 1 FROM ProductColors WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("""
+                CREATE TABLE ProductColors (
+                    color_id       NUMBER PRIMARY KEY,
+                    product_id     NUMBER NOT NULL REFERENCES Products(product_id),
+                    color_name     VARCHAR2(100) NOT NULL,
+                    color_code     VARCHAR2(30) DEFAULT '#000000',
+                    image_path     CLOB,
+                    stock          NUMBER DEFAULT 0,
+                    sort_order     NUMBER DEFAULT 0,
+                    created_at     DATE DEFAULT SYSDATE
+                )
+                """)
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                cur.execute("CREATE SEQUENCE productcolors_seq START WITH 1 INCREMENT BY 1")
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                cur.execute("CREATE INDEX idx_productcolors_product ON ProductColors(product_id, sort_order)")
+                conn.commit()
+            except Exception:
+                pass
+
+        # Ensure selected_color exists on Cart and OrderItems
+        try:
+            cur.execute("SELECT selected_color FROM Cart WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Cart ADD (selected_color VARCHAR2(100))")
+                conn.commit()
+            except Exception:
+                pass
+
+        try:
+            cur.execute("SELECT selected_color FROM OrderItems WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE OrderItems ADD (selected_color VARCHAR2(100))")
+                conn.commit()
+            except Exception:
+                pass
+
 
         # 2. Ensure default SiteSettings exist and Karachi delivery text is synced
         try:
@@ -126,6 +239,10 @@ def _auto_migrate(conn):
             ('FEEDBACKREPLIES', 'MEDIA_PATH'),
             ('PRODUCTSUGGESTIONS', 'MEDIA_PATH'),
             ('ORDERS', 'PAYMENT_PROOF_PATH'),
+            ('CATEGORIES', 'IMAGE_PATH'),
+            ('BRANDS', 'LOGO_PATH'),
+            ('HEROBANNERS', 'IMAGE_PATH'),
+            ('PRODUCTCOLORS', 'IMAGE_PATH'),
         )
         for table, col in media_columns:
             try:
@@ -135,7 +252,7 @@ def _auto_migrate(conn):
                 )
                 row = cur.fetchone()
                 if row and row[0] != 'CLOB':
-                    temp_col = f"{col.lower()}_clob"
+                    temp_col = f"{col.lower()[:24]}_clob"
                     cur.execute(f"ALTER TABLE {table} ADD ({temp_col} CLOB)")
                     cur.execute(f"UPDATE {table} SET {temp_col} = {col}")
                     cur.execute(f"ALTER TABLE {table} DROP COLUMN {col}")
@@ -143,6 +260,7 @@ def _auto_migrate(conn):
                     conn.commit()
             except Exception:
                 pass
+
 
         # 4. Ensure address columns exist on Orders
         try:
@@ -515,13 +633,13 @@ BEGIN
             CASE WHEN v_coupon_id IS NOT NULL THEN UPPER(p_coupon_code) ELSE NULL END, v_coupon_disc);
 
     FOR item IN (
-        SELECT c.product_id, c.quantity, p.price
+        SELECT c.product_id, c.quantity, p.price, c.selected_color
         FROM Cart c
         JOIN Products p ON c.product_id = p.product_id
         WHERE c.user_id = p_user_id
     ) LOOP
-        INSERT INTO OrderItems (item_id, order_id, product_id, quantity, unit_price)
-        VALUES (orderitems_seq.NEXTVAL, v_order_id, item.product_id, item.quantity, item.price);
+        INSERT INTO OrderItems (item_id, order_id, product_id, quantity, unit_price, selected_color)
+        VALUES (orderitems_seq.NEXTVAL, v_order_id, item.product_id, item.quantity, item.price, item.selected_color);
 
         UPDATE Products SET stock = stock - item.quantity WHERE product_id = item.product_id;
     END LOOP;
@@ -578,11 +696,13 @@ def get_db():
     if 'db_conn' not in g:
         conn = _pool.acquire()
         conn.outputtypehandler = _output_type_handler
+        conn.inputtypehandler = _input_type_handler
         if not _migrated:
             _migrated = True
             _auto_migrate(conn)
         g.db_conn = conn
     return g.db_conn
+
 
 
 def close_db(_exc=None):

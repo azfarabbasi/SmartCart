@@ -23,6 +23,7 @@ customer_bp = Blueprint('customer', __name__)
 LOW_STOCK_THRESHOLD = 5
 
 
+from specs_parser import parse_technical_specs, parse_highlights_list, parse_box_contents_list
 from whatsapp_utils import format_whatsapp_phone, get_whatsapp_order_link
 
 
@@ -48,20 +49,23 @@ def notify_admin_stock_issue(cur, product_name, requested, available, customer_n
         body = f"""
         <html><body>
         <h2>Stock Alert</h2>
-        <p><strong>{customer_name}</strong> ({customer_email}) tried to order <strong>{requested}</strong> of
-        &quot;<strong>{product_name}</strong>&quot;, which {availability}. The order was not processed.</p>
-        <p>Consider restocking soon, or reach out to the customer directly.</p>
-        <br><p>&mdash; SmartCart</p>
+        <p>A customer encountered a stock limit while adding an item to their cart.</p>
+        <ul>
+            <li><strong>Product:</strong> {product_name}</li>
+            <li><strong>Requested Quantity:</strong> {requested}</li>
+            <li><strong>Available Stock:</strong> {available}</li>
+            <li><strong>Customer:</strong> {customer_name} ({customer_email})</li>
+        </ul>
+        <p>The product {availability}. Please review inventory and restock if necessary.</p>
         </body></html>
         """
         msg.attach(MIMEText(body, 'html'))
-        server = smtplib.SMTP(current_app.config['EMAIL_HOST'], current_app.config['EMAIL_PORT'])
-        server.starttls()
-        server.login(current_app.config['EMAIL_USER'], current_app.config['EMAIL_PASSWORD'])
-        server.sendmail(current_app.config['EMAIL_USER'], admin_email, msg.as_string())
-        server.quit()
+        with smtplib.SMTP(current_app.config['EMAIL_SERVER'], current_app.config['EMAIL_PORT']) as server:
+            server.starttls()
+            server.login(current_app.config['EMAIL_USER'], current_app.config['EMAIL_PASSWORD'])
+            server.send_message(msg)
     except Exception as e:
-        current_app.logger.warning(f'Stock alert email failed: {e}')
+        current_app.logger.error(f'Failed to send stock alert email: {e}')
 
 
 # ── PUBLIC CATALOG ──────────────────────────────────────────────
@@ -198,14 +202,27 @@ def search():
 @customer_bp.route('/product/<int:product_id>')
 def product_detail(product_id):
     cur = get_db().cursor()
-    cur.execute(
-        "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
-        "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery "
-        "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
-        "WHERE p.product_id = :pid",
-        {'pid': product_id},
-    )
-    product = cur.fetchone()
+    try:
+        cur.execute(
+            "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
+            "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery, "
+            "p.technical_specs, p.highlights, p.box_contents "
+            "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
+            "WHERE p.product_id = :pid",
+            {'pid': product_id},
+        )
+        product = cur.fetchone()
+    except Exception:
+        cur.execute(
+            "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
+            "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery, "
+            "NULL, NULL, NULL "
+            "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
+            "WHERE p.product_id = :pid",
+            {'pid': product_id},
+        )
+        product = cur.fetchone()
+
     if not product:
         flash('Product not found.', 'error')
         return redirect(url_for('customer.index'))
@@ -216,6 +233,27 @@ def product_detail(product_id):
         {'pid': product_id},
     )
     gallery = cur.fetchall()
+
+    # Query Color Variants
+    try:
+        cur.execute(
+            "SELECT color_id, color_name, color_code, image_path, stock FROM ProductColors "
+            "WHERE product_id = :pid ORDER BY sort_order, color_id",
+            {'pid': product_id},
+        )
+        color_rows = cur.fetchall()
+    except Exception:
+        color_rows = []
+
+    colors = []
+    for cr in color_rows:
+        colors.append({
+            'id': cr[0],
+            'name': cr[1],
+            'code': cr[2] or '#000000',
+            'image': cr[3],
+            'stock': cr[4] or 0,
+        })
 
     # Build unified media_list with cover image first, followed by gallery images/videos
     media_list = []
@@ -228,6 +266,15 @@ def product_detail(product_id):
         if m_path and str(m_path).strip() and str(m_path).strip() not in seen:
             media_list.append({'id': m_id, 'path': m_path, 'type': m_type or 'image'})
             seen.add(str(m_path).strip())
+
+    # Parse Specs, Highlights, and Box Contents
+    raw_specs = product[9] if len(product) > 9 else None
+    raw_highlights = product[10] if len(product) > 10 else None
+    raw_box = product[11] if len(product) > 11 else None
+
+    parsed_specs = parse_technical_specs(raw_specs)
+    parsed_highlights = parse_highlights_list(raw_highlights)
+    parsed_box = parse_box_contents_list(raw_box)
 
     cur.execute(
         """
@@ -256,7 +303,15 @@ def product_detail(product_id):
         get_db().commit()
 
     return render_template(
-        'customer/product_detail.html', product=product, media_list=media_list, gallery=gallery, feedback_list=feedback_list,
+        'customer/product_detail.html',
+        product=product,
+        media_list=media_list,
+        gallery=gallery,
+        feedback_list=feedback_list,
+        colors=colors,
+        specs=parsed_specs,
+        highlights=parsed_highlights,
+        box_contents=parsed_box,
     )
 
 
@@ -265,13 +320,23 @@ def product_detail(product_id):
 @login_required
 def view_cart():
     cur = get_db().cursor()
-    cur.execute(
-        "SELECT c.cart_id, p.product_id, p.name, p.price, c.quantity, p.image_path, p.stock "
-        "FROM Cart c JOIN Products p ON c.product_id = p.product_id "
-        "WHERE c.user_id = :1",
-        [current_user_id()],
-    )
-    items = cur.fetchall()
+    try:
+        cur.execute(
+            "SELECT c.cart_id, p.product_id, p.name, p.price, c.quantity, p.image_path, p.stock, c.selected_color "
+            "FROM Cart c JOIN Products p ON c.product_id = p.product_id "
+            "WHERE c.user_id = :1",
+            [current_user_id()],
+        )
+        items = cur.fetchall()
+    except Exception:
+        cur.execute(
+            "SELECT c.cart_id, p.product_id, p.name, p.price, c.quantity, p.image_path, p.stock, NULL "
+            "FROM Cart c JOIN Products p ON c.product_id = p.product_id "
+            "WHERE c.user_id = :1",
+            [current_user_id()],
+        )
+        items = cur.fetchall()
+
     total = sum(row[3] * row[4] for row in items)
     stock_alert = session.pop('stock_alert', None)
     whatsapp_cta = None
@@ -300,6 +365,7 @@ def _record_stock_conflict(cur, product_name, requested, available):
 def add_to_cart():
     product_id = int(request.form['product_id'])
     quantity = int(request.form.get('quantity', 1))
+    selected_color = request.form.get('selected_color', '').strip() or None
 
     cur = get_db().cursor()
     cur.execute("SELECT name, stock FROM Products WHERE product_id = :1", [product_id])
@@ -309,11 +375,33 @@ def add_to_cart():
         return redirect(url_for('customer.index'))
     product_name, stock = prod
 
-    cur.execute(
-        "SELECT cart_id, quantity FROM Cart WHERE user_id = :1 AND product_id = :2",
-        [current_user_id(), product_id],
-    )
-    existing = cur.fetchone()
+    if selected_color:
+        try:
+            cur.execute(
+                "SELECT cart_id, quantity FROM Cart WHERE user_id = :1 AND product_id = :2 AND selected_color = :3",
+                [current_user_id(), product_id, selected_color],
+            )
+            existing = cur.fetchone()
+        except Exception:
+            cur.execute(
+                "SELECT cart_id, quantity FROM Cart WHERE user_id = :1 AND product_id = :2",
+                [current_user_id(), product_id],
+            )
+            existing = cur.fetchone()
+    else:
+        try:
+            cur.execute(
+                "SELECT cart_id, quantity FROM Cart WHERE user_id = :1 AND product_id = :2 AND (selected_color IS NULL OR selected_color = '')",
+                [current_user_id(), product_id],
+            )
+            existing = cur.fetchone()
+        except Exception:
+            cur.execute(
+                "SELECT cart_id, quantity FROM Cart WHERE user_id = :1 AND product_id = :2",
+                [current_user_id(), product_id],
+            )
+            existing = cur.fetchone()
+
     current_qty = existing[1] if existing else 0
     desired_total = current_qty + quantity
 
@@ -322,11 +410,18 @@ def add_to_cart():
         if existing:
             cur.execute("UPDATE Cart SET quantity = :1 WHERE cart_id = :2", [capped, existing[0]])
         elif capped > 0:
-            cur.execute(
-                "INSERT INTO Cart (cart_id, user_id, product_id, quantity) "
-                "VALUES (cart_seq.NEXTVAL, :1, :2, :3)",
-                [current_user_id(), product_id, capped],
-            )
+            try:
+                cur.execute(
+                    "INSERT INTO Cart (cart_id, user_id, product_id, quantity, selected_color) "
+                    "VALUES (cart_seq.NEXTVAL, :1, :2, :3, :4)",
+                    [current_user_id(), product_id, capped, selected_color],
+                )
+            except Exception:
+                cur.execute(
+                    "INSERT INTO Cart (cart_id, user_id, product_id, quantity) "
+                    "VALUES (cart_seq.NEXTVAL, :1, :2, :3)",
+                    [current_user_id(), product_id, capped],
+                )
         _record_stock_conflict(cur, product_name, desired_total, stock)
         log_activity(cur, current_user_id(), 'add_to_cart', product_id=product_id)
         get_db().commit()
@@ -345,15 +440,23 @@ def add_to_cart():
             [quantity, existing[0]],
         )
     else:
-        cur.execute(
-            "INSERT INTO Cart (cart_id, user_id, product_id, quantity) "
-            "VALUES (cart_seq.NEXTVAL, :1, :2, :3)",
-            [current_user_id(), product_id, quantity],
-        )
+        try:
+            cur.execute(
+                "INSERT INTO Cart (cart_id, user_id, product_id, quantity, selected_color) "
+                "VALUES (cart_seq.NEXTVAL, :1, :2, :3, :4)",
+                [current_user_id(), product_id, quantity, selected_color],
+            )
+        except Exception:
+            cur.execute(
+                "INSERT INTO Cart (cart_id, user_id, product_id, quantity) "
+                "VALUES (cart_seq.NEXTVAL, :1, :2, :3)",
+                [current_user_id(), product_id, quantity],
+            )
     log_activity(cur, current_user_id(), 'add_to_cart', product_id=product_id)
     get_db().commit()
     flash('Item added to cart.', 'success')
     return redirect(url_for('customer.view_cart'))
+
 
 
 @customer_bp.route('/cart/update', methods=['POST'])
@@ -469,13 +572,22 @@ def remove_from_wishlist(wishlist_id):
 
 
 def _get_checkout_summary(cur, user_id, points_balance):
-    cur.execute(
-        "SELECT p.name, c.quantity, p.price, NVL(p.cost_price, 0) FROM Cart c JOIN Products p ON c.product_id = p.product_id "
-        "WHERE c.user_id = :1",
-        [user_id],
-    )
-    cart_rows = cur.fetchall()
-    cart_items = [(r[0], r[1], float(r[2])) for r in cart_rows]
+    try:
+        cur.execute(
+            "SELECT p.name, c.quantity, p.price, NVL(p.cost_price, 0), c.selected_color FROM Cart c JOIN Products p ON c.product_id = p.product_id "
+            "WHERE c.user_id = :1",
+            [user_id],
+        )
+        cart_rows = cur.fetchall()
+        cart_items = [(r[0], r[1], float(r[2]), r[4] if len(r) > 4 else None) for r in cart_rows]
+    except Exception:
+        cur.execute(
+            "SELECT p.name, c.quantity, p.price, NVL(p.cost_price, 0) FROM Cart c JOIN Products p ON c.product_id = p.product_id "
+            "WHERE c.user_id = :1",
+            [user_id],
+        )
+        cart_rows = cur.fetchall()
+        cart_items = [(r[0], r[1], float(r[2]), None) for r in cart_rows]
     subtotal = sum(row[1] * float(row[2]) for row in cart_rows)
     settings = sitesettings.get_settings(cur)
     floor_margin = sitesettings.get_setting_number(settings, 'min_profit_margin_floor', 300)
@@ -825,13 +937,22 @@ def order_detail(order_id):
         flash('Order not found.', 'error')
         return redirect(url_for('customer.order_history'))
 
-    cur.execute(
-        "SELECT p.name, oi.quantity, oi.unit_price "
-        "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id "
-        "WHERE oi.order_id = :1",
-        [order_id],
-    )
-    items = cur.fetchall()
+    try:
+        cur.execute(
+            "SELECT p.name, oi.quantity, oi.unit_price, oi.selected_color "
+            "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id "
+            "WHERE oi.order_id = :1",
+            [order_id],
+        )
+        items = cur.fetchall()
+    except Exception:
+        cur.execute(
+            "SELECT p.name, oi.quantity, oi.unit_price, NULL "
+            "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id "
+            "WHERE oi.order_id = :1",
+            [order_id],
+        )
+        items = cur.fetchall()
 
     cur.execute("SELECT amount, payment_date, method FROM Payments WHERE order_id = :1", [order_id])
     payment = cur.fetchone()

@@ -2,18 +2,20 @@
 {% block title %}{{ product[1] }} - SmartCart{% endblock %}
 {% block content %}
     <div class="container py-4">
+        <!-- Breadcrumb Navigation -->
         <nav aria-label="breadcrumb" class="mb-4">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('customer.category', slug=slugify(product[6])) }}">{{ product[6] }}</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ product[1] }}</li>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('customer.index') }}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('customer.category', slug=slugify(product[6])) }}" class="text-decoration-none">{{ product[6] }}</a></li>
+                <li class="breadcrumb-item active text-truncate" style="max-width: 350px;" aria-current="page">{{ product[1] }}</li>
             </ol>
         </nav>
 
         <div class="product-detail-container">
-            <div class="row">
-                <div class="col-lg-5 mb-4">
-                    <div class="product-gallery-card">
+            <div class="row g-4">
+                <!-- Left Column: Gallery Carousel -->
+                <div class="col-lg-5">
+                    <div class="product-gallery-card sticky-top" style="top: 80px; z-index: 10;">
                         {% if media_list and media_list|length > 0 %}
                             <div id="productGalleryCarousel" class="carousel slide product-gallery-slider" data-bs-ride="false" data-bs-interval="false">
                                 {% if media_list|length > 1 %}
@@ -22,14 +24,14 @@
                                     </div>
                                 {% endif %}
 
-                                <div class="carousel-inner">
+                                <div class="carousel-inner" id="galleryInner">
                                     {% for item in media_list %}
                                         <div class="carousel-item {% if loop.first %}active{% endif %}" data-slide-index="{{ loop.index0 }}">
                                             <div class="gallery-main-viewport">
                                                 {% if item.type == 'video' %}
                                                     <video src="{{ media_url(item.path) }}" class="gallery-media-item" controls playsinline></video>
                                                 {% else %}
-                                                    <img src="{{ media_url(item.path) }}" alt="{{ product[1] }} - View {{ loop.index }}" class="gallery-media-item" loading="{% if loop.first %}eager{% else %}lazy{% endif %}">
+                                                    <img src="{{ media_url(item.path) }}" alt="{{ product[1] }} - View {{ loop.index }}" class="gallery-media-item main-product-img" loading="{% if loop.first %}eager{% else %}lazy{% endif %}">
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -66,7 +68,7 @@
                             {% endif %}
                         {% elif product[5] %}
                             <div class="gallery-main-viewport single-image">
-                                <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" class="gallery-media-item">
+                                <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" class="gallery-media-item main-product-img" id="singleMainImg">
                             </div>
                         {% else %}
                             <div class="no-image-large">
@@ -77,76 +79,182 @@
                     </div>
                 </div>
 
-                <div class="col-lg-4 mb-4">
+                <!-- Middle Column: Product Details, Highlights & Specs -->
+                <div class="col-lg-4">
                     <div class="product-detail-info">
-                        <h1 class="product-detail-title">{{ product[1] }}</h1>
-
-                        <div class="product-detail-price">
-                            <span class="price-label">Price:</span>
-                            <span class="price-value">Rs {{ "{:,.2f}".format(product[2]) }}</span>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <a href="{{ url_for('customer.category', slug=slugify(product[6])) }}" class="badge bg-secondary text-decoration-none px-2 py-1">
+                                {{ product[6] }}
+                            </a>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <i class="bi bi-patch-check-fill me-1"></i>100% Authentic
+                            </span>
                         </div>
 
-                        <div class="product-detail-delivery">
-                            <i class="bi bi-truck"></i>
-                            <span>FREE delivery <strong>Tomorrow</strong></span>
+                        <h1 class="product-detail-title fs-3 fw-bold mb-2">{{ product[1] }}</h1>
+
+                        <!-- Price Row -->
+                        <div class="product-detail-price mb-3">
+                            <span class="price-currency fs-5 fw-semibold text-muted">Rs</span>
+                            <span class="price-value fs-2 fw-bold text-warning" id="unitPriceDisplay">{{ "{:,.2f}".format(product[2]) }}</span>
                         </div>
 
-                        <hr>
-
-                        <div class="product-detail-category mb-3">
-                            <span class="label">Category:</span>
-                            <a href="{{ url_for('customer.category', slug=slugify(product[6])) }}">{{ product[6] }}</a>
-                        </div>
-
-                        <div class="product-detail-description">
-                            <h6>About this item</h6>
-                            <p>{{ product[4] if product[4] else 'No description available.' }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-3">
-                    <div class="buy-box">
-                        <div class="buy-box-price">
-                            <span class="currency">Rs</span>
-                            <span class="amount">{{ "{:,.2f}".format(product[2]) }}</span>
-                        </div>
-
-                        {% if product[7] or product[8] %}
-                            <div class="buy-box-delivery">
-                                <p>
-                                    <i class="bi bi-truck"></i>
-                                    {% if product[8] %}<strong>FREE Delivery</strong>{% else %}Delivery charges apply{% endif %}
-                                    {% if product[7] %} &mdash; {{ product[7] }}{% endif %}
-                                </p>
+                        <!-- Highlights Pill Badges -->
+                        {% if highlights and highlights|length > 0 %}
+                            <div class="product-highlights-badges d-flex flex-wrap gap-2 mb-3">
+                                {% for hl in highlights %}
+                                    <div class="highlight-pill d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); font-size: 0.85rem; font-weight: 500;">
+                                        <i class="bi {{ hl.icon }}" style="color: {{ hl.color }};"></i>
+                                        <span>{{ hl.text }}</span>
+                                    </div>
+                                {% endfor %}
                             </div>
                         {% endif %}
 
-                        <div class="buy-box-stock {% if product[3] > 0 %}in-stock{% else %}out-of-stock{% endif %}">
+                        <!-- Color Variants Swatch Selector -->
+                        {% if colors and colors|length > 0 %}
+                            <div class="product-color-selector mb-4 p-3 rounded border" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-semibold small text-uppercase tracking-wider text-muted">Select Color:</span>
+                                    <span class="fw-bold text-light" id="activeColorName">{{ colors[0].name }}</span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2" id="colorSwatchesList">
+                                    {% for col in colors %}
+                                        <button type="button" 
+                                                class="color-swatch-btn d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill border {% if loop.first %}active{% endif %}"
+                                                data-color-name="{{ col.name }}"
+                                                data-color-code="{{ col.code }}"
+                                                data-color-image="{{ media_url(col.image) if col.image else '' }}"
+                                                data-color-stock="{{ col.stock }}"
+                                                style="background: rgba(0,0,0,0.3); border-color: {% if loop.first %}var(--bs-warning, #ffc107){% else %}rgba(255,255,255,0.15){% endif %} !important; cursor: pointer; transition: all 0.2s ease;">
+                                            <span class="swatch-circle rounded-circle shadow-sm" style="width: 18px; height: 18px; background-color: {{ col.code }}; border: 1px solid rgba(255,255,255,0.3); display: inline-block;"></span>
+                                            <span class="swatch-name small fw-semibold text-light">{{ col.name }}</span>
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Product Overview Description -->
+                        <div class="product-detail-description mb-4">
+                            <h6 class="fw-bold text-light mb-2"><i class="bi bi-info-circle me-1 text-warning"></i>About this item</h6>
+                            <p class="text-muted mb-0" style="line-height: 1.6; white-space: pre-line;">{{ product[4] if product[4] else 'No description available.' }}</p>
+                        </div>
+
+                        <!-- Technical Specifications Section -->
+                        {% if specs and specs|length > 0 %}
+                            <div class="product-specs-card mb-4 p-3 rounded border" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08) !important;">
+                                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(255,255,255,0.08) !important;">
+                                    <i class="bi bi-sliders text-warning fs-5"></i>
+                                    <h6 class="fw-bold text-light mb-0">Technical Specifications</h6>
+                                </div>
+
+                                {% for section in specs %}
+                                    {% if section.title and section.title != 'Technical Specifications' %}
+                                        <div class="spec-section-header fw-bold small text-uppercase tracking-wider text-warning mt-3 mb-2">
+                                            {{ section.title }}
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-borderless align-middle mb-0" style="color: inherit;">
+                                            <tbody>
+                                                {% for item in (section.rows or section['items']) %}
+                                                    <tr style="background: {% if loop.index is odd %}rgba(255,255,255,0.03){% else %}transparent{% endif %}; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                                        <td style="width: 42%; padding: 8px 10px;">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 24px; height: 24px; background: {{ item.color }}20; color: {{ item.color }}; flex-shrink: 0;">
+                                                                    <i class="bi {{ item.icon }} small"></i>
+                                                                </span>
+                                                                <span class="small fw-semibold text-light">{{ item.key }}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td style="padding: 8px 10px; font-size: 0.88rem; color: rgba(255,255,255,0.85); font-weight: 500;">
+                                                            {{ item.value }}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Package Contents / What's in the Box -->
+                        {% if box_contents and box_contents|length > 0 %}
+                            <div class="product-box-contents mb-4 p-3 rounded border" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08) !important;">
+                                <h6 class="fw-bold text-light mb-2"><i class="bi bi-box-seam text-warning me-2"></i>What's In The Box</h6>
+                                <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
+                                    {% for box_item in box_contents %}
+                                        <li class="small text-light d-flex align-items-center gap-2">
+                                            <i class="bi bi-check2 text-success fw-bold"></i>
+                                            <span>{{ box_item }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Right Column: Buy Box & Guarantees -->
+                <div class="col-lg-3">
+                    <div class="buy-box sticky-top" style="top: 80px; z-index: 10;">
+                        <div class="buy-box-price">
+                            <span class="currency">Rs</span>
+                            <span class="amount" id="buyBoxAmount">{{ "{:,.2f}".format(product[2]) }}</span>
+                        </div>
+
+                        <!-- Total live calculation for multiple quantities -->
+                        <div class="small text-muted mb-2 d-none" id="multiQtyTotalRow">
+                            Total: <strong class="text-warning ms-1" id="multiQtyTotalAmount">Rs 0.00</strong>
+                        </div>
+
+                        <!-- Delivery Timeline -->
+                        <div class="buy-box-delivery mb-2">
+                            <p class="mb-1">
+                                <i class="bi bi-truck text-warning me-1"></i>
+                                {% if product[8] %}
+                                    <strong class="text-success">FREE Delivery Across Karachi</strong>
+                                {% else %}
+                                    <span>Karachi Delivery: <strong>Rs 200 (4–5 Days)</strong></span>
+                                {% endif %}
+                            </p>
+                            {% if product[7] %}
+                                <small class="text-muted d-block">{{ product[7] }}</small>
+                            {% endif %}
+                        </div>
+
+                        <!-- Stock Status -->
+                        <div class="buy-box-stock {% if product[3] > 0 %}in-stock{% else %}out-of-stock{% endif %} mb-3">
                             {% if product[3] > 5 %}
-                                <i class="bi bi-check-circle-fill"></i> In Stock
+                                <i class="bi bi-check-circle-fill text-success me-1"></i> <span class="fw-semibold">In Stock (Ready to Ship)</span>
                             {% elif product[3] > 0 %}
-                                <i class="bi bi-exclamation-circle-fill"></i> Only {{ product[3] }} left in stock
+                                <i class="bi bi-exclamation-circle-fill text-warning me-1"></i> <span class="fw-semibold">Only {{ product[3] }} units left!</span>
                             {% else %}
-                                <i class="bi bi-x-circle-fill"></i> Currently Unavailable
+                                <i class="bi bi-x-circle-fill text-danger me-1"></i> <span class="fw-semibold">Currently Out of Stock</span>
                             {% endif %}
                         </div>
 
                         {% if current_user %}
                             {% if product[3] > 0 %}
-                                <form action="{{ url_for('customer.add_to_cart') }}" method="POST" class="buy-box-form">
+                                <form action="{{ url_for('customer.add_to_cart') }}" method="POST" class="buy-box-form" id="addToCartForm">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="product_id" value="{{ product[0] }}">
+                                    <input type="hidden" name="selected_color" id="selectedColorInput" value="{{ colors[0].name if colors and colors|length > 0 else '' }}">
+
                                     <div class="quantity-selector mb-3">
-                                        <label for="quantity">Qty:</label>
+                                        <label for="quantity" class="form-label small fw-semibold">Quantity:</label>
                                         <select name="quantity" id="quantity" class="form-select">
                                             {% for i in range(1, min(product[3], 10) + 1) %}
                                                 <option value="{{ i }}">{{ i }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <button type="submit" class="btn btn-warning w-100 mb-2">
-                                        <i class="bi bi-cart-plus me-2"></i>Add to Cart
+
+                                    <button type="submit" class="btn btn-warning w-100 py-2 mb-2 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                                        <i class="bi bi-cart-plus-fill fs-5"></i>Add to Cart
                                     </button>
                                 </form>
                             {% endif %}
@@ -154,42 +262,43 @@
                             <form action="{{ url_for('customer.add_to_wishlist') }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="product_id" value="{{ product[0] }}">
-                                <button type="submit" class="btn btn-outline-secondary w-100">
-                                    <i class="bi bi-heart me-2"></i>Add to Wishlist
+                                <button type="submit" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2">
+                                    <i class="bi bi-heart me-1"></i>Save to Wishlist
                                 </button>
                             </form>
                         {% else %}
-                            <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-warning w-100 mb-2">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Login to Buy
+                            <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-warning w-100 py-2 mb-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-box-arrow-in-right fs-5"></i>Login to Purchase
                             </a>
-                            <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-outline-secondary w-100">
-                                <i class="bi bi-heart me-2"></i>Login to Save to Wishlist
+                            <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-heart me-1"></i>Login to Wishlist
                             </a>
                         {% endif %}
 
-                        <div class="product-trust-box mt-3 p-3 rounded bg-light border">
+                        <!-- Trust Guarantees Box -->
+                        <div class="product-trust-box mt-3 p-3 rounded border" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08) !important;">
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <i class="bi bi-box-seam text-warning fs-5"></i>
-                                <span class="small fw-semibold"><a href="{{ url_for('customer.returns_policy') }}" class="text-dark text-decoration-none">Check on Delivery &amp; {{ site_settings.get('returns_days', '1') }}-Day Device Exchange</a></span>
+                                <span class="small fw-semibold"><a href="{{ url_for('customer.returns_policy') }}" class="text-decoration-none text-light">Check at Delivery &amp; {{ site_settings.get('returns_days', '1') }}-Day Exchange</a></span>
                             </div>
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <i class="bi bi-patch-check-fill text-success fs-5"></i>
-                                <span class="small fw-semibold text-dark">100% Genuine with Official Warranty</span>
+                                <span class="small fw-semibold text-light">100% Genuine with Official Warranty</span>
                             </div>
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <i class="bi bi-truck text-info fs-5"></i>
-                                <span class="small fw-semibold text-dark">{{ site_settings.get('delivery_scope_text', 'Delivery All Over Karachi') }}</span>
+                                <span class="small fw-semibold text-light">{{ site_settings.get('delivery_scope_text', 'Delivery All Over Karachi') }}</span>
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-cash-coin text-primary fs-5"></i>
-                                <span class="small fw-semibold text-dark">Cash on Delivery &amp; Bank Transfer</span>
+                                <i class="bi bi-cash-coin text-warning fs-5"></i>
+                                <span class="small fw-semibold text-light">Cash on Delivery &amp; Bank Transfer</span>
                             </div>
                         </div>
 
-                        <!-- 1-Click WhatsApp Inquiry -->
+                        <!-- 1-Click WhatsApp Instant Order Inquiry -->
                         <div class="mt-3">
-                            <a href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I'm%20interested%20in%20buying%20*{{ product[1]|urlencode }}*%20(Price:%20Rs%20{{ product[2] }}).%20Is%20it%20available%20for%20delivery%20in%20Karachi?" target="_blank" class="btn btn-outline-success w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-whatsapp fs-5"></i>Ask about this on WhatsApp
+                            <a id="whatsappInquiryBtn" href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I'm%20interested%20in%20ordering%20*{{ product[1]|urlencode }}*{% if colors and colors|length > 0 %}%20(Color:%20{{ colors[0].name|urlencode }}){% endif %}%20(Price:%20Rs%20{{ product[2] }}).%20Is%20it%20available%20for%20delivery%20in%20Karachi?" target="_blank" class="btn btn-outline-success w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-whatsapp fs-5"></i>Order / Ask on WhatsApp
                             </a>
                         </div>
                     </div>
@@ -197,6 +306,150 @@
             </div>
         </div>
 
+        <!-- Customer Feedback & Reviews Section -->
         {% include 'feedback/_feedback_section.html' %}
     </div>
+
+    <!-- Sticky Bottom Add-to-Cart Purchase Bar on Scroll -->
+    <div id="stickyPurchaseBar" class="sticky-purchase-bar position-fixed bottom-0 start-0 end-0 border-top shadow-lg py-2 px-3 d-none" style="background: rgba(18, 24, 38, 0.95); backdrop-filter: blur(10px); z-index: 1050; border-color: rgba(255,255,255,0.1) !important; transition: transform 0.3s ease-in-out;">
+        <div class="container">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3 overflow-hidden">
+                    <div class="sticky-bar-thumb rounded border overflow-hidden d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px; background: #1a1a1a;">
+                        {% if product[5] %}
+                            <img src="{{ media_url(product[5]) }}" id="stickyBarImg" alt="{{ product[1] }}" style="width: 100%; height: 100%; object-fit: contain;">
+                        {% else %}
+                            <i class="bi bi-image text-muted"></i>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex flex-column text-truncate">
+                        <span class="fw-bold text-light text-truncate" style="max-width: 320px;">{{ product[1] }}</span>
+                        <div class="d-flex align-items-center gap-2 small">
+                            <span class="text-warning fw-bold">Rs {{ "{:,.2f}".format(product[2]) }}</span>
+                            {% if colors and colors|length > 0 %}
+                                <span class="badge bg-dark border text-muted" id="stickyColorBadge">{{ colors[0].name }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <a id="stickyWhatsappBtn" href="https://wa.me/{{ whatsapp_number }}?text=Hi%20SmartCart!%20I'm%20interested%20in%20*{{ product[1]|urlencode }}*%20(Price:%20Rs%20{{ product[2] }})" target="_blank" class="btn btn-outline-success btn-sm d-none d-md-inline-flex align-items-center gap-1">
+                        <i class="bi bi-whatsapp"></i> WhatsApp
+                    </a>
+                    {% if current_user and product[3] > 0 %}
+                        <button type="button" class="btn btn-warning btn-sm px-3 fw-bold d-flex align-items-center gap-1" id="stickyAddToCartBtn">
+                            <i class="bi bi-cart-plus-fill"></i> Add to Cart
+                        </button>
+                    {% elif not current_user %}
+                        <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-warning btn-sm px-3 fw-bold">
+                            Login to Buy
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var rawUnitPrice = parseFloat("{{ product[2] }}") || 0;
+    var productName = {{ product[1]|tojson }};
+    var whatsappPhone = "{{ whatsapp_number }}";
+
+    // 1. Color Swatch Switching
+    var colorSwatches = document.querySelectorAll('.color-swatch-btn');
+    var activeColorName = document.getElementById('activeColorName');
+    var selectedColorInput = document.getElementById('selectedColorInput');
+    var stickyColorBadge = document.getElementById('stickyColorBadge');
+    var whatsappInquiryBtn = document.getElementById('whatsappInquiryBtn');
+    var stickyWhatsappBtn = document.getElementById('stickyWhatsappBtn');
+    var stickyBarImg = document.getElementById('stickyBarImg');
+    var singleMainImg = document.getElementById('singleMainImg');
+
+    function updateColorSelection(swatchBtn) {
+        if (!swatchBtn) return;
+        colorSwatches.forEach(function(b) {
+            b.classList.remove('active');
+            b.style.borderColor = 'rgba(255,255,255,0.15)';
+        });
+        swatchBtn.classList.add('active');
+        swatchBtn.style.borderColor = '#ffc107';
+
+        var colName = swatchBtn.getAttribute('data-color-name');
+        var colImg = swatchBtn.getAttribute('data-color-image');
+
+        if (activeColorName) activeColorName.textContent = colName;
+        if (selectedColorInput) selectedColorInput.value = colName;
+        if (stickyColorBadge) stickyColorBadge.textContent = colName;
+
+        // If color has a specific image, update gallery active slide or single image
+        if (colImg) {
+            var activeCarouselImg = document.querySelector('.carousel-item.active .main-product-img');
+            if (activeCarouselImg) {
+                activeCarouselImg.src = colImg;
+            }
+            if (singleMainImg) {
+                singleMainImg.src = colImg;
+            }
+            if (stickyBarImg) {
+                stickyBarImg.src = colImg;
+            }
+        }
+
+        // Update WhatsApp inquiry links with selected color
+        var waMsg = "Hi SmartCart! I'm interested in ordering *" + productName + "* (Color: " + colName + ") (Price: Rs " + rawUnitPrice.toFixed(2) + "). Is it available for delivery in Karachi?";
+        var waUrl = "https://wa.me/" + whatsappPhone + "?text=" + encodeURIComponent(waMsg);
+        if (whatsappInquiryBtn) whatsappInquiryBtn.href = waUrl;
+        if (stickyWhatsappBtn) stickyWhatsappBtn.href = waUrl;
+    }
+
+    colorSwatches.forEach(function(swatchBtn) {
+        swatchBtn.addEventListener('click', function() {
+            updateColorSelection(this);
+        });
+    });
+
+    // 2. Dynamic Multi-Quantity Price Calculator
+    var quantitySelect = document.getElementById('quantity');
+    var multiQtyTotalRow = document.getElementById('multiQtyTotalRow');
+    var multiQtyTotalAmount = document.getElementById('multiQtyTotalAmount');
+
+    if (quantitySelect && multiQtyTotalRow && multiQtyTotalAmount) {
+        quantitySelect.addEventListener('change', function() {
+            var qty = parseInt(this.value) || 1;
+            if (qty > 1) {
+                var total = qty * rawUnitPrice;
+                multiQtyTotalAmount.textContent = 'Rs ' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                multiQtyTotalRow.classList.remove('d-none');
+            } else {
+                multiQtyTotalRow.classList.add('d-none');
+            }
+        });
+    }
+
+    // 3. Sticky Bottom Purchase Bar Trigger on Scroll
+    var stickyBar = document.getElementById('stickyPurchaseBar');
+    var stickyAddToCartBtn = document.getElementById('stickyAddToCartBtn');
+    var addToCartForm = document.getElementById('addToCartForm');
+
+    if (stickyBar) {
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 400) {
+                stickyBar.classList.remove('d-none');
+            } else {
+                stickyBar.classList.add('d-none');
+            }
+        });
+    }
+
+    if (stickyAddToCartBtn && addToCartForm) {
+        stickyAddToCartBtn.addEventListener('click', function() {
+            addToCartForm.submit();
+        });
+    }
+});
+</script>
 {% endblock %}

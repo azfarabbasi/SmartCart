@@ -39,6 +39,13 @@
                                 </div>
                                 <div class="cart-item-details">
                                     <a href="{{ url_for('customer.product_detail', product_id=item[1]) }}" class="cart-item-title">{{ item[2] }}</a>
+                                    {% if item[7] %}
+                                        <div class="cart-item-color my-1">
+                                            <span class="badge bg-dark border text-light px-2 py-1 small">
+                                                <i class="bi bi-palette me-1 text-warning"></i>Color: <strong>{{ item[7] }}</strong>
+                                            </span>
+                                        </div>
+                                    {% endif %}
                                     {% if item[6] <= 0 %}
                                         <p class="cart-item-stock text-danger"><i class="bi bi-x-circle-fill"></i> Out of Stock</p>
                                     {% elif item[6] <= 5 %}

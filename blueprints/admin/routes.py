@@ -213,12 +213,15 @@ def _save_gallery_media(cur, product_id, files, existing_count, base64_media_lis
             if saved >= slots_left:
                 break
             kind = 'video' if b64.startswith('data:video/') else 'image'
-            cur.execute(
-                "INSERT INTO ProductMedia (media_id, product_id, media_path, media_type, sort_order, created_at) "
-                "VALUES (productmedia_seq.NEXTVAL, :pid, :mp, :mt, :so, SYSDATE)",
-                {'pid': product_id, 'mp': b64, 'mt': kind, 'so': existing_count + saved},
-            )
-            saved += 1
+            try:
+                cur.execute(
+                    "INSERT INTO ProductMedia (media_id, product_id, media_path, media_type, sort_order, created_at) "
+                    "VALUES (productmedia_seq.NEXTVAL, :pid, :mp, :mt, :so, SYSDATE)",
+                    {'pid': product_id, 'mp': b64, 'mt': kind, 'so': existing_count + saved},
+                )
+                saved += 1
+            except Exception as e:
+                current_app.logger.warning(f"Error saving base64 gallery media for product #{product_id}: {e}")
 
     if files:
         for f in files:
@@ -231,13 +234,65 @@ def _save_gallery_media(cur, product_id, files, existing_count, base64_media_lis
             if not ok:
                 flash(f'{f.filename}: {err}', 'error')
                 continue
-            cur.execute(
-                "INSERT INTO ProductMedia (media_id, product_id, media_path, media_type, sort_order, created_at) "
-                "VALUES (productmedia_seq.NEXTVAL, :pid, :mp, :mt, :so, SYSDATE)",
-                {'pid': product_id, 'mp': media_data, 'mt': kind, 'so': existing_count + saved},
-            )
-            saved += 1
+            try:
+                cur.execute(
+                    "INSERT INTO ProductMedia (media_id, product_id, media_path, media_type, sort_order, created_at) "
+                    "VALUES (productmedia_seq.NEXTVAL, :pid, :mp, :mt, :so, SYSDATE)",
+                    {'pid': product_id, 'mp': media_data, 'mt': kind, 'so': existing_count + saved},
+                )
+                saved += 1
+            except Exception as e:
+                current_app.logger.warning(f"Error saving file gallery media for product #{product_id}: {e}")
     return saved
+
+
+def _save_product_colors(cur, product_id, form, files):
+    color_names = form.getlist('color_name')
+    color_codes = form.getlist('color_code')
+    color_stocks = form.getlist('color_stock')
+    color_b64s = form.getlist('color_image_base64')
+    color_files = files.getlist('color_image')
+
+    for i, cname in enumerate(color_names):
+        cname = (cname or '').strip()
+        if not cname:
+            continue
+        ccode = color_codes[i].strip() if i < len(color_codes) and color_codes[i] else '#000000'
+        try:
+            cstock = int(color_stocks[i]) if i < len(color_stocks) and color_stocks[i] else 0
+        except ValueError:
+            cstock = 0
+
+        cimg = None
+        if i < len(color_b64s) and color_b64s[i] and color_b64s[i].startswith('data:image/'):
+            cimg = color_b64s[i]
+        elif i < len(color_files) and color_files[i] and color_files[i].filename:
+            ok, err, data_url, _kind = process_upload(color_files[i], allow_video=False)
+            if ok:
+                cimg = data_url
+
+        try:
+            cur.execute(
+                "INSERT INTO ProductColors (color_id, product_id, color_name, color_code, image_path, stock, sort_order, created_at) "
+                "VALUES (productcolors_seq.NEXTVAL, :pid, :cn, :cc, :img, :stk, :so, SYSDATE)",
+                {'pid': product_id, 'cn': cname, 'cc': ccode, 'img': cimg, 'stk': cstock, 'so': i},
+            )
+        except Exception as e:
+            current_app.logger.warning(f"Error inserting color variant {cname} for product #{product_id}: {e}")
+
+
+@admin_bp.route('/products/color/<int:color_id>/delete', methods=['POST'])
+@admin_required
+def delete_product_color(color_id):
+    cur = get_db().cursor()
+    cur.execute("SELECT product_id FROM ProductColors WHERE color_id = :c", {'c': color_id})
+    row = cur.fetchone()
+    product_id = row[0] if row else None
+    cur.execute("DELETE FROM ProductColors WHERE color_id = :c", {'c': color_id})
+    log_admin_action(cur, current_user_id(), 'product.color_delete', 'Product', product_id, f'color_id={color_id}')
+    get_db().commit()
+    flash('Color variant removed.', 'success')
+    return redirect(url_for('admin.edit_product', product_id=product_id) if product_id else url_for('admin.products'))
 
 
 @admin_bp.route('/products/add', methods=['GET', 'POST'])
@@ -251,15 +306,36 @@ def add_product():
         description = request.form.get('description', '').strip()
         delivery_time_text = request.form.get('delivery_time_text', '').strip()
         free_delivery = 1 if request.form.get('free_delivery') else 0
+        technical_specs = request.form.get('technical_specs', '').strip()
+        highlights = request.form.get('highlights', '').strip()
+        box_contents = request.form.get('box_contents', '').strip()
 
         ok, err = validate_required_text(name, 'Product name', min_len=2, max_len=150)
+        if not ok:
+            flash(err, 'error')
+            return redirect(url_for('admin.add_product'))
+
+        if not category_id:
+            flash('Please select a category.', 'error')
+            return redirect(url_for('admin.add_product'))
+        try:
+            category_id = int(category_id)
+        except (ValueError, TypeError):
+            flash('Invalid category selected.', 'error')
+            return redirect(url_for('admin.add_product'))
+
         price = stock = cost_price = None
-        if ok:
-            ok, err, price = validate_price(request.form.get('price'))
-        if ok:
-            ok, err, cost_price = validate_cost_price(request.form.get('cost_price'))
-        if ok:
-            ok, err, stock = validate_stock(request.form.get('stock'))
+        ok, err, price = validate_price(request.form.get('price'))
+        if not ok:
+            flash(err, 'error')
+            return redirect(url_for('admin.add_product'))
+
+        ok, err, cost_price = validate_cost_price(request.form.get('cost_price'))
+        if not ok:
+            flash(err, 'error')
+            return redirect(url_for('admin.add_product'))
+
+        ok, err, stock = validate_stock(request.form.get('stock'))
         if not ok:
             flash(err, 'error')
             return redirect(url_for('admin.add_product'))
@@ -277,23 +353,55 @@ def add_product():
                     return redirect(url_for('admin.add_product'))
                 image_path = data_url
 
-        cur.execute(
-            "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path, "
-            "delivery_time_text, free_delivery) "
-            "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :cp, :s, :d, :img, :dt, :fd)",
-            {'cid': category_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description, 'img': image_path,
-             'dt': delivery_time_text or None, 'fd': free_delivery},
-        )
-        cur.execute("SELECT products_seq.CURRVAL FROM dual")
-        new_product_id = cur.fetchone()[0]
+        try:
+            new_pid_var = cur.var(oracledb.NUMBER)
+            try:
+                cur.execute(
+                    "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path, "
+                    "delivery_time_text, free_delivery, technical_specs, highlights, box_contents) "
+                    "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :cp, :s, :d, :img, :dt, :fd, :ts, :hl, :bc) "
+                    "RETURNING product_id INTO :new_pid",
+                    {'cid': category_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
+                     'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery,
+                     'ts': technical_specs or None, 'hl': highlights or None, 'bc': box_contents or None,
+                     'new_pid': new_pid_var},
+                )
+                new_product_id = int(new_pid_var.getvalue()[0])
+            except Exception as insert_err:
+                current_app.logger.warning(f"Retrying insert with fallback: {insert_err}")
+                try:
+                    cur.execute(
+                        "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path, delivery_time_text, free_delivery) "
+                        "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :cp, :s, :d, :img, :dt, :fd) "
+                        "RETURNING product_id INTO :new_pid",
+                        {'cid': category_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
+                         'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery, 'new_pid': new_pid_var},
+                    )
+                    new_product_id = int(new_pid_var.getvalue()[0])
+                except Exception:
+                    cur.execute(
+                        "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path) "
+                        "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :cp, :s, :d, :img)",
+                        {'cid': category_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description, 'img': image_path},
+                    )
+                    cur.execute("SELECT products_seq.CURRVAL FROM dual")
+                    new_product_id = cur.fetchone()[0]
 
-        gallery_b64 = request.form.getlist('gallery_base64')
-        _save_gallery_media(cur, new_product_id, request.files.getlist('media'), 0, base64_media_list=gallery_b64)
+            gallery_b64 = request.form.getlist('gallery_base64')
+            _save_gallery_media(cur, new_product_id, request.files.getlist('media'), 0, base64_media_list=gallery_b64)
 
-        log_admin_action(cur, current_user_id(), 'product.create', 'Product', new_product_id, f'name={name}')
-        get_db().commit()
-        flash('Product added successfully.', 'success')
-        return redirect(url_for('admin.products'))
+            # Save Color Variants
+            _save_product_colors(cur, new_product_id, request.form, request.files)
+
+            log_admin_action(cur, current_user_id(), 'product.create', 'Product', new_product_id, f'name={name}')
+            get_db().commit()
+            flash(f'Product "{name}" added successfully.', 'success')
+            return redirect(url_for('admin.products'))
+        except Exception as e:
+            get_db().rollback()
+            current_app.logger.exception(f'Error adding product: {e}')
+            flash(f'Failed to add product: {str(e)}', 'error')
+            return redirect(url_for('admin.add_product'))
 
     cur.execute("SELECT category_id, category_name FROM Categories ORDER BY category_name")
     categories = cur.fetchall()
@@ -311,80 +419,144 @@ def edit_product(product_id):
         description = request.form.get('description', '').strip()
         delivery_time_text = request.form.get('delivery_time_text', '').strip()
         free_delivery = 1 if request.form.get('free_delivery') else 0
-
-        current_app.logger.info(
-            f'[edit_product #{product_id}] POST received: name={name!r} cat={category_id!r} '
-            f'has_image_file={bool(request.files.get("image") and request.files["image"].filename)} '
-            f'image_base64_len={len(request.form.get("image_base64", ""))} '
-            f'remove_image={request.form.get("remove_image")!r}'
-        )
+        technical_specs = request.form.get('technical_specs', '').strip()
+        highlights = request.form.get('highlights', '').strip()
+        box_contents = request.form.get('box_contents', '').strip()
 
         ok, err = validate_required_text(name, 'Product name', min_len=2, max_len=150)
-        price = stock = cost_price = None
-        if ok:
-            ok, err, price = validate_price(request.form.get('price'))
-        if ok:
-            ok, err, cost_price = validate_cost_price(request.form.get('cost_price'))
-        if ok:
-            ok, err, stock = validate_stock(request.form.get('stock'))
         if not ok:
-            current_app.logger.warning(f'[edit_product #{product_id}] Validation failed: {err}')
+            flash(err, 'error')
+            return redirect(url_for('admin.edit_product', product_id=product_id))
+
+        if not category_id:
+            flash('Please select a category.', 'error')
+            return redirect(url_for('admin.edit_product', product_id=product_id))
+        try:
+            category_id = int(category_id)
+        except (ValueError, TypeError):
+            flash('Invalid category selected.', 'error')
+            return redirect(url_for('admin.edit_product', product_id=product_id))
+
+        price = stock = cost_price = None
+        ok, err, price = validate_price(request.form.get('price'))
+        if not ok:
+            flash(err, 'error')
+            return redirect(url_for('admin.edit_product', product_id=product_id))
+
+        ok, err, cost_price = validate_cost_price(request.form.get('cost_price'))
+        if not ok:
+            flash(err, 'error')
+            return redirect(url_for('admin.edit_product', product_id=product_id))
+
+        ok, err, stock = validate_stock(request.form.get('stock'))
+        if not ok:
             flash(err, 'error')
             return redirect(url_for('admin.edit_product', product_id=product_id))
 
         cur.execute("SELECT image_path FROM Products WHERE product_id = :pid", {'pid': product_id})
         row = cur.fetchone()
         image_path = row[0] if row else None
-        current_app.logger.info(f'[edit_product #{product_id}] Existing image_path type={type(image_path).__name__} len={len(image_path) if image_path else 0}')
 
         if request.form.get('remove_image') == '1':
             image_path = None
-            current_app.logger.info(f'[edit_product #{product_id}] Image removed by user.')
 
         image_base64 = request.form.get('image_base64', '').strip()
         if image_base64.startswith('data:image/'):
             image_path = image_base64
-            current_app.logger.info(f'[edit_product #{product_id}] Using client-side Base64 image (len={len(image_base64)})')
         else:
             file = request.files.get('image')
             if file and file.filename:
-                current_app.logger.info(f'[edit_product #{product_id}] Processing server-side file: {file.filename}')
                 img_ok, img_err, data_url, _kind = process_upload(file, allow_video=False)
                 if not img_ok:
-                    current_app.logger.warning(f'[edit_product #{product_id}] Upload failed: {img_err}')
                     flash(img_err, 'error')
                     return redirect(url_for('admin.edit_product', product_id=product_id))
                 image_path = data_url
-                current_app.logger.info(f'[edit_product #{product_id}] Server-side Base64 ready (len={len(data_url)})')
-            else:
-                current_app.logger.info(f'[edit_product #{product_id}] No new image provided, keeping existing.')
 
-        current_app.logger.info(f'[edit_product #{product_id}] Final image_path: {(image_path[:40] + "...") if image_path else "NULL"}')
+        try:
+            try:
+                cur.execute(
+                    "UPDATE Products SET name=:n, category_id=:cid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img, "
+                    "delivery_time_text=:dt, free_delivery=:fd, technical_specs=:ts, highlights=:hl, box_contents=:bc WHERE product_id=:pid",
+                    {'n': name, 'cid': category_id, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
+                     'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery,
+                     'ts': technical_specs or None, 'hl': highlights or None, 'bc': box_contents or None,
+                     'pid': product_id},
+                )
+            except Exception as update_err:
+                current_app.logger.warning(f"Retrying update with fallback: {update_err}")
+                cur.execute(
+                    "UPDATE Products SET name=:n, category_id=:cid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img "
+                    "WHERE product_id=:pid",
+                    {'n': name, 'cid': category_id, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
+                     'img': image_path, 'pid': product_id},
+                )
 
+            cur.execute("SELECT COUNT(*) FROM ProductMedia WHERE product_id = :pid", {'pid': product_id})
+            existing_count = cur.fetchone()[0]
+            gallery_b64 = request.form.getlist('gallery_base64')
+            _save_gallery_media(cur, product_id, request.files.getlist('media'), existing_count, base64_media_list=gallery_b64)
+
+            # Update existing color variants
+            existing_ids = request.form.getlist('existing_color_id')
+            existing_names = request.form.getlist('existing_color_name')
+            existing_codes = request.form.getlist('existing_color_code')
+            existing_stocks = request.form.getlist('existing_color_stock')
+            existing_b64s = request.form.getlist('existing_color_image_base64')
+
+            for i, cid in enumerate(existing_ids):
+                try:
+                    cid_int = int(cid)
+                    cname = existing_names[i].strip() if i < len(existing_names) else ''
+                    if not cname:
+                        continue
+                    ccode = existing_codes[i].strip() if i < len(existing_codes) and existing_codes[i] else '#000000'
+                    try:
+                        cstock = int(existing_stocks[i]) if i < len(existing_stocks) and existing_stocks[i] else 0
+                    except ValueError:
+                        cstock = 0
+                    
+                    cimg = existing_b64s[i] if i < len(existing_b64s) and existing_b64s[i] and existing_b64s[i].startswith('data:image/') else None
+                    if cimg:
+                        cur.execute(
+                            "UPDATE ProductColors SET color_name = :cn, color_code = :cc, image_path = :img, stock = :stk, sort_order = :so WHERE color_id = :cid AND product_id = :pid",
+                            {'cn': cname, 'cc': ccode, 'img': cimg, 'stk': cstock, 'so': i, 'cid': cid_int, 'pid': product_id}
+                        )
+                    else:
+                        cur.execute(
+                            "UPDATE ProductColors SET color_name = :cn, color_code = :cc, stock = :stk, sort_order = :so WHERE color_id = :cid AND product_id = :pid",
+                            {'cn': cname, 'cc': ccode, 'stk': cstock, 'so': i, 'cid': cid_int, 'pid': product_id}
+                        )
+                except Exception as e:
+                    current_app.logger.warning(f"Error updating existing color #{cid}: {e}")
+
+            # Save newly added color variants
+            _save_product_colors(cur, product_id, request.form, request.files)
+
+            log_admin_action(cur, current_user_id(), 'product.update', 'Product', product_id, f'name={name}')
+            get_db().commit()
+            flash('Product updated successfully.', 'success')
+            return redirect(url_for('admin.products'))
+        except Exception as e:
+            get_db().rollback()
+            current_app.logger.exception(f'Error updating product #{product_id}: {e}')
+            flash(f'Failed to update product: {str(e)}', 'error')
+            return redirect(url_for('admin.edit_product', product_id=product_id))
+
+    try:
         cur.execute(
-            "UPDATE Products SET name=:n, category_id=:cid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img, "
-            "delivery_time_text=:dt, free_delivery=:fd WHERE product_id=:pid",
-            {'n': name, 'cid': category_id, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
-             'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery, 'pid': product_id},
+            "SELECT product_id, category_id, name, price, NVL(cost_price, 0), stock, description, image_path, "
+            "       delivery_time_text, free_delivery, technical_specs, highlights, box_contents FROM Products WHERE product_id = :pid",
+            {'pid': product_id},
         )
+        product = cur.fetchone()
+    except Exception:
+        cur.execute(
+            "SELECT product_id, category_id, name, price, NVL(cost_price, 0), stock, description, image_path, "
+            "       delivery_time_text, free_delivery, NULL, NULL, NULL FROM Products WHERE product_id = :pid",
+            {'pid': product_id},
+        )
+        product = cur.fetchone()
 
-        cur.execute("SELECT COUNT(*) FROM ProductMedia WHERE product_id = :pid", {'pid': product_id})
-        existing_count = cur.fetchone()[0]
-        gallery_b64 = request.form.getlist('gallery_base64')
-        _save_gallery_media(cur, product_id, request.files.getlist('media'), existing_count, base64_media_list=gallery_b64)
-
-        log_admin_action(cur, current_user_id(), 'product.update', 'Product', product_id, f'name={name}')
-        get_db().commit()
-        current_app.logger.info(f'[edit_product #{product_id}] Committed successfully.')
-        flash('Product updated.', 'success')
-        return redirect(url_for('admin.products'))
-
-    cur.execute(
-        "SELECT product_id, category_id, name, price, NVL(cost_price, 0), stock, description, image_path, "
-        "       delivery_time_text, free_delivery FROM Products WHERE product_id = :pid",
-        {'pid': product_id},
-    )
-    product = cur.fetchone()
     if not product:
         flash('Product not found.', 'error')
         return redirect(url_for('admin.products'))
@@ -396,10 +568,22 @@ def edit_product(product_id):
         {'pid': product_id},
     )
     gallery = cur.fetchall()
+
+    try:
+        cur.execute(
+            "SELECT color_id, color_name, color_code, image_path, stock, sort_order FROM ProductColors "
+            "WHERE product_id = :pid ORDER BY sort_order, color_id",
+            {'pid': product_id},
+        )
+        colors = cur.fetchall()
+    except Exception:
+        colors = []
+
     return render_template(
         'admin/edit_product.html', product=product, categories=categories, gallery=gallery,
-        max_media=MAX_PRODUCT_MEDIA,
+        colors=colors, max_media=MAX_PRODUCT_MEDIA,
     )
+
 
 
 @admin_bp.route('/products/media/<int:media_id>/delete', methods=['POST'])
@@ -435,20 +619,18 @@ def delete_product(product_id):
 
 
 def _handle_image_input(req, file_field_name='image_file', url_field_name='image_url', max_dim=800):
-    """Returns Base64 string or URL, or (None, err) if error occurred."""
+    """Returns (Base64 string or URL, error_message or None)."""
     file = req.files.get(file_field_name)
     if file and file.filename:
-        ok, err = validate_upload(file, 'image')
+        ok, err, data_url, _kind = process_upload(file, allow_video=False, max_dimension=max_dim)
         if not ok:
             return None, err
-        raw_bytes = file.read()
-        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
-        b64 = convert_image_to_base64(raw_bytes, ext=ext, max_dimension=max_dim)
-        return b64, None
+        return data_url, None
     url = req.form.get(url_field_name, '').strip()
     if url:
         return url, None
     return None, None
+
 
 
 # ── CATEGORIES ───────────────────────────────────────────────────
@@ -972,14 +1154,14 @@ def order_detail(order_id):
 
         try:
             cur.execute(
-                "SELECT p.name, oi.quantity, oi.unit_price, NVL(p.cost_price, 0) "
+                "SELECT p.name, oi.quantity, oi.unit_price, NVL(p.cost_price, 0), oi.selected_color "
                 "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
                 [order_id],
             )
             raw_items = cur.fetchall()
         except Exception:
             cur.execute(
-                "SELECT p.name, oi.quantity, oi.unit_price, 0 "
+                "SELECT p.name, oi.quantity, oi.unit_price, 0, NULL "
                 "FROM OrderItems oi JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = :1",
                 [order_id],
             )
@@ -988,13 +1170,13 @@ def order_detail(order_id):
         items = []
         total_order_cost = 0.0
         items_subtotal = 0.0
-        for name, qty, unit_price, cost_price in raw_items:
+        for name, qty, unit_price, cost_price, sel_color in raw_items:
             item_total = qty * float(unit_price or 0.0)
             item_cost = qty * float(cost_price or 0.0)
             item_profit = item_total - item_cost
             items_subtotal += item_total
             total_order_cost += item_cost
-            items.append((name, qty, unit_price, cost_price, item_total, item_cost, item_profit))
+            items.append((name, qty, unit_price, cost_price, item_total, item_cost, item_profit, sel_color))
 
         realized_revenue = float(order[4] or 0.0)
         coupon_discount = float(order[13] or 0.0)
