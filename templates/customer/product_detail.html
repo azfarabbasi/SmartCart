@@ -287,22 +287,22 @@
                         {% endif %}
 
                         <!-- Trust Guarantees Box -->
-                        <div class="product-trust-box mt-3 p-3 rounded border" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08) !important;">
+                        <div class="product-trust-box mt-3 p-3 rounded-3 border bg-light shadow-sm">
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <i class="bi bi-box-seam text-warning fs-5"></i>
-                                <span class="small fw-semibold"><a href="{{ url_for('customer.returns_policy') }}" class="text-decoration-none text-light">Check at Delivery &amp; {{ site_settings.get('returns_days', '1') }}-Day Exchange</a></span>
+                                <span class="small fw-semibold"><a href="{{ url_for('customer.returns_policy') }}" class="text-decoration-none fw-bold" style="color: #0f172a;">Check at Delivery &amp; {{ site_settings.get('returns_days', '1') }}-Day Exchange</a></span>
                             </div>
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <i class="bi bi-patch-check-fill text-success fs-5"></i>
-                                <span class="small fw-semibold text-light">100% Genuine with Official Warranty</span>
+                                <span class="small fw-bold" style="color: #0f172a;">100% Genuine with Official Warranty</span>
                             </div>
                             <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="bi bi-truck text-info fs-5"></i>
-                                <span class="small fw-semibold text-light">{{ site_settings.get('delivery_scope_text', 'Delivery All Over Karachi') }}</span>
+                                <i class="bi bi-truck text-primary fs-5"></i>
+                                <span class="small fw-bold" style="color: #0f172a;">{{ site_settings.get('delivery_scope_text', 'Delivery All Over Karachi') }}</span>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-cash-coin text-warning fs-5"></i>
-                                <span class="small fw-semibold text-light">Cash on Delivery &amp; Bank Transfer</span>
+                                <span class="small fw-bold" style="color: #0f172a;">Cash on Delivery &amp; Bank Transfer</span>
                             </div>
                         </div>
 
