@@ -31,7 +31,7 @@
                                 <i class="bi bi-cart4 text-warning"></i>
                                 <span>Smart<span class="text-warning">Cart</span></span>
                             </div>
-                            <p class="text-muted small mb-3">{{ site_settings.get('footer_note') or 'Your trusted destination for 100% authentic tech, earbuds, audio & accessories delivered across Karachi.' }}</p>
+                            <p class="small mb-3" style="color: rgba(255,255,255,0.85); line-height: 1.6;">{{ site_settings.get('footer_note') or 'Your trusted destination for 100% authentic tech, earbuds, audio & accessories delivered across Karachi.' }}</p>
                             <span class="badge bg-dark border border-secondary text-warning small py-1 px-2"><i class="bi bi-shield-check me-1"></i> 100% Genuine with Warranty</span>
                         </div>
                     </div>
@@ -63,8 +63,8 @@
                             <li><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp text-success"></i> WhatsApp: {{ contact_phone }}</a></li>
                             <li><a href="tel:{{ contact_phone }}"><i class="bi bi-telephone text-warning"></i> {{ contact_phone }}</a></li>
                             <li><a href="mailto:{{ contact_email }}"><i class="bi bi-envelope text-warning"></i> {{ contact_email }}</a></li>
-                            <li class="text-muted small mt-2"><i class="bi bi-clock me-1 text-warning"></i> {{ site_settings.get('store_hours', 'Mon–Sat: 11AM – 11PM') }}</li>
-                            <li class="text-muted small"><i class="bi bi-geo-alt me-1 text-warning"></i> {{ site_settings.get('store_address', 'Karachi, Pakistan') }}</li>
+                            <li class="small mt-2" style="color: rgba(255,255,255,0.85);"><i class="bi bi-clock me-1 text-warning"></i> {{ site_settings.get('store_hours', 'Mon–Sat: 11AM – 11PM') }}</li>
+                            <li class="small" style="color: rgba(255,255,255,0.85);"><i class="bi bi-geo-alt me-1 text-warning"></i> {{ site_settings.get('store_address', 'Karachi, Pakistan') }}</li>
                         </ul>
                     </div>
                 </div>

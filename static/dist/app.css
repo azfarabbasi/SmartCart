@@ -2768,13 +2768,15 @@ a:hover {
 .footer-middle {
     background: var(--primary);
     padding: 40px 0;
-    color: var(--gray-300);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .footer-middle h5 {
     color: var(--white);
-    font-size: 1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
     margin-bottom: 16px;
+    letter-spacing: 0.2px;
 }
 
 .footer-middle ul {
@@ -2785,23 +2787,40 @@ a:hover {
 
 .footer-middle ul li {
     margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .footer-middle ul li a {
-    color: var(--gray-300);
+    color: rgba(255, 255, 255, 0.82);
     font-size: 0.875rem;
+    transition: color 0.2s ease;
 }
 
 .footer-middle ul li a:hover {
-    color: var(--white);
+    color: var(--accent);
     text-decoration: underline;
+}
+
+.main-footer .text-muted,
+.footer-brand p,
+.footer-middle p,
+.footer-middle li.text-muted,
+.footer-bottom p,
+.footer-note {
+    color: rgba(255, 255, 255, 0.78) !important;
+    line-height: 1.6;
 }
 
 .footer-bottom {
     background: var(--primary-dark);
     padding: 24px;
     text-align: center;
-    color: var(--gray-400);
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.footer-bottom p {
+    color: rgba(255, 255, 255, 0.72) !important;
+    margin-bottom: 4px;
 }
 
 .footer-logo {
