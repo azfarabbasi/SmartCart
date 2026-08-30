@@ -77,9 +77,68 @@
                             </div>
                         {% endif %}
                     </div>
+
+                    <!-- Technical Specifications Section (Under Left Gallery) -->
+                    {% if specs and specs|length > 0 %}
+                        <div class="product-specs-card mt-4 p-3 rounded-3 border bg-white shadow-sm">
+                            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                                <i class="bi bi-sliders text-warning fs-5"></i>
+                                <h6 class="fw-bold text-dark mb-0 fs-6">Technical Specifications</h6>
+                                <span class="badge bg-secondary-subtle text-dark border ms-auto small">Official Specs</span>
+                            </div>
+
+                            {% for section in specs %}
+                                {% if section.title and section.title != 'Technical Specifications' %}
+                                    <div class="spec-section-header fw-bold small text-uppercase tracking-wider text-primary mt-3 mb-2 d-flex align-items-center gap-1">
+                                        <i class="bi bi-chevron-right text-warning small"></i> {{ section.title }}
+                                    </div>
+                                {% endif %}
+
+                                <div class="table-responsive rounded-2 border overflow-hidden mb-3">
+                                    <table class="table table-sm table-striped align-middle mb-0">
+                                        <tbody>
+                                            {% for item in (section.rows or section['items']) %}
+                                                <tr style="border-bottom: 1px solid #eef2f6;">
+                                                    <td style="width: 36%; padding: 10px 14px; background: #f8fafc; border-right: 1px solid #eef2f6;">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 26px; height: 26px; background: {{ item.color }}18; color: {{ item.color }}; flex-shrink: 0; border: 1px solid {{ item.color }}35;">
+                                                                <i class="bi {{ item.icon }} small"></i>
+                                                            </span>
+                                                            <span class="small fw-bold" style="color: #334155;">{{ item.key }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding: 10px 16px; font-size: 0.92rem; color: #0f172a; font-weight: 600; background: #ffffff;">
+                                                        {{ item.value }}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Package Contents / What's in the Box -->
+                    {% if box_contents and box_contents|length > 0 %}
+                        <div class="product-box-contents mt-3 p-3 rounded-3 border bg-white shadow-sm">
+                            <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
+                                <i class="bi bi-box-seam text-warning fs-5"></i>
+                                <h6 class="fw-bold text-dark mb-0 fs-6">What's In The Box</h6>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 pt-1">
+                                {% for box_item in box_contents %}
+                                    <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-2 border bg-light shadow-sm" style="font-size: 0.88rem; font-weight: 600; color: #1e293b;">
+                                        <i class="bi bi-check2-circle text-success fs-6"></i>
+                                        <span>{{ box_item }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
 
-                <!-- Middle Column: Product Details, Highlights & Specs -->
+                <!-- Middle Column: Product Details, Highlights & Description -->
                 <div class="col-lg-4">
                     <div class="product-detail-info">
                         <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
@@ -147,65 +206,6 @@
                             <h6 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle-fill me-2 text-warning"></i>About this item</h6>
                             <div class="text-secondary mb-0" style="line-height: 1.7; font-size: 0.93rem; color: #334155 !important; white-space: pre-line;">{{ product[4] if product[4] else 'No description available.' }}</div>
                         </div>
-
-                        <!-- Technical Specifications Section -->
-                        {% if specs and specs|length > 0 %}
-                            <div class="product-specs-card mb-4 p-3 rounded-3 border bg-white shadow-sm">
-                                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
-                                    <i class="bi bi-sliders text-warning fs-5"></i>
-                                    <h6 class="fw-bold text-dark mb-0 fs-6">Technical Specifications</h6>
-                                    <span class="badge bg-secondary-subtle text-dark border ms-auto small">Official Specs</span>
-                                </div>
-
-                                {% for section in specs %}
-                                    {% if section.title and section.title != 'Technical Specifications' %}
-                                        <div class="spec-section-header fw-bold small text-uppercase tracking-wider text-primary mt-3 mb-2 d-flex align-items-center gap-1">
-                                            <i class="bi bi-chevron-right text-warning small"></i> {{ section.title }}
-                                        </div>
-                                    {% endif %}
-
-                                    <div class="table-responsive rounded-2 border overflow-hidden mb-2">
-                                        <table class="table table-sm table-striped align-middle mb-0">
-                                            <tbody>
-                                                {% for item in (section.rows or section['items']) %}
-                                                    <tr style="border-bottom: 1px solid #eef2f6;">
-                                                        <td style="width: 42%; padding: 10px 12px; background: #f8fafc; border-right: 1px solid #eef2f6;">
-                                                            <div class="d-flex align-items-center gap-2">
-                                                                <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 26px; height: 26px; background: {{ item.color }}18; color: {{ item.color }}; flex-shrink: 0; border: 1px solid {{ item.color }}35;">
-                                                                    <i class="bi {{ item.icon }} small"></i>
-                                                                </span>
-                                                                <span class="small fw-bold" style="color: #334155;">{{ item.key }}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td style="padding: 10px 14px; font-size: 0.9rem; color: #0f172a; font-weight: 600; background: #ffffff;">
-                                                            {{ item.value }}
-                                                        </td>
-                                                    </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-
-                        <!-- Package Contents / What's in the Box -->
-                        {% if box_contents and box_contents|length > 0 %}
-                            <div class="product-box-contents mb-4 p-3 rounded-3 border bg-white shadow-sm">
-                                <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
-                                    <i class="bi bi-box-seam text-warning fs-5"></i>
-                                    <h6 class="fw-bold text-dark mb-0 fs-6">What's In The Box</h6>
-                                </div>
-                                <div class="d-flex flex-wrap gap-2 pt-1">
-                                    {% for box_item in box_contents %}
-                                        <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-2 border bg-light shadow-sm" style="font-size: 0.88rem; font-weight: 600; color: #1e293b;">
-                                            <i class="bi bi-check2-circle text-success fs-6"></i>
-                                            <span>{{ box_item }}</span>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
 
