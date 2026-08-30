@@ -2,55 +2,79 @@
 {% block title %}Categories Management - Admin | SmartCart{% endblock %}
 {% block page_title %}Categories Management{% endblock %}
 {% block content %}
+    <!-- ═══ INFORMATIONAL GUIDE BANNER ═══ -->
+    <div class="card mb-4 border-0 shadow-sm rounded-3" style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border-left: 4px solid #3b82f6 !important;">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex align-items-start gap-3">
+                <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="bi bi-tags-fill fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-1">What is Categories Management?</h6>
+                    <p class="text-secondary small mb-2" style="line-height: 1.5;">
+                        Categories organize your products into discoverable collections (e.g. <strong>Audio &amp; Earbuds</strong>, <strong>Power Banks</strong>, <strong>Gaming &amp; Consoles</strong>).
+                    </p>
+                    <div class="d-flex flex-wrap gap-3 small text-muted">
+                        <span><i class="bi bi-phone text-primary me-1"></i><strong>Mobile Category Strip:</strong> Circular sliding category avatars on the customer homepage.</span>
+                        <span><i class="bi bi-filter text-success me-1"></i><strong>Navbar &amp; Search:</strong> Dropdown filters for quick product browsing.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <!-- ═══ ADD CATEGORY CARD ═══ -->
         <div class="col-lg-4">
-            <div class="admin-card">
-                <div class="card-header bg-transparent pb-0 border-0">
-                    <h5 class="mb-0 text-white"><i class="bi bi-plus-circle-fill text-warning me-2"></i>Add New Category</h5>
+            <div class="admin-card bg-white shadow-sm border rounded-3 p-3 p-md-4">
+                <div class="card-header bg-transparent p-0 pb-3 mb-3 border-bottom">
+                    <h5 class="mb-1 fw-bold text-dark"><i class="bi bi-plus-circle-fill text-warning me-2"></i>Add New Category</h5>
+                    <small class="text-muted">Create a new category to group related products together.</small>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <form method="POST" action="{{ url_for('admin.add_category') }}" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         
                         <div class="mb-3">
-                            <label for="category_name" class="form-label text-light">Category Name <span class="text-danger">*</span></label>
+                            <label for="category_name" class="form-label fw-bold text-dark mb-1">Category Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="category_name" name="category_name" required minlength="2" placeholder="e.g. Electronics, Gaming, Audio">
+                            <div class="form-text text-muted small">Display name shown in menus and category strips.</div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="icon_name" class="form-label text-light">Category Icon</label>
+                            <label for="icon_name" class="form-label fw-bold text-dark mb-1">Category Icon</label>
                             <select class="form-select" id="icon_name" name="icon_name">
                                 <option value="bi-tag" selected>🏷️ Default Tag (bi-tag)</option>
-                                <option value="bi-laptop">💻 Electronics & Laptops (bi-laptop)</option>
-                                <option value="bi-controller">🎮 Gaming & Consoles (bi-controller)</option>
-                                <option value="bi-tv">📺 Home Appliances & TVs (bi-tv)</option>
-                                <option value="bi-headphones">🎧 Audio & Earbuds (bi-headphones)</option>
+                                <option value="bi-laptop">💻 Electronics &amp; Laptops (bi-laptop)</option>
+                                <option value="bi-controller">🎮 Gaming &amp; Consoles (bi-controller)</option>
+                                <option value="bi-tv">📺 Home Appliances &amp; TVs (bi-tv)</option>
+                                <option value="bi-headphones">🎧 Audio &amp; Earbuds (bi-headphones)</option>
                                 <option value="bi-phone">📱 Mobile Phones (bi-phone)</option>
                                 <option value="bi-smartwatch">⌚ Smartwatches (bi-smartwatch)</option>
-                                <option value="bi-bag-heart">👗 Fashion & Apparel (bi-bag-heart)</option>
-                                <option value="bi-fire">🔥 Deals & Hot Items (bi-fire)</option>
-                                <option value="bi-stars">✨ Featured & New (bi-stars)</option>
-                                <option value="bi-camera">📷 Cameras & Optics (bi-camera)</option>
+                                <option value="bi-bag-heart">👗 Fashion &amp; Apparel (bi-bag-heart)</option>
+                                <option value="bi-fire">🔥 Deals &amp; Hot Items (bi-fire)</option>
+                                <option value="bi-stars">✨ Featured &amp; New (bi-stars)</option>
+                                <option value="bi-camera">📷 Cameras &amp; Optics (bi-camera)</option>
                                 <option value="bi-cpu">⚡ Tech Accessories (bi-cpu)</option>
                             </select>
+                            <div class="form-text text-muted small">Used as a fallback icon when no category image is uploaded.</div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label text-light">Category Image / Avatar <small class="text-muted">(Optional)</small></label>
+                            <label class="form-label fw-bold text-dark mb-1">Category Image / Avatar <small class="text-muted fw-normal">(Optional)</small></label>
                             <input type="file" class="form-control mb-2" name="image_file" accept="image/*">
-                            <div class="text-center text-muted small my-1">OR image URL:</div>
-                            <input type="url" class="form-control" name="image_url" placeholder="https://example.com/category.jpg">
-                            <div class="form-text text-muted">Used for the visual circular sliding category strip on the mobile storefront.</div>
+                            <input type="url" class="form-control" name="image_url" placeholder="Or enter image URL">
+                            <div class="form-text text-muted small">Visual circular image shown on the mobile category slider.</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="sort_order" class="form-label text-light">Display Order</label>
+                        <div class="mb-4">
+                            <label for="sort_order" class="form-label fw-bold text-dark mb-1">Display Order</label>
                             <input type="number" class="form-control" id="sort_order" name="sort_order" value="0" min="0">
+                            <div class="form-text text-muted small">Lower numbers (0, 1) appear first in menus.</div>
                         </div>
 
-                        <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold">
-                            <i class="bi bi-plus-lg me-2"></i>Create Category
+                        <button type="submit" class="btn btn-warning w-100 py-2 fw-bold text-dark shadow-sm">
+                            <i class="bi bi-plus-lg me-1"></i>Create Category
                         </button>
                     </form>
                 </div>
@@ -59,20 +83,23 @@
 
         <!-- ═══ ALL CATEGORIES LIST ═══ -->
         <div class="col-lg-8">
-            <div class="admin-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-white"><i class="bi bi-tags text-warning me-2"></i>Existing Categories</h5>
-                    <span class="badge bg-warning text-dark">{{ categories|length }} categories</span>
+            <div class="admin-card bg-white shadow-sm border rounded-3 p-3 p-md-4">
+                <div class="card-header bg-transparent p-0 pb-3 mb-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1 fw-bold text-dark"><i class="bi bi-tags-fill text-warning me-2"></i>Existing Categories</h5>
+                        <small class="text-muted">Manage active store categories and view product counts.</small>
+                    </div>
+                    <span class="badge bg-warning text-dark px-3 py-2 fw-bold rounded-pill">{{ categories|length }} categories</span>
                 </div>
                 <div class="table-responsive">
-                    <table class="table admin-table align-middle">
-                        <thead>
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <th>Order</th>
-                                <th>Image / Icon</th>
-                                <th>Category Name</th>
-                                <th>Products</th>
-                                <th class="text-end">Actions</th>
+                                <th style="width: 10%;">Order</th>
+                                <th style="width: 15%;">Image / Icon</th>
+                                <th style="width: 45%;">Category Name</th>
+                                <th style="width: 15%;">Products</th>
+                                <th style="width: 15%;" class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -84,28 +111,28 @@
                                             {% if cat[4] %}
                                                 <img src="{{ cat[4] }}" alt="{{ cat[1] }}" class="rounded-circle border border-warning" style="width: 38px; height: 38px; object-fit: cover;">
                                             {% else %}
-                                                <div class="rounded-circle bg-dark border border-secondary text-warning d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                                <div class="rounded-circle bg-light border text-warning d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
                                                     <i class="bi {{ cat[3]|default('bi-tag') }} fs-6"></i>
                                                 </div>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <strong class="text-white">{{ cat[1] }}</strong>
+                                            <strong class="text-dark d-block fs-6">{{ cat[1] }}</strong>
                                             <div class="small text-muted">ID: {{ cat[0] }} &bull; Icon: <code>{{ cat[3]|default('bi-tag') }}</code></div>
                                         </td>
                                         <td>
                                             {% if cat[2] > 0 %}
-                                                <span class="badge bg-info text-dark">{{ cat[2] }} product{{ 's' if cat[2] != 1 else '' }}</span>
+                                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1">{{ cat[2] }} item{{ 's' if cat[2] != 1 else '' }}</span>
                                             {% else %}
-                                                <span class="badge bg-secondary">0 products</span>
+                                                <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">0 items</span>
                                             {% endif %}
                                         </td>
                                         <td class="text-end">
-                                            <button type="button" class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editCategoryModal{{ cat[0] }}">
-                                                <i class="bi bi-pencil-square"></i> Edit
+                                            <button type="button" class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editCategoryModal{{ cat[0] }}" title="Edit Category">
+                                                <i class="bi bi-pencil-square"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCategoryModal{{ cat[0] }}">
-                                                <i class="bi bi-trash"></i> Delete
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCategoryModal{{ cat[0] }}" title="Delete Category">
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -113,8 +140,9 @@
                             {% else %}
                                 <tr>
                                     <td colspan="5" class="text-center text-muted py-5">
-                                        <i class="bi bi-tags fs-1 d-block mb-2"></i>
-                                        No categories found. Add your first category.
+                                        <i class="bi bi-tags fs-1 d-block mb-2 text-secondary"></i>
+                                        <strong>No categories found.</strong>
+                                        <p class="small text-muted mb-0">Use the form on the left to add your first store category.</p>
                                     </td>
                                 </tr>
                             {% endif %}
@@ -130,48 +158,48 @@
         {% for cat in categories %}
             <div class="modal fade" id="editCategoryModal{{ cat[0] }}" tabindex="-1" aria-labelledby="editCatLabel{{ cat[0] }}" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content bg-dark text-light border-secondary">
-                        <div class="modal-header border-secondary">
-                            <h5 class="modal-title" id="editCatLabel{{ cat[0] }}">
+                    <div class="modal-content bg-white text-dark border-0 shadow-lg rounded-3">
+                        <div class="modal-header border-bottom">
+                            <h5 class="modal-title fw-bold text-dark" id="editCatLabel{{ cat[0] }}">
                                 <i class="bi bi-pencil-square text-warning me-2"></i>Edit Category: {{ cat[1] }}
                             </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <form method="POST" action="{{ url_for('admin.edit_category', category_id=cat[0]) }}" enctype="multipart/form-data">
-                            <div class="modal-body">
+                            <div class="modal-body p-4">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 
                                 <div class="mb-3">
-                                    <label class="form-label text-light">Category Name <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold text-dark mb-1">Category Name <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" name="category_name" value="{{ cat[1] }}" required minlength="2">
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label text-light">Category Icon</label>
+                                    <label class="form-label fw-bold text-dark mb-1">Category Icon</label>
                                     <select class="form-select" name="icon_name">
                                         <option value="bi-tag" {% if cat[3] == 'bi-tag' %}selected{% endif %}>🏷️ Default Tag (bi-tag)</option>
-                                        <option value="bi-laptop" {% if cat[3] == 'bi-laptop' %}selected{% endif %}>💻 Electronics & Laptops (bi-laptop)</option>
-                                        <option value="bi-controller" {% if cat[3] == 'bi-controller' %}selected{% endif %}>🎮 Gaming & Consoles (bi-controller)</option>
-                                        <option value="bi-tv" {% if cat[3] == 'bi-tv' %}selected{% endif %}>📺 Home Appliances & TVs (bi-tv)</option>
-                                        <option value="bi-headphones" {% if cat[3] == 'bi-headphones' %}selected{% endif %}>🎧 Audio & Earbuds (bi-headphones)</option>
+                                        <option value="bi-laptop" {% if cat[3] == 'bi-laptop' %}selected{% endif %}>💻 Electronics &amp; Laptops (bi-laptop)</option>
+                                        <option value="bi-controller" {% if cat[3] == 'bi-controller' %}selected{% endif %}>🎮 Gaming &amp; Consoles (bi-controller)</option>
+                                        <option value="bi-tv" {% if cat[3] == 'bi-tv' %}selected{% endif %}>📺 Home Appliances &amp; TVs (bi-tv)</option>
+                                        <option value="bi-headphones" {% if cat[3] == 'bi-headphones' %}selected{% endif %}>🎧 Audio &amp; Earbuds (bi-headphones)</option>
                                         <option value="bi-phone" {% if cat[3] == 'bi-phone' %}selected{% endif %}>📱 Mobile Phones (bi-phone)</option>
                                         <option value="bi-smartwatch" {% if cat[3] == 'bi-smartwatch' %}selected{% endif %}>⌚ Smartwatches (bi-smartwatch)</option>
-                                        <option value="bi-bag-heart" {% if cat[3] == 'bi-bag-heart' %}selected{% endif %}>👗 Fashion & Apparel (bi-bag-heart)</option>
-                                        <option value="bi-fire" {% if cat[3] == 'bi-fire' %}selected{% endif %}>🔥 Deals & Hot Items (bi-fire)</option>
-                                        <option value="bi-stars" {% if cat[3] == 'bi-stars' %}selected{% endif %}>✨ Featured & New (bi-stars)</option>
-                                        <option value="bi-camera" {% if cat[3] == 'bi-camera' %}selected{% endif %}>📷 Cameras & Optics (bi-camera)</option>
+                                        <option value="bi-bag-heart" {% if cat[3] == 'bi-bag-heart' %}selected{% endif %}>👗 Fashion &amp; Apparel (bi-bag-heart)</option>
+                                        <option value="bi-fire" {% if cat[3] == 'bi-fire' %}selected{% endif %}>🔥 Deals &amp; Hot Items (bi-fire)</option>
+                                        <option value="bi-stars" {% if cat[3] == 'bi-stars' %}selected{% endif %}>✨ Featured &amp; New (bi-stars)</option>
+                                        <option value="bi-camera" {% if cat[3] == 'bi-camera' %}selected{% endif %}>📷 Cameras &amp; Optics (bi-camera)</option>
                                         <option value="bi-cpu" {% if cat[3] == 'bi-cpu' %}selected{% endif %}>⚡ Tech Accessories (bi-cpu)</option>
                                     </select>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label text-light">Update Image / Avatar</label>
+                                    <label class="form-label fw-bold text-dark mb-1">Update Image / Avatar</label>
                                     {% if cat[4] %}
-                                        <div class="mb-2 d-flex align-items-center gap-3 p-2 bg-black rounded border border-secondary">
+                                        <div class="mb-2 d-flex align-items-center gap-3 p-2 bg-light rounded border">
                                             <img src="{{ cat[4] }}" alt="{{ cat[1] }}" class="rounded-circle" style="width: 44px; height: 44px; object-fit: cover;">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="remove_image" value="1" id="removeImg{{ cat[0] }}">
-                                                <label class="form-check-label text-danger small" for="removeImg{{ cat[0] }}">Remove current image</label>
+                                                <label class="form-check-label text-danger small fw-bold" for="removeImg{{ cat[0] }}">Remove current image</label>
                                             </div>
                                         </div>
                                     {% endif %}
@@ -180,13 +208,13 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label text-light">Display Order</label>
+                                    <label class="form-label fw-bold text-dark mb-1">Display Order</label>
                                     <input type="number" class="form-control" name="sort_order" value="{{ cat[5]|default(0) }}" min="0">
                                 </div>
                             </div>
-                            <div class="modal-footer border-secondary">
+                            <div class="modal-footer border-top">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="submit" class="btn btn-warning">Save Changes</button>
+                                <button type="submit" class="btn btn-warning fw-bold text-dark">Save Changes</button>
                             </div>
                         </form>
                     </div>
@@ -196,15 +224,15 @@
             <!-- Delete Category Modal -->
             <div class="modal fade" id="deleteCategoryModal{{ cat[0] }}" tabindex="-1" aria-labelledby="delModalLabel{{ cat[0] }}" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content bg-dark text-light border-secondary">
-                        <div class="modal-header border-secondary">
-                            <h5 class="modal-title" id="delModalLabel{{ cat[0] }}">
+                    <div class="modal-content bg-white text-dark border-0 shadow-lg rounded-3">
+                        <div class="modal-header border-bottom">
+                            <h5 class="modal-title fw-bold text-dark" id="delModalLabel{{ cat[0] }}">
                                 <i class="bi bi-exclamation-triangle text-warning me-2"></i>Delete Category: {{ cat[1] }}
                             </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         
-                        <div class="modal-body text-start">
+                        <div class="modal-body p-4 text-start">
                             {% if cat[2] == 0 %}
                                 <p>Are you sure you want to delete the category <strong>{{ cat[1] }}</strong>?</p>
                                 <p class="text-muted small mb-0">This category has no products assigned and can be safely deleted.</p>
@@ -226,9 +254,9 @@
                                 </div>
 
                                 <div class="accordion" id="accordionDelete{{ cat[0] }}">
-                                    <div class="accordion-item bg-black border-secondary">
+                                    <div class="accordion-item border rounded mb-2">
                                         <h2 class="accordion-header" id="headingMove{{ cat[0] }}">
-                                            <button class="accordion-button collapsed bg-dark text-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMove{{ cat[0] }}">
+                                            <button class="accordion-button collapsed fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMove{{ cat[0] }}">
                                                 <i class="bi bi-arrow-right-circle text-info me-2"></i>Option 1: Move products to "Uncategorized" &amp; Delete
                                             </button>
                                         </h2>
@@ -238,15 +266,15 @@
                                                 <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                     <input type="hidden" name="action" value="move">
-                                                    <button type="submit" class="btn btn-info btn-sm w-100">Move &amp; Delete Category</button>
+                                                    <button type="submit" class="btn btn-info btn-sm w-100 fw-bold">Move &amp; Delete Category</button>
                                                 </form>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="accordion-item bg-black border-secondary mt-2">
+                                    <div class="accordion-item border rounded">
                                         <h2 class="accordion-header" id="headingCascade{{ cat[0] }}">
-                                            <button class="accordion-button collapsed bg-dark text-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCascade{{ cat[0] }}">
+                                            <button class="accordion-button collapsed fw-bold text-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCascade{{ cat[0] }}">
                                                 <i class="bi bi-trash3 text-danger me-2"></i>Option 2: Delete Category AND All {{ cat[2] }} Products
                                             </button>
                                         </h2>
@@ -256,7 +284,7 @@
                                                 <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat[0]) }}">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                     <input type="hidden" name="action" value="cascade">
-                                                    <button type="submit" class="btn btn-danger btn-sm w-100">Permanently Delete All</button>
+                                                    <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold">Permanently Delete All</button>
                                                 </form>
                                             </div>
                                         </div>
