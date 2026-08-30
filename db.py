@@ -112,6 +112,19 @@ def _auto_migrate(conn):
             except Exception:
                 pass
 
+        try:
+            cur.execute("SELECT brand_id FROM Products WHERE ROWNUM = 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE Products ADD (brand_id NUMBER REFERENCES Brands(brand_id))")
+                conn.commit()
+            except Exception:
+                try:
+                    cur.execute("ALTER TABLE Products ADD (brand_id NUMBER)")
+                    conn.commit()
+                except Exception:
+                    pass
+
         # Ensure ProductColors table and sequence exist
         try:
             cur.execute("SELECT 1 FROM ProductColors WHERE ROWNUM = 1")

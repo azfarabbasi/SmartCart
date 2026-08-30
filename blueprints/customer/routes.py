@@ -71,8 +71,10 @@ def notify_admin_stock_issue(cur, product_name, requested, available, customer_n
 # ── PUBLIC CATALOG ──────────────────────────────────────────────
 PRODUCT_SELECT = (
     "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
-    "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery "
+    "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery, "
+    "b.brand_name, b.brand_id "
     "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
+    "LEFT JOIN Brands b ON p.brand_id = b.brand_id "
 )
 
 
@@ -180,7 +182,7 @@ def search():
 
     clauses, binds = [], {}
     if term:
-        clauses.append("LOWER(p.name) LIKE :term")
+        clauses.append("(LOWER(p.name) LIKE :term OR LOWER(b.brand_name) LIKE :term)")
         binds['term'] = f'%{term.lower()}%'
     if slug:
         category_ids, _ = _category_ids_for_slug(cur, slug)
@@ -206,8 +208,10 @@ def product_detail(product_id):
         cur.execute(
             "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
             "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery, "
-            "p.technical_specs, p.highlights, p.box_contents "
+            "p.technical_specs, p.highlights, p.box_contents, "
+            "b.brand_name, b.badge_text, b.badge_color, b.logo_path, b.brand_id "
             "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
+            "LEFT JOIN Brands b ON p.brand_id = b.brand_id "
             "WHERE p.product_id = :pid",
             {'pid': product_id},
         )
@@ -216,7 +220,7 @@ def product_detail(product_id):
         cur.execute(
             "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
             "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery, "
-            "NULL, NULL, NULL "
+            "NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL "
             "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
             "WHERE p.product_id = :pid",
             {'pid': product_id},
@@ -276,6 +280,16 @@ def product_detail(product_id):
     parsed_highlights = parse_highlights_list(raw_highlights)
     parsed_box = parse_box_contents_list(raw_box)
 
+    brand_info = None
+    if len(product) > 12 and product[12]:
+        brand_info = {
+            'name': product[12],
+            'badge_text': product[13],
+            'badge_color': product[14] or 'brand-bg-dark',
+            'logo': product[15],
+            'id': product[16],
+        }
+
     cur.execute(
         """
         SELECT f.feedback_id, u.name, f.rating, f.comment_text, f.media_path, f.media_type, f.created_at
@@ -312,6 +326,7 @@ def product_detail(product_id):
         specs=parsed_specs,
         highlights=parsed_highlights,
         box_contents=parsed_box,
+        brand=brand_info,
     )
 
 

@@ -172,15 +172,16 @@ def products():
     cur = get_db().cursor()
     try:
         cur.execute(
-            "SELECT p.product_id, p.name, c.category_name, p.price, NVL(p.cost_price, 0), p.stock, p.image_path "
+            "SELECT p.product_id, p.name, c.category_name, p.price, NVL(p.cost_price, 0), p.stock, p.image_path, b.brand_name "
             "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
+            "LEFT JOIN Brands b ON p.brand_id = b.brand_id "
             "ORDER BY p.product_id"
         )
         rows = cur.fetchall()
     except Exception as e:
         current_app.logger.warning(f"Fallback products query: {e}")
         cur.execute(
-            "SELECT p.product_id, p.name, c.category_name, p.price, 0, p.stock, p.image_path "
+            "SELECT p.product_id, p.name, c.category_name, p.price, 0, p.stock, p.image_path, NULL "
             "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
             "ORDER BY p.product_id"
         )
@@ -189,7 +190,7 @@ def products():
     upload_dir = current_app.config['UPLOAD_FOLDER']
     product_rows = []
     for r in rows:
-        pid, name, cat_name, price, cost_price, stock, img_path = r
+        pid, name, cat_name, price, cost_price, stock, img_path, brand_name = r
         if not img_path:
             image_missing = False
         elif isinstance(img_path, str) and (img_path.startswith('data:') or img_path.startswith('http://') or img_path.startswith('https://')):
@@ -198,7 +199,7 @@ def products():
             image_missing = not os.path.exists(os.path.join(upload_dir, os.path.basename(str(img_path))))
         unit_profit = float(price) - float(cost_price)
         margin_pct = (unit_profit / float(price) * 100) if float(price) > 0 else 0.0
-        product_rows.append((pid, name, cat_name, price, cost_price, stock, img_path, image_missing, unit_profit, margin_pct))
+        product_rows.append((pid, name, cat_name, price, cost_price, stock, img_path, image_missing, unit_profit, margin_pct, brand_name))
     return render_template('admin/products.html', products=product_rows)
 
 
@@ -303,6 +304,7 @@ def add_product():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         category_id = request.form.get('category_id')
+        brand_id = request.form.get('brand_id')
         description = request.form.get('description', '').strip()
         delivery_time_text = request.form.get('delivery_time_text', '').strip()
         free_delivery = 1 if request.form.get('free_delivery') else 0
@@ -323,6 +325,11 @@ def add_product():
         except (ValueError, TypeError):
             flash('Invalid category selected.', 'error')
             return redirect(url_for('admin.add_product'))
+
+        try:
+            brand_id = int(brand_id) if brand_id and str(brand_id).strip() else None
+        except (ValueError, TypeError):
+            brand_id = None
 
         price = stock = cost_price = None
         ok, err, price = validate_price(request.form.get('price'))
@@ -357,11 +364,11 @@ def add_product():
             new_pid_var = cur.var(oracledb.NUMBER)
             try:
                 cur.execute(
-                    "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path, "
+                    "INSERT INTO Products (product_id, category_id, brand_id, name, price, cost_price, stock, description, image_path, "
                     "delivery_time_text, free_delivery, technical_specs, highlights, box_contents) "
-                    "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :cp, :s, :d, :img, :dt, :fd, :ts, :hl, :bc) "
+                    "VALUES (products_seq.NEXTVAL, :cid, :bid, :n, :p, :cp, :s, :d, :img, :dt, :fd, :ts, :hl, :bc) "
                     "RETURNING product_id INTO :new_pid",
-                    {'cid': category_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
+                    {'cid': category_id, 'bid': brand_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
                      'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery,
                      'ts': technical_specs or None, 'hl': highlights or None, 'bc': box_contents or None,
                      'new_pid': new_pid_var},
@@ -371,10 +378,10 @@ def add_product():
                 current_app.logger.warning(f"Retrying insert with fallback: {insert_err}")
                 try:
                     cur.execute(
-                        "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path, delivery_time_text, free_delivery) "
-                        "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :cp, :s, :d, :img, :dt, :fd) "
+                        "INSERT INTO Products (product_id, category_id, brand_id, name, price, cost_price, stock, description, image_path, delivery_time_text, free_delivery) "
+                        "VALUES (products_seq.NEXTVAL, :cid, :bid, :n, :p, :cp, :s, :d, :img, :dt, :fd) "
                         "RETURNING product_id INTO :new_pid",
-                        {'cid': category_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
+                        {'cid': category_id, 'bid': brand_id, 'n': name, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
                          'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery, 'new_pid': new_pid_var},
                     )
                     new_product_id = int(new_pid_var.getvalue()[0])
@@ -405,7 +412,12 @@ def add_product():
 
     cur.execute("SELECT category_id, category_name FROM Categories ORDER BY category_name")
     categories = cur.fetchall()
-    return render_template('admin/add_product.html', categories=categories, max_media=MAX_PRODUCT_MEDIA)
+    try:
+        cur.execute("SELECT brand_id, brand_name FROM Brands WHERE is_active = 1 ORDER BY brand_name")
+        brands = cur.fetchall()
+    except Exception:
+        brands = []
+    return render_template('admin/add_product.html', categories=categories, brands=brands, max_media=MAX_PRODUCT_MEDIA)
 
 
 @admin_bp.route('/products/edit/<int:product_id>', methods=['GET', 'POST'])
@@ -416,6 +428,7 @@ def edit_product(product_id):
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         category_id = request.form.get('category_id')
+        brand_id = request.form.get('brand_id')
         description = request.form.get('description', '').strip()
         delivery_time_text = request.form.get('delivery_time_text', '').strip()
         free_delivery = 1 if request.form.get('free_delivery') else 0
@@ -436,6 +449,11 @@ def edit_product(product_id):
         except (ValueError, TypeError):
             flash('Invalid category selected.', 'error')
             return redirect(url_for('admin.edit_product', product_id=product_id))
+
+        try:
+            brand_id = int(brand_id) if brand_id and str(brand_id).strip() else None
+        except (ValueError, TypeError):
+            brand_id = None
 
         price = stock = cost_price = None
         ok, err, price = validate_price(request.form.get('price'))
@@ -475,9 +493,9 @@ def edit_product(product_id):
         try:
             try:
                 cur.execute(
-                    "UPDATE Products SET name=:n, category_id=:cid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img, "
+                    "UPDATE Products SET name=:n, category_id=:cid, brand_id=:bid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img, "
                     "delivery_time_text=:dt, free_delivery=:fd, technical_specs=:ts, highlights=:hl, box_contents=:bc WHERE product_id=:pid",
-                    {'n': name, 'cid': category_id, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
+                    {'n': name, 'cid': category_id, 'bid': brand_id, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
                      'img': image_path, 'dt': delivery_time_text or None, 'fd': free_delivery,
                      'ts': technical_specs or None, 'hl': highlights or None, 'bc': box_contents or None,
                      'pid': product_id},
@@ -485,9 +503,9 @@ def edit_product(product_id):
             except Exception as update_err:
                 current_app.logger.warning(f"Retrying update with fallback: {update_err}")
                 cur.execute(
-                    "UPDATE Products SET name=:n, category_id=:cid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img "
+                    "UPDATE Products SET name=:n, category_id=:cid, brand_id=:bid, price=:p, cost_price=:cp, stock=:s, description=:d, image_path=:img "
                     "WHERE product_id=:pid",
-                    {'n': name, 'cid': category_id, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
+                    {'n': name, 'cid': category_id, 'bid': brand_id, 'p': price, 'cp': cost_price, 's': stock, 'd': description,
                      'img': image_path, 'pid': product_id},
                 )
 
@@ -545,14 +563,14 @@ def edit_product(product_id):
     try:
         cur.execute(
             "SELECT product_id, category_id, name, price, NVL(cost_price, 0), stock, description, image_path, "
-            "       delivery_time_text, free_delivery, technical_specs, highlights, box_contents FROM Products WHERE product_id = :pid",
+            "       delivery_time_text, free_delivery, technical_specs, highlights, box_contents, brand_id FROM Products WHERE product_id = :pid",
             {'pid': product_id},
         )
         product = cur.fetchone()
     except Exception:
         cur.execute(
             "SELECT product_id, category_id, name, price, NVL(cost_price, 0), stock, description, image_path, "
-            "       delivery_time_text, free_delivery, NULL, NULL, NULL FROM Products WHERE product_id = :pid",
+            "       delivery_time_text, free_delivery, NULL, NULL, NULL, NULL FROM Products WHERE product_id = :pid",
             {'pid': product_id},
         )
         product = cur.fetchone()
@@ -563,6 +581,11 @@ def edit_product(product_id):
 
     cur.execute("SELECT category_id, category_name FROM Categories ORDER BY category_name")
     categories = cur.fetchall()
+    try:
+        cur.execute("SELECT brand_id, brand_name FROM Brands WHERE is_active = 1 ORDER BY brand_name")
+        brands = cur.fetchall()
+    except Exception:
+        brands = []
     cur.execute(
         "SELECT media_id, media_path, media_type FROM ProductMedia WHERE product_id = :pid ORDER BY sort_order",
         {'pid': product_id},
@@ -580,7 +603,7 @@ def edit_product(product_id):
         colors = []
 
     return render_template(
-        'admin/edit_product.html', product=product, categories=categories, gallery=gallery,
+        'admin/edit_product.html', product=product, categories=categories, brands=brands, gallery=gallery,
         colors=colors, max_media=MAX_PRODUCT_MEDIA,
     )
 

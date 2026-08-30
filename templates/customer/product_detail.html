@@ -82,10 +82,15 @@
                 <!-- Middle Column: Product Details, Highlights & Specs -->
                 <div class="col-lg-4">
                     <div class="product-detail-info">
-                        <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
                             <a href="{{ url_for('customer.category', slug=slugify(product[6])) }}" class="badge bg-secondary text-decoration-none px-2 py-1">
                                 {{ product[6] }}
                             </a>
+                            {% if brand %}
+                                <a href="{{ url_for('customer.search', q=brand.name) }}" class="badge bg-warning text-dark text-decoration-none px-2 py-1 fw-bold shadow-sm">
+                                    <i class="bi bi-building-check me-1"></i>Official Brand: {{ brand.name }}
+                                </a>
+                            {% endif %}
                             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
                                 <i class="bi bi-patch-check-fill me-1"></i>100% Authentic
                             </span>

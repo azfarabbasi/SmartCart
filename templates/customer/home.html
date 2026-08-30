@@ -232,6 +232,13 @@
                             </div>
 
                             <div class="product-info">
+                                {% if product|length > 9 and product[9] %}
+                                    <div class="mb-1">
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-0 small fw-semibold" style="font-size: 0.72rem;">
+                                            <i class="bi bi-patch-check-fill me-1"></i>{{ product[9] }}
+                                        </span>
+                                    </div>
+                                {% endif %}
                                 <a href="{{ url_for('customer.product_detail', product_id=product[0]) }}" class="product-title">{{ product[1] }}</a>
                                 
                                 <div class="product-price">

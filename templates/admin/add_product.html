@@ -19,7 +19,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
                                 <select class="form-select" id="category_id" name="category_id" required>
                                     <option value="">Select Category</option>
@@ -28,7 +28,19 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="brand_id" class="form-label mb-0">Brand / Label</label>
+                                    <span class="badge bg-secondary-subtle text-muted" style="font-size: 0.72rem;">Optional</span>
+                                </div>
+                                <select class="form-select" id="brand_id" name="brand_id">
+                                    <option value="">None (Unbranded / Generic)</option>
+                                    {% for b in brands %}
+                                        <option value="{{ b[0] }}">{{ b[1] }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 <label for="stock" class="form-label">Total Stock Units <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" id="stock" name="stock" required min="0" placeholder="0">
                             </div>
