@@ -32,6 +32,9 @@ def create_app():
 
     app.teardown_appcontext(db.close_db)
 
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+
     csrf.init_app(app)
     limiter.init_app(app)
     security.register_security_headers(app)
@@ -148,6 +151,18 @@ def create_app():
             except Exception:
                 g.nav_categories = []
         return {'nav_categories': g.nav_categories}
+
+    from flask_wtf.csrf import CSRFError
+    from flask import flash, redirect, request, url_for
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        app.logger.warning(f"CSRF error caught on {request.path}: {e.description}")
+        flash('Your session or security token expired. Please try submitting again.', 'error')
+        referrer = request.referrer
+        if referrer and referrer.startswith(request.host_url):
+            return redirect(referrer)
+        return redirect(url_for('customer.index'))
 
     @app.errorhandler(500)
     def internal_error(e):

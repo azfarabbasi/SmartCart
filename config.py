@@ -25,7 +25,12 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_SECURE = os.environ.get('FORCE_HTTPS', 'false').lower() == 'true'
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)
+
+    # CSRF Settings
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = None  # Tokens remain valid for the full session lifetime
+    WTF_CSRF_SSL_STRICT = False  # Avoid referrer scheme mismatches behind Vercel edge reverse proxy
 
     # How long a login lasts. The identity token is stateless, so there is no
     # server-side record to revoke -- keep this short enough that a leaked
