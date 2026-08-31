@@ -515,6 +515,23 @@ def _auto_migrate(conn):
             except Exception:
                 pass
 
+        # 12. Ensure database performance indexes exist
+        index_defs = [
+            ("idx_products_category", "CREATE INDEX idx_products_category ON Products(category_id)"),
+            ("idx_products_brand", "CREATE INDEX idx_products_brand ON Products(brand_id)"),
+            ("idx_herobanners_active", "CREATE INDEX idx_herobanners_active ON HeroBanners(is_active, sort_order)"),
+            ("idx_brands_active", "CREATE INDEX idx_brands_active ON Brands(is_active, sort_order)"),
+            ("idx_cart_user", "CREATE INDEX idx_cart_user ON Cart(user_id)"),
+            ("idx_orders_user", "CREATE INDEX idx_orders_user ON Orders(user_id)"),
+            ("idx_orderitems_order", "CREATE INDEX idx_orderitems_order ON OrderItems(order_id)"),
+        ]
+        for idx_name, idx_sql in index_defs:
+            try:
+                cur.execute(idx_sql)
+                conn.commit()
+            except Exception:
+                pass
+
         # 7. Always keep place_order procedure up to date (recompile on startup)
         try:
             cur.execute("""

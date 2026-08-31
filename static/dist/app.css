@@ -42,6 +42,8 @@
 .bi-arrow-right::before { content: "\f138"; }
 .bi-arrows-fullscreen::before { content: "\f14d"; }
 .bi-aspect-ratio::before { content: "\f150"; }
+.bi-award::before { content: "\f154"; }
+.bi-badge-ad-fill::before { content: "\f160"; }
 .bi-badge-ad::before { content: "\f161"; }
 .bi-bag-check::before { content: "\f171"; }
 .bi-bag::before { content: "\f179"; }
@@ -66,7 +68,6 @@
 .bi-cash-stack::before { content: "\f246"; }
 .bi-cash::before { content: "\f247"; }
 .bi-chat-dots-fill::before { content: "\f249"; }
-.bi-chat-left-quote::before { content: "\f250"; }
 .bi-chat-square-text::before { content: "\f264"; }
 .bi-check-circle-fill::before { content: "\f26a"; }
 .bi-check-circle::before { content: "\f26b"; }
@@ -82,6 +83,7 @@
 .bi-cpu-fill::before { content: "\f2d5"; }
 .bi-cpu::before { content: "\f2d6"; }
 .bi-credit-card::before { content: "\f2dc"; }
+.bi-cursor-fill::before { content: "\f2e1"; }
 .bi-display::before { content: "\f302"; }
 .bi-download::before { content: "\f30a"; }
 .bi-envelope-fill::before { content: "\f32c"; }
@@ -94,6 +96,8 @@
 .bi-eye::before { content: "\f341"; }
 .bi-file-earmark-code::before { content: "\f362"; }
 .bi-file-earmark-text::before { content: "\f38b"; }
+.bi-filter-circle::before { content: "\f3c5"; }
+.bi-filter::before { content: "\f3ca"; }
 .bi-folder2-open::before { content: "\f3d8"; }
 .bi-gear-wide-connected::before { content: "\f3e3"; }
 .bi-gear::before { content: "\f3e5"; }
@@ -161,6 +165,7 @@
 .bi-stars::before { content: "\f589"; }
 .bi-tag-fill::before { content: "\f5af"; }
 .bi-tag::before { content: "\f5b0"; }
+.bi-tags-fill::before { content: "\f5b1"; }
 .bi-tags::before { content: "\f5b2"; }
 .bi-telephone-fill::before { content: "\f5b4"; }
 .bi-telephone-outbound::before { content: "\f5bc"; }

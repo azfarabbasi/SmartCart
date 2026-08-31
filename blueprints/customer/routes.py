@@ -69,8 +69,11 @@ def notify_admin_stock_issue(cur, product_name, requested, available, customer_n
 
 
 # ── PUBLIC CATALOG ──────────────────────────────────────────────
+from cache_service import (get_all_categories, get_active_banners,
+                           get_active_brands)
+
 PRODUCT_SELECT = (
-    "SELECT p.product_id, p.name, p.price, p.stock, p.description, "
+    "SELECT p.product_id, p.name, p.price, p.stock, CAST(NULL AS VARCHAR2(1)) AS description, "
     "p.image_path, c.category_name, p.delivery_time_text, p.free_delivery, "
     "b.brand_name, b.brand_id "
     "FROM Products p JOIN Categories c ON p.category_id = c.category_id "
@@ -78,46 +81,24 @@ PRODUCT_SELECT = (
 )
 
 
-def _all_categories(cur):
-    cur.execute("SELECT category_id, category_name FROM Categories ORDER BY category_name")
-    return cur.fetchall()
+def _all_categories(cur=None):
+    return get_all_categories(cur)
 
 
 def _category_ids_for_slug(cur, slug):
-    """All category ids whose name slugifies to `slug`.
-
-    Returns a list because the catalog can legitimately hold more than one
-    row with the same display name (e.g. two 'Electronics' categories); a
-    shopper clicking 'Electronics' expects to see every electronics item,
-    not an arbitrary half of them.
-    """
+    """All category ids whose name slugifies to `slug`."""
     matches = [(cid, name) for cid, name in _all_categories(cur) if slugify(name) == slug]
     if not matches:
         return [], None
     return [cid for cid, _ in matches], matches[0][1]
 
 
-def _get_active_banners(cur):
-    try:
-        cur.execute(
-            "SELECT banner_id, badge_tag, title, subtitle, cta_text, cta_link, "
-            "       gradient_class, image_path FROM HeroBanners "
-            "WHERE is_active = 1 ORDER BY NVL(sort_order, 0), banner_id"
-        )
-        return cur.fetchall()
-    except Exception:
-        return []
+def _get_active_banners(cur=None):
+    return get_active_banners(cur)
 
 
-def _get_active_brands(cur):
-    try:
-        cur.execute(
-            "SELECT brand_id, brand_name, subtitle, logo_path, badge_text, badge_color, search_query "
-            "FROM Brands WHERE is_active = 1 ORDER BY NVL(sort_order, 0), brand_name"
-        )
-        return cur.fetchall()
-    except Exception:
-        return []
+def _get_active_brands(cur=None):
+    return get_active_brands(cur)
 
 
 def _render_catalog(cur, products, heading, search='', active_slug=None):

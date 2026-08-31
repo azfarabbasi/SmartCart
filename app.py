@@ -89,18 +89,12 @@ def create_app():
                 pass
         return {'asset_version': app.config.get('ASSET_VERSION', 'dev')}
 
+    from cache_service import (get_nav_categories as _cached_nav_categories,
+                               get_site_settings as _cached_site_settings)
+
     @app.context_processor
     def inject_site_settings():
-        from flask import g
-
-        import sitesettings
-        if 'site_settings' not in g:
-            try:
-                cur = db.get_db().cursor()
-                g.site_settings = sitesettings.get_settings(cur)
-            except Exception:
-                g.site_settings = dict(sitesettings.DEFAULTS)
-        settings = g.site_settings
+        settings = _cached_site_settings()
         return {
             'site_settings': settings,
             'contact_phone': settings.get('contact_phone') or app.config['CONTACT_PHONE'],
@@ -110,47 +104,43 @@ def create_app():
 
     @app.context_processor
     def inject_nav_categories():
-        from flask import g
+        return {'nav_categories': _cached_nav_categories()}
 
-        from slugs import slugify
-        if 'nav_categories' not in g:
+    import gzip
+    from flask import request
+
+    @app.after_request
+    def optimize_response_headers_and_compression(response):
+        # 1. Long-term browser caching for static assets
+        if request.path.startswith('/static/dist/'):
+            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        elif request.path.startswith('/static/'):
+            response.headers['Cache-Control'] = 'public, max-age=86400'
+
+        # 2. Gzip compression for text / json / svg / css / js responses
+        accept_encoding = request.headers.get('Accept-Encoding', '')
+        if (
+            'gzip' in accept_encoding
+            and response.status_code == 200
+            and not response.headers.get('Content-Encoding')
+            and response.mimetype in (
+                'text/html', 'text/css', 'text/javascript', 'application/javascript',
+                'application/json', 'image/svg+xml', 'text/plain', 'text/xml'
+            )
+        ):
             try:
-                cur = db.get_db().cursor()
-                try:
-                    cur.execute(
-                        "SELECT category_id, category_name, icon_name, image_path, sort_order FROM ("
-                        "  SELECT category_id, category_name, icon_name, image_path, sort_order FROM Categories "
-                        "  ORDER BY NVL(sort_order, 0), category_name"
-                        ") WHERE ROWNUM <= 20"
-                    )
-                    rows = cur.fetchall()
-                    seen_names = set()
-                    g.nav_categories = []
-                    for row in rows:
-                        name_key = (row[1] or '').strip().lower()
-                        if name_key and name_key not in seen_names:
-                            seen_names.add(name_key)
-                            g.nav_categories.append({
-                                'id': row[0],
-                                'name': row[1],
-                                'slug': slugify(row[1]),
-                                'icon': row[2] or 'bi-tag',
-                                'image': row[3],
-                                'sort_order': row[4] or 0,
-                            })
-                except Exception:
-                    cur.execute(
-                        "SELECT category_name FROM ("
-                        "  SELECT DISTINCT category_name FROM Categories ORDER BY category_name"
-                        ") WHERE ROWNUM <= 20"
-                    )
-                    g.nav_categories = [
-                        {'name': row[0], 'slug': slugify(row[0]), 'icon': 'bi-tag', 'image': None, 'sort_order': 0}
-                        for row in cur.fetchall()
-                    ]
+                response.direct_passthrough = False
+                response_data = response.get_data()
+                if len(response_data) > 500:
+                    compressed_data = gzip.compress(response_data, compresslevel=6)
+                    response.set_data(compressed_data)
+                    response.headers['Content-Encoding'] = 'gzip'
+                    response.headers['Content-Length'] = len(compressed_data)
+                    response.headers['Vary'] = 'Accept-Encoding'
             except Exception:
-                g.nav_categories = []
-        return {'nav_categories': g.nav_categories}
+                pass
+
+        return response
 
     from flask_wtf.csrf import CSRFError
     from flask import flash, redirect, request, url_for

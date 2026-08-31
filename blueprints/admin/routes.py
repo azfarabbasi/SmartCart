@@ -11,6 +11,8 @@ from flask import (Blueprint, current_app, flash, redirect, render_template,
 import sitesettings
 from blueprints.auth.decorators import admin_required
 from auth_tokens import current_user_id
+from cache_service import (invalidate_banners, invalidate_brands,
+                           invalidate_categories, invalidate_site_settings)
 from db import get_db
 from extensions import limiter
 from security import log_admin_action
@@ -698,6 +700,7 @@ def add_category():
     cur.execute("SELECT categories_seq.CURRVAL FROM dual")
     log_admin_action(cur, current_user_id(), 'category.create', 'Category', cur.fetchone()[0], f'name={name}')
     get_db().commit()
+    invalidate_categories()
     flash('Category added successfully.', 'success')
     return redirect(url_for('admin.categories'))
 
@@ -745,6 +748,7 @@ def edit_category(category_id):
 
     log_admin_action(cur, current_user_id(), 'category.edit', 'Category', category_id, f'name={name}')
     get_db().commit()
+    invalidate_categories()
     flash('Category updated successfully.', 'success')
     return redirect(url_for('admin.categories'))
 
@@ -778,6 +782,7 @@ def delete_category(category_id):
             log_admin_action(cur, current_user_id(), 'category.delete', 'Category', category_id,
                              f'{moved} products moved to Uncategorized')
             get_db().commit()
+            invalidate_categories()
             flash(f'Category deleted. {moved} product(s) moved to Uncategorized.', 'success')
 
         elif action == 'cascade':
@@ -805,12 +810,14 @@ def delete_category(category_id):
             log_admin_action(cur, current_user_id(), 'category.delete', 'Category', category_id,
                              f'Cascade-deleted with {len(product_ids)} products')
             get_db().commit()
+            invalidate_categories()
             flash(f'Category and {len(product_ids)} product(s) permanently deleted.', 'success')
 
         else:  # simple delete
             cur.execute("DELETE FROM Categories WHERE category_id = :cid", {'cid': category_id})
             log_admin_action(cur, current_user_id(), 'category.delete', 'Category', category_id)
             get_db().commit()
+            invalidate_categories()
             flash('Category deleted.', 'success')
 
     except oracledb.IntegrityError:
@@ -884,6 +891,7 @@ def add_brand():
     brand_id = cur.fetchone()[0]
     log_admin_action(cur, current_user_id(), 'brand.create', 'Brand', brand_id, f'name={name}')
     get_db().commit()
+    invalidate_brands()
     flash(f'Brand "{name}" added successfully.', 'success')
     return redirect(url_for('admin.brands'))
 
@@ -944,6 +952,7 @@ def edit_brand(brand_id):
 
     log_admin_action(cur, current_user_id(), 'brand.edit', 'Brand', brand_id, f'name={name}')
     get_db().commit()
+    invalidate_brands()
     flash(f'Brand "{name}" updated successfully.', 'success')
     return redirect(url_for('admin.brands'))
 
@@ -955,6 +964,7 @@ def toggle_brand(brand_id):
     cur.execute("UPDATE Brands SET is_active = 1 - is_active WHERE brand_id = :bid", {'bid': brand_id})
     log_admin_action(cur, current_user_id(), 'brand.toggle', 'Brand', brand_id)
     get_db().commit()
+    invalidate_brands()
     flash('Brand visibility updated.', 'success')
     return redirect(url_for('admin.brands'))
 
@@ -966,6 +976,7 @@ def delete_brand(brand_id):
     cur.execute("DELETE FROM Brands WHERE brand_id = :bid", {'bid': brand_id})
     log_admin_action(cur, current_user_id(), 'brand.delete', 'Brand', brand_id)
     get_db().commit()
+    invalidate_brands()
     flash('Brand deleted successfully.', 'success')
     return redirect(url_for('admin.brands'))
 
@@ -1020,6 +1031,7 @@ def add_banner():
     banner_id = cur.fetchone()[0]
     log_admin_action(cur, current_user_id(), 'banner.create', 'HeroBanner', banner_id, f'title={title}')
     get_db().commit()
+    invalidate_banners()
     flash('Promotional banner ad created successfully.', 'success')
     return redirect(url_for('admin.banners'))
 
@@ -1084,6 +1096,7 @@ def edit_banner(banner_id):
 
     log_admin_action(cur, current_user_id(), 'banner.edit', 'HeroBanner', banner_id, f'title={title}')
     get_db().commit()
+    invalidate_banners()
     flash('Promotional banner ad updated successfully.', 'success')
     return redirect(url_for('admin.banners'))
 
@@ -1095,6 +1108,7 @@ def toggle_banner(banner_id):
     cur.execute("UPDATE HeroBanners SET is_active = 1 - is_active WHERE banner_id = :bid", {'bid': banner_id})
     log_admin_action(cur, current_user_id(), 'banner.toggle', 'HeroBanner', banner_id)
     get_db().commit()
+    invalidate_banners()
     flash('Banner active status updated.', 'success')
     return redirect(url_for('admin.banners'))
 
@@ -1106,6 +1120,7 @@ def delete_banner(banner_id):
     cur.execute("DELETE FROM HeroBanners WHERE banner_id = :bid", {'bid': banner_id})
     log_admin_action(cur, current_user_id(), 'banner.delete', 'HeroBanner', banner_id)
     get_db().commit()
+    invalidate_banners()
     flash('Promotional banner deleted successfully.', 'success')
     return redirect(url_for('admin.banners'))
 
@@ -1801,6 +1816,7 @@ def site_settings():
             )
         log_admin_action(cur, current_user_id(), 'settings.update')
         get_db().commit()
+        invalidate_site_settings()
         flash('Settings updated.', 'success')
         return redirect(url_for('admin.site_settings'))
 

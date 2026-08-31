@@ -183,13 +183,9 @@ FIELD_GROUPS = [
 ]
 
 
-def get_settings(cur):
-    cur.execute("SELECT setting_key, setting_value FROM SiteSettings")
-    values = dict(DEFAULTS)
-    for key, value in cur.fetchall():
-        if value is not None:
-            values[key] = value
-    return values
+def get_settings(cur=None):
+    from cache_service import get_site_settings
+    return get_site_settings(cur)
 
 
 def get_setting_number(settings, key, default):
