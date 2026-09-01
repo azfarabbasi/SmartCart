@@ -5,8 +5,11 @@ from email.mime.text import MIMEText
 from urllib.parse import quote
 
 import oracledb
-from flask import (Blueprint, current_app, flash, redirect, render_template,
-                    request, url_for)
+from flask import (Blueprint, current_app, flash, jsonify, redirect, render_template,
+                    request, Response, url_for)
+from catalog_parser import parse_catalogue_file
+from catalog_scraper import (verify_official_url, search_product_on_official_website,
+                             scrape_official_product_details)
 
 import sitesettings
 from blueprints.auth.decorators import admin_required
@@ -422,7 +425,311 @@ def add_product():
     return render_template('admin/add_product.html', categories=categories, brands=brands, max_media=MAX_PRODUCT_MEDIA)
 
 
+# ── AUTO-LIST FROM CATALOGUE WITH OFFICIAL WEBSITE SCRAPING ────────
+@admin_bp.route('/products/import-catalogue', methods=['GET'])
+@admin_required
+def import_catalogue():
+    cur = get_db().cursor()
+    cur.execute("SELECT category_id, category_name FROM Categories ORDER BY category_name")
+    categories = cur.fetchall()
+    try:
+        cur.execute("SELECT brand_id, brand_name FROM Brands WHERE is_active = 1 ORDER BY brand_name")
+        brands = cur.fetchall()
+    except Exception:
+        brands = []
+    return render_template('admin/catalog_import.html', categories=categories, brands=brands)
+
+
+@admin_bp.route('/products/import-catalogue/verify-url', methods=['POST'])
+@admin_required
+def verify_catalogue_url():
+    data = request.get_json(silent=True) or request.form
+    url = (data.get('url') or '').strip()
+    ok, clean_url, site_title, err = verify_official_url(url)
+    return jsonify({
+        'success': ok,
+        'url': clean_url,
+        'site_title': site_title,
+        'error': err
+    })
+
+
+@admin_bp.route('/products/sample-catalogue', methods=['GET'])
+@admin_required
+def sample_catalogue():
+    sample_csv = (
+        "Product Name,Catalogue Price,Stock\n"
+        "Anker 737 Power Bank 24000mAh,18500.00,20\n"
+        "Ronin R-520 Earbuds,2500.00,25\n"
+        "Apple 20W USB-C Power Adapter,4200.00,30\n"
+        "Audionic Airbud 400,3200.00,15\n"
+    )
+    return Response(
+        sample_csv,
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=smartcart_sample_catalogue.csv'}
+    )
+
+
+@admin_bp.route('/products/import-catalogue/process', methods=['POST'])
+@admin_required
+def process_catalogue():
+    file = request.files.get('catalogue_file')
+    if not file or not file.filename:
+        return jsonify({'success': False, 'error': 'Please select a catalogue file (PDF, CSV, or Excel).'}), 400
+
+    official_url = (request.form.get('official_url') or '').strip()
+    try:
+        markup = float(request.form.get('markup', 300.0) or 300.0)
+    except ValueError:
+        markup = 300.0
+
+    default_category_id = request.form.get('default_category_id')
+    default_brand_id = request.form.get('default_brand_id')
+    skip_missing = request.form.get('skip_missing', '1') == '1'
+
+    # Step 1: Parse catalogue file (converts PDF to CSV and normalizes items)
+    ok, parse_err, parsed_items, csv_text = parse_catalogue_file(file, markup=markup)
+    if not ok:
+        return jsonify({'success': False, 'error': parse_err}), 400
+
+    cur = get_db().cursor()
+    # Cache existing categories and brands for smart matching
+    cur.execute("SELECT category_id, LOWER(category_name) FROM Categories")
+    cat_lookup = {r[1]: r[0] for r in cur.fetchall()}
+    try:
+        cur.execute("SELECT brand_id, LOWER(brand_name) FROM Brands")
+        brand_lookup = {r[1]: r[0] for r in cur.fetchall()}
+    except Exception:
+        brand_lookup = {}
+
+    processed_products = []
+    skipped_products = []
+
+    for item in parsed_items:
+        raw_name = item['name']
+        cat_cost = item['catalogue_price']
+        cost_price = item['cost_price']
+        sale_price = item['sale_price']
+        stock_count = item.get('stock', 20)
+
+        # Smart default brand determination
+        assigned_brand_id = int(default_brand_id) if default_brand_id and default_brand_id.isdigit() else None
+        if not assigned_brand_id:
+            for b_name, b_id in brand_lookup.items():
+                if b_name in raw_name.lower():
+                    assigned_brand_id = b_id
+                    break
+
+        # Smart default category determination
+        assigned_cat_id = int(default_category_id) if default_category_id and default_category_id.isdigit() else None
+        if not assigned_cat_id and cat_lookup:
+            assigned_cat_id = list(cat_lookup.values())[0]
+
+        # Step 2: Search official website if URL provided
+        if official_url:
+            found_url = search_product_on_official_website(official_url, raw_name)
+            if found_url:
+                scraped = scrape_official_product_details(found_url, cat_cost, markup=markup, download_images=True)
+                if scraped and scraped.get('title'):
+                    # Match brand from scraped details if not yet assigned
+                    if not assigned_brand_id and scraped.get('brand'):
+                        s_brand = scraped['brand'].lower()
+                        for b_name, b_id in brand_lookup.items():
+                            if b_name in s_brand or s_brand in b_name:
+                                assigned_brand_id = b_id
+                                break
+
+                    processed_products.append({
+                        'name': scraped['title'][:150],
+                        'catalogue_price': cat_cost,
+                        'cost_price': cost_price,
+                        'sale_price': sale_price,
+                        'stock': stock_count,
+                        'description': scraped.get('description', '')[:4000],
+                        'image_path': scraped.get('image_path') or '',
+                        'gallery_images': scraped.get('gallery_images', []),
+                        'specs_text': scraped.get('specs_text', ''),
+                        'specs_count': scraped.get('specs_count', 0),
+                        'highlights_text': scraped.get('highlights_text', '')[:1000],
+                        'highlights_count': scraped.get('highlights_count', 0),
+                        'box_contents_text': scraped.get('box_contents_text', '')[:1000],
+                        'official_url': found_url,
+                        'category_id': assigned_cat_id,
+                        'brand_id': assigned_brand_id,
+                        'status': 'scraped'
+                    })
+                else:
+                    if skip_missing:
+                        skipped_products.append({
+                            'name': raw_name,
+                            'price': cat_cost,
+                            'reason': 'Product page could not be parsed'
+                        })
+                    else:
+                        processed_products.append({
+                            'name': raw_name[:150],
+                            'catalogue_price': cat_cost,
+                            'cost_price': cost_price,
+                            'sale_price': sale_price,
+                            'stock': stock_count,
+                            'description': 'Imported from catalogue.',
+                            'image_path': '',
+                            'gallery_images': [],
+                            'specs_text': '',
+                            'specs_count': 0,
+                            'highlights_text': '',
+                            'highlights_count': 0,
+                            'box_contents_text': '',
+                            'official_url': '',
+                            'category_id': assigned_cat_id,
+                            'brand_id': assigned_brand_id,
+                            'status': 'partial'
+                        })
+            else:
+                if skip_missing:
+                    skipped_products.append({
+                        'name': raw_name,
+                        'price': cat_cost,
+                        'reason': f"Not found on official website ({official_url})"
+                    })
+                else:
+                    processed_products.append({
+                        'name': raw_name[:150],
+                        'catalogue_price': cat_cost,
+                        'cost_price': cost_price,
+                        'sale_price': sale_price,
+                        'stock': stock_count,
+                        'description': 'Imported from catalogue.',
+                        'image_path': '',
+                        'gallery_images': [],
+                        'specs_text': '',
+                        'specs_count': 0,
+                        'highlights_text': '',
+                        'highlights_count': 0,
+                        'box_contents_text': '',
+                        'official_url': '',
+                        'category_id': assigned_cat_id,
+                        'brand_id': assigned_brand_id,
+                        'status': 'not_found_fallback'
+                    })
+        else:
+            # If no official website URL was entered, add directly with catalogue data
+            processed_products.append({
+                'name': raw_name[:150],
+                'catalogue_price': cat_cost,
+                'cost_price': cost_price,
+                'sale_price': sale_price,
+                'stock': stock_count,
+                'description': 'Imported from catalogue.',
+                'image_path': '',
+                'gallery_images': [],
+                'specs_text': '',
+                'specs_count': 0,
+                'highlights_text': '',
+                'highlights_count': 0,
+                'box_contents_text': '',
+                'official_url': '',
+                'category_id': assigned_cat_id,
+                'brand_id': assigned_brand_id,
+                'status': 'catalogue_only'
+            })
+
+    return jsonify({
+        'success': True,
+        'total_catalogue_items': len(parsed_items),
+        'scraped_count': len(processed_products),
+        'skipped_count': len(skipped_products),
+        'products': processed_products,
+        'skipped': skipped_products,
+        'csv_text': csv_text,
+        'official_url': official_url
+    })
+
+
+@admin_bp.route('/products/import-catalogue/commit', methods=['POST'])
+@admin_required
+def commit_imported_products():
+    data = request.get_json(silent=True) or {}
+    items = data.get('products', [])
+    if not items:
+        return jsonify({'success': False, 'error': 'No products provided to save.'}), 400
+
+    cur = get_db().cursor()
+    saved_ids = []
+
+    try:
+        for p in items:
+            name = str(p.get('name', '')).strip()[:150]
+            if not name:
+                continue
+
+            cat_id = int(p.get('category_id') or 1)
+            brand_id = int(p.get('brand_id')) if p.get('brand_id') else None
+            cost_price = float(p.get('cost_price') or p.get('catalogue_price') or 0.0)
+            sale_price = float(p.get('sale_price') or (cost_price + 300.0))
+            stock = int(p.get('stock') or 20)
+            description = str(p.get('description', '')).strip()[:4000]
+            image_path = p.get('image_path') or None
+            specs = str(p.get('specs_text', '')).strip() or None
+            highlights = str(p.get('highlights_text', '')).strip()[:1000] or None
+            box_contents = str(p.get('box_contents_text', '')).strip()[:1000] or None
+
+            new_pid_var = cur.var(oracledb.NUMBER)
+            try:
+                cur.execute(
+                    "INSERT INTO Products (product_id, category_id, brand_id, name, price, cost_price, stock, description, image_path, "
+                    "delivery_time_text, free_delivery, technical_specs, highlights, box_contents) "
+                    "VALUES (products_seq.NEXTVAL, :cid, :bid, :n, :p, :cp, :s, :d, :img, '2-3 Business Days', 0, :ts, :hl, :bc) "
+                    "RETURNING product_id INTO :new_pid",
+                    {'cid': cat_id, 'bid': brand_id, 'n': name, 'p': sale_price, 'cp': cost_price, 's': stock,
+                     'd': description, 'img': image_path, 'ts': specs, 'hl': highlights, 'bc': box_contents,
+                     'new_pid': new_pid_var}
+                )
+                new_pid = int(new_pid_var.getvalue()[0])
+            except Exception as e:
+                current_app.logger.warning(f"Fallback insert for {name}: {e}")
+                cur.execute(
+                    "INSERT INTO Products (product_id, category_id, name, price, cost_price, stock, description, image_path) "
+                    "VALUES (products_seq.NEXTVAL, :cid, :n, :p, :cp, :s, :d, :img)",
+                    {'cid': cat_id, 'n': name, 'p': sale_price, 'cp': cost_price, 's': stock, 'd': description, 'img': image_path}
+                )
+                cur.execute("SELECT products_seq.CURRVAL FROM dual")
+                new_pid = cur.fetchone()[0]
+
+            # Save Gallery Media from official website
+            gallery_imgs = p.get('gallery_images', [])
+            for s_idx, g_img in enumerate(gallery_imgs[:MAX_PRODUCT_MEDIA]):
+                if g_img:
+                    try:
+                        cur.execute(
+                            "INSERT INTO ProductMedia (media_id, product_id, media_path, media_type, sort_order, created_at) "
+                            "VALUES (productmedia_seq.NEXTVAL, :pid, :mp, 'image', :so, SYSDATE)",
+                            {'pid': new_pid, 'mp': g_img, 'so': s_idx}
+                        )
+                    except Exception as g_err:
+                        current_app.logger.warning(f"Error saving gallery media for #{new_pid}: {g_err}")
+
+            log_admin_action(cur, current_user_id(), 'product.catalogue_import', 'Product', new_pid, f'name={name}')
+            saved_ids.append(new_pid)
+
+        get_db().commit()
+        invalidate_categories()
+        flash(f'Successfully imported and published {len(saved_ids)} products from catalogue!', 'success')
+        return jsonify({
+            'success': True,
+            'imported_count': len(saved_ids),
+            'redirect': url_for('admin.products')
+        })
+
+    except Exception as e:
+        get_db().rollback()
+        current_app.logger.exception(f"Error committing catalogue products: {e}")
+        return jsonify({'success': False, 'error': f"Database error: {str(e)}"}), 500
+
+
 @admin_bp.route('/products/edit/<int:product_id>', methods=['GET', 'POST'])
+
 @admin_required
 def edit_product(product_id):
     cur = get_db().cursor()

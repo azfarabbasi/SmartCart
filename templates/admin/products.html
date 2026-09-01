@@ -2,11 +2,17 @@
 {% block title %}Products - Admin | SmartCart{% endblock %}
 {% block page_title %}Products{% endblock %}
 {% block content %}
-    <div class="d-flex justify-content-end mb-3">
-        <a href="{{ url_for('admin.add_product') }}" class="btn btn-warning">
+    <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+        <a href="{{ url_for('admin.import_catalogue') }}" class="btn btn-outline-warning d-flex align-items-center shadow-sm">
+            <i class="bi bi-cloud-arrow-up-fill me-2 fs-6"></i>
+            <span>Auto-List from Catalogue</span>
+            <span class="badge bg-warning text-dark ms-2" style="font-size: 0.7rem;">PDF / Web</span>
+        </a>
+        <a href="{{ url_for('admin.add_product') }}" class="btn btn-warning shadow-sm">
             <i class="bi bi-plus-lg me-2"></i>Add Product
         </a>
     </div>
+
 
     <div class="admin-card">
         <div class="card-header">

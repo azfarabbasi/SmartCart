@@ -1,0 +1,770 @@
+{% extends "admin/base.html" %}
+{% block title %}Auto-List from Catalogue - Admin | SmartCart{% endblock %}
+{% block page_title %}Auto-List from Catalogue{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.products') }}" class="text-decoration-none">Products</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Auto-List Catalogue</li>
+            </ol>
+        </nav>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.sample_catalogue') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-download me-1"></i>Download Sample Catalogue (CSV)
+            </a>
+            <a href="{{ url_for('admin.products') }}" class="btn btn-sm btn-outline-light text-muted border">
+                <i class="bi bi-arrow-left me-1"></i>Back to Products
+            </a>
+        </div>
+    </div>
+
+    <!-- Feature Banner -->
+    <div class="card bg-dark text-white border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-warning text-dark px-2 py-1 fw-bold">
+                            <i class="bi bi-robot me-1"></i>Automated Web Scraping
+                        </span>
+                        <span class="badge bg-success text-white px-2 py-1 fw-bold">
+                            <i class="bi bi-check-circle-fill me-1"></i>100% Free Forever
+                        </span>
+                        <span class="badge bg-primary text-white px-2 py-1">
+                            PDF &rarr; CSV &rarr; Official Store
+                        </span>
+                    </div>
+                    <h3 class="fw-bold mb-2 text-white">Automate Your Product Listings</h3>
+                    <p class="text-light text-opacity-75 mb-0" style="font-size: 0.95rem;">
+                        Upload your product catalogue in <strong>PDF, Excel, or CSV</strong>. Provide the company's official website URL—the system will convert your PDF into CSV, locate the authentic product page on the brand's website, extract overview, technical specifications, key features, and high-resolution official photos, automatically calculate your customer price as <strong>Catalogue Price + 300 Rs</strong>, and skip any unavailable items cleanly.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <div class="p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 d-inline-block text-start">
+                        <div class="small text-warning fw-bold text-uppercase tracking-wide mb-1">Pricing Formula</div>
+                        <div class="fs-5 fw-bold text-white mb-1">Cost: Catalogue Price</div>
+                        <div class="fs-6 fw-semibold text-success">Sale Price: Cost + 300 Rs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 1: Upload & Configuration Form -->
+    <div class="card border-0 shadow-sm mb-4" id="uploadCard">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-cloud-arrow-up text-warning me-2"></i>Upload Catalogue & Official Website
+            </h5>
+            <span class="badge bg-secondary-subtle text-secondary border">Step 1 of 2</span>
+        </div>
+        <div class="card-body p-4">
+            <form id="catalogueForm" enctype="multipart/form-data">
+                <div class="row g-4">
+                    <!-- Company Official Website URL -->
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-dark mb-1">
+                            Company Official Website URL <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-globe2 text-primary"></i></span>
+                            <input type="url" class="form-control form-control-lg" id="officialUrlInput" name="official_url" 
+                                   placeholder="e.g. https://ronin.pk or https://us.anker.com or https://audionic.co" required>
+                            <button type="button" class="btn btn-outline-primary px-4 fw-semibold" id="verifyUrlBtn">
+                                <i class="bi bi-patch-check me-1"></i>Verify Website
+                            </button>
+                        </div>
+                        <div class="form-text mt-1 d-flex align-items-center justify-content-between">
+                            <span>The scraper will search specifically on this company's official website for product overview, specs, and photos.</span>
+                            <span id="urlVerifyStatus" class="fw-semibold"></span>
+                        </div>
+                    </div>
+
+                    <!-- Catalogue File Dropzone -->
+                    <div class="col-lg-7">
+                        <label class="form-label fw-bold text-dark mb-1">
+                            Catalogue Document <span class="text-danger">*</span>
+                        </label>
+                        <div class="file-dropzone border border-2 border-dashed rounded-3 p-4 text-center bg-light" id="dropZone" style="cursor: pointer; transition: all 0.2s ease;">
+                            <input type="file" id="catalogueFileInput" name="catalogue_file" accept=".pdf,.csv,.xlsx,.xls,.txt" class="d-none" required>
+                            <div id="dropZoneContent">
+                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-1 d-block mb-2" id="fileIcon"></i>
+                                <h6 class="fw-bold text-dark mb-1" id="filePrompt">Drop your PDF, Excel, or CSV catalogue here</h6>
+                                <p class="text-muted small mb-2">or click to browse from your computer</p>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <span class="badge bg-danger-subtle text-danger border">.PDF (Auto-converts to CSV)</span>
+                                    <span class="badge bg-success-subtle text-success border">.XLSX / .XLS</span>
+                                    <span class="badge bg-primary-subtle text-primary border">.CSV</span>
+                                </div>
+                            </div>
+                            <div id="selectedFileInfo" class="d-none">
+                                <div class="badge bg-success fs-6 mb-2 py-2 px-3">
+                                    <i class="bi bi-check-circle-fill me-2"></i><span id="selectedFileName">catalogue.pdf</span>
+                                </div>
+                                <div class="small text-muted" id="selectedFileSize"></div>
+                                <button type="button" class="btn btn-sm btn-link text-danger mt-1" id="clearFileBtn">Change File</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Margin, Category & Rules Settings -->
+                    <div class="col-lg-5">
+                        <div class="p-3 rounded-3 border bg-white h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">
+                                    <i class="bi bi-sliders text-warning me-2"></i>Listing & Price Settings
+                                </h6>
+
+                                <!-- Price Markup -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-secondary mb-1">
+                                        Price Markup Formula <span class="text-success fw-semibold">(+300 Rs)</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light fw-bold text-muted">Sale Price = Cost +</span>
+                                        <input type="number" class="form-control fw-bold text-success" id="markupInput" name="markup" value="300" min="0" step="1">
+                                        <span class="input-group-text bg-light">Rs</span>
+                                    </div>
+                                    <div class="form-text small">Automatically sets Customer Price = Catalogue Cost + Markup.</div>
+                                </div>
+
+                                <!-- Default Category -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-secondary mb-1">Default Category</label>
+                                    <select class="form-select" name="default_category_id" id="categorySelect">
+                                        {% for c in categories %}
+                                            <option value="{{ c[0] }}" {% if 'electronic' in c[1]|lower %}selected{% endif %}>{{ c[1] }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Default Brand -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-secondary mb-1">Default Brand (Optional)</label>
+                                    <select class="form-select" name="default_brand_id" id="brandSelect">
+                                        <option value="">-- Auto-detect from website/catalogue --</option>
+                                        {% for b in brands %}
+                                            <option value="{{ b[0] }}">{{ b[1] }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Auto-skip Toggle -->
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="skipMissingCheck" name="skip_missing" value="1" checked>
+                                    <label class="form-check-label small fw-bold text-dark" for="skipMissingCheck">
+                                        Skip products not found on official website
+                                    </label>
+                                    <div class="form-text small">Unavailable/discontinued items are safely skipped without failing the batch.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit / Action Button -->
+                    <div class="col-12 text-end pt-2 border-top">
+                        <button type="submit" class="btn btn-warning btn-lg px-5 fw-bold shadow-sm" id="startProcessBtn">
+                            <i class="bi bi-lightning-charge-fill me-2"></i>Start Auto-Listing
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Step 2: Live Progress Indicator -->
+    <div class="card border-0 shadow-sm mb-4 d-none" id="progressCard">
+        <div class="card-body p-4 text-center">
+            <div class="spinner-border text-warning mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+            <h5 class="fw-bold text-dark mb-2" id="progressStatusText">Processing Catalogue...</h5>
+            <p class="text-muted small mb-3" id="progressSubText">Converting catalogue, searching official company website, and scraping product details.</p>
+            <div class="progress mb-2" style="height: 10px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" id="progressBar" style="width: 100%;"></div>
+            </div>
+            <div class="small text-muted" id="progressDetailLog">Please wait, fetching live official product data & images...</div>
+        </div>
+    </div>
+
+    <!-- Step 3: Extracted Results & Review Section -->
+    <div class="d-none" id="resultsSection">
+        <!-- Stats Summary Bar -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 bg-white">
+                    <div class="small text-muted fw-bold">TOTAL CATALOGUE ITEMS</div>
+                    <div class="fs-3 fw-bold text-dark" id="statTotalItems">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 bg-success-subtle border-start border-success border-4">
+                    <div class="small text-success fw-bold">SCRAPED &amp; READY</div>
+                    <div class="fs-3 fw-bold text-success" id="statScrapedCount">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 bg-warning-subtle border-start border-warning border-4">
+                    <div class="small text-warning-emphasis fw-bold">SKIPPED (NOT FOUND)</div>
+                    <div class="fs-3 fw-bold text-warning-emphasis" id="statSkippedCount">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 bg-primary-subtle border-start border-primary border-4">
+                    <div class="small text-primary fw-bold">PROFIT PER ITEM</div>
+                    <div class="fs-3 fw-bold text-primary" id="statMarginCount">+300 Rs</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Converted CSV Download Banner (if PDF was uploaded) -->
+        <div class="alert alert-info border-info d-flex justify-content-between align-items-center mb-4 d-none" id="convertedCsvBanner">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-spreadsheet-fill fs-3 text-primary"></i>
+                <div>
+                    <strong class="text-dark">PDF Successfully Converted to CSV!</strong>
+                    <div class="small text-muted">The catalogue was converted into clean tabular rows of Product Name and Catalogue Price.</div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary shadow-sm" id="downloadCsvBtn">
+                <i class="bi bi-download me-1"></i>Download Converted CSV
+            </button>
+        </div>
+
+        <!-- Results Tabs: Ready Products vs Skipped Products -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <ul class="nav nav-pills card-header-pills mb-0" id="resultTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold" id="ready-tab" data-bs-toggle="pill" data-bs-target="#readyPane" type="button">
+                            <i class="bi bi-check2-circle text-success me-1"></i>Ready to Publish 
+                            <span class="badge bg-success ms-1" id="readyTabBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold" id="skipped-tab" data-bs-toggle="pill" data-bs-target="#skippedPane" type="button">
+                            <i class="bi bi-dash-circle text-warning me-1"></i>Skipped Products 
+                            <span class="badge bg-secondary ms-1" id="skippedTabBadge">0</span>
+                        </button>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="resetBtn">
+                        <i class="bi bi-arrow-repeat me-1"></i>Import Another Catalogue
+                    </button>
+                    <button type="button" class="btn btn-success fw-bold px-4 shadow-sm" id="commitBtn">
+                        <i class="bi bi-cloud-upload-fill me-1"></i>Publish Selected Products to Store
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="tab-content" id="resultTabsContent">
+                    <!-- Tab 1: Ready to Publish Table -->
+                    <div class="tab-pane fade show active" id="readyPane" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40px;" class="text-center">
+                                            <input type="checkbox" class="form-check-input" id="selectAllCheck" checked>
+                                        </th>
+                                        <th style="width: 80px;">Image</th>
+                                        <th>Product Details</th>
+                                        <th style="width: 140px;">Category</th>
+                                        <th style="width: 130px;">Catalogue Cost</th>
+                                        <th style="width: 150px;">Customer Sale Price</th>
+                                        <th style="width: 140px;" class="text-center">Specs &amp; Gallery</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="readyTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Skipped Products Table -->
+                    <div class="tab-pane fade" id="skippedPane" role="tabpanel">
+                        <div class="p-3 text-muted small border-bottom bg-light">
+                            <i class="bi bi-info-circle me-1"></i>The following products from your catalogue were not found on the official company website and were safely skipped.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Catalogue Item Name</th>
+                                        <th style="width: 180px;">Catalogue Price</th>
+                                        <th>Reason for Skipping</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="skippedTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="text-muted small" id="selectionCountInfo">0 products selected for publishing.</div>
+                <button type="button" class="btn btn-success fw-bold px-4 shadow-sm" id="commitBtnBottom">
+                    <i class="bi bi-cloud-upload-fill me-1"></i>Publish Selected Products to Store
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: View Scraped Details Preview -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="modalProductTitle">Product Details Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="modalProductBody">
+                <!-- Injected dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    // Elements
+    const form = document.getElementById('catalogueForm');
+    const officialUrlInput = document.getElementById('officialUrlInput');
+    const verifyUrlBtn = document.getElementById('verifyUrlBtn');
+    const urlVerifyStatus = document.getElementById('urlVerifyStatus');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('catalogueFileInput');
+    const dropZoneContent = document.getElementById('dropZoneContent');
+    const selectedFileInfo = document.getElementById('selectedFileInfo');
+    const selectedFileName = document.getElementById('selectedFileName');
+    const selectedFileSize = document.getElementById('selectedFileSize');
+    const clearFileBtn = document.getElementById('clearFileBtn');
+    const startProcessBtn = document.getElementById('startProcessBtn');
+    
+    const uploadCard = document.getElementById('uploadCard');
+    const progressCard = document.getElementById('progressCard');
+    const resultsSection = document.getElementById('resultsSection');
+    
+    const statTotalItems = document.getElementById('statTotalItems');
+    const statScrapedCount = document.getElementById('statScrapedCount');
+    const statSkippedCount = document.getElementById('statSkippedCount');
+    const statMarginCount = document.getElementById('statMarginCount');
+    
+    const readyTableBody = document.getElementById('readyTableBody');
+    const skippedTableBody = document.getElementById('skippedTableBody');
+    const readyTabBadge = document.getElementById('readyTabBadge');
+    const skippedTabBadge = document.getElementById('skippedTabBadge');
+    const convertedCsvBanner = document.getElementById('convertedCsvBanner');
+    const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+    const selectAllCheck = document.getElementById('selectAllCheck');
+    const selectionCountInfo = document.getElementById('selectionCountInfo');
+    const commitBtn = document.getElementById('commitBtn');
+    const commitBtnBottom = document.getElementById('commitBtnBottom');
+    const resetBtn = document.getElementById('resetBtn');
+    
+    let currentProcessedProducts = [];
+    let currentConvertedCsv = '';
+
+    // File Drag & Drop Handling
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-warning', 'bg-warning-subtle');
+    });
+    ['dragleave', 'dragend'].forEach(evt => {
+        dropZone.addEventListener(evt, () => {
+            dropZone.classList.remove('border-warning', 'bg-warning-subtle');
+        });
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-warning', 'bg-warning-subtle');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            updateFileDisplay();
+        }
+    });
+    fileInput.addEventListener('change', updateFileDisplay);
+
+    function updateFileDisplay() {
+        if (fileInput.files.length > 0) {
+            const f = fileInput.files[0];
+            selectedFileName.textContent = f.name;
+            selectedFileSize.textContent = `${(f.size / 1024).toFixed(1)} KB`;
+            dropZoneContent.classList.add('d-none');
+            selectedFileInfo.classList.remove('d-none');
+        }
+    }
+
+    clearFileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.value = '';
+        dropZoneContent.classList.remove('d-none');
+        selectedFileInfo.classList.add('d-none');
+    });
+
+    // Verify Company Official Website URL
+    verifyUrlBtn.addEventListener('click', async function() {
+        const url = officialUrlInput.value.trim();
+        if (!url) {
+            urlVerifyStatus.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Please enter a URL</span>';
+            return;
+        }
+
+        verifyUrlBtn.disabled = true;
+        verifyUrlBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing...';
+        urlVerifyStatus.innerHTML = '<span class="text-muted">Connecting to website...</span>';
+
+        try {
+            const resp = await fetch("{{ url_for('admin.verify_catalogue_url') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ url: url })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                officialUrlInput.value = data.url;
+                urlVerifyStatus.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Connected: <strong>${data.site_title || 'Valid Website'}</strong></span>`;
+            } else {
+                urlVerifyStatus.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>${data.error || 'Website unreachable'}</span>`;
+            }
+        } catch (err) {
+            urlVerifyStatus.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Connection error</span>';
+        } finally {
+            verifyUrlBtn.disabled = false;
+            verifyUrlBtn.innerHTML = '<i class="bi bi-patch-check me-1"></i>Verify Website';
+        }
+    });
+
+    // Handle Form Submit & Process Catalogue
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (!fileInput.files.length) {
+            alert('Please select a catalogue file to upload.');
+            return;
+        }
+
+        const formData = new FormData(form);
+        startProcessBtn.disabled = true;
+        uploadCard.classList.add('d-none');
+        progressCard.classList.remove('d-none');
+
+        try {
+            const resp = await fetch("{{ url_for('admin.process_catalogue') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            });
+
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                throw new Error(data.error || 'Processing catalogue failed.');
+            }
+
+            // Render Extracted Results
+            renderResults(data);
+        } catch (err) {
+            alert('Error: ' + err.message);
+            uploadCard.classList.remove('d-none');
+        } finally {
+            progressCard.classList.add('d-none');
+            startProcessBtn.disabled = false;
+        }
+    });
+
+    function renderResults(data) {
+        currentProcessedProducts = data.products || [];
+        currentConvertedCsv = data.csv_text || '';
+
+        statTotalItems.textContent = data.total_catalogue_items || 0;
+        statScrapedCount.textContent = data.scraped_count || 0;
+        statSkippedCount.textContent = data.skipped_count || 0;
+        statMarginCount.textContent = `+${document.getElementById('markupInput').value || 300} Rs`;
+
+        readyTabBadge.textContent = data.scraped_count || 0;
+        skippedTabBadge.textContent = data.skipped_count || 0;
+
+        // Show Converted CSV Banner if PDF was parsed
+        if (currentConvertedCsv) {
+            convertedCsvBanner.classList.remove('d-none');
+        } else {
+            convertedCsvBanner.classList.add('d-none');
+        }
+
+        // Render Ready Table
+        readyTableBody.innerHTML = '';
+        if (currentProcessedProducts.length === 0) {
+            readyTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+                        No products ready. If all products were skipped, check the "Skipped Products" tab.
+                    </td>
+                </tr>`;
+        } else {
+            currentProcessedProducts.forEach((p, idx) => {
+                const tr = document.createElement('tr');
+                const imgTag = p.image_path 
+                    ? `<img src="${p.image_path}" alt="Product" class="rounded border" style="width: 54px; height: 54px; object-fit: cover;">`
+                    : `<div class="rounded border bg-light d-flex align-items-center justify-content-center text-muted" style="width: 54px; height: 54px;"><i class="bi bi-image"></i></div>`;
+
+                tr.innerHTML = `
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input item-check" data-idx="${idx}" checked>
+                    </td>
+                    <td>${imgTag}</td>
+                    <td>
+                        <div class="fw-bold text-dark">${escapeHtml(p.name)}</div>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            ${p.official_url ? `<a href="${p.official_url}" target="_blank" class="badge bg-light text-primary border text-decoration-none small"><i class="bi bi-link-45deg"></i> Official Link</a>` : ''}
+                            <span class="badge ${p.status === 'scraped' ? 'bg-success-subtle text-success border' : 'bg-warning-subtle text-warning border'} small">
+                                <i class="bi ${p.status === 'scraped' ? 'bi-patch-check-fill' : 'bi-info-circle'} me-1"></i>${p.status === 'scraped' ? 'Official Specs & Photos' : 'Catalogue Data'}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary-subtle text-dark border">
+                            ${p.category_id ? document.querySelector(`#categorySelect option[value="${p.category_id}"]`)?.textContent || 'General' : 'General'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="text-muted fw-semibold">Rs ${parseFloat(p.cost_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </td>
+                    <td>
+                        <strong class="text-warning fs-6">Rs ${parseFloat(p.sale_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                        <div class="small text-success fw-semibold">+Rs ${(p.sale_price - p.cost_price).toFixed(2)}</div>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary preview-btn" data-idx="${idx}">
+                            <i class="bi bi-eye me-1"></i>Details (${p.specs_count} specs)
+                        </button>
+                    </td>
+                `;
+                readyTableBody.appendChild(tr);
+            });
+        }
+
+        // Render Skipped Table
+        skippedTableBody.innerHTML = '';
+        const skippedList = data.skipped || [];
+        if (skippedList.length === 0) {
+            skippedTableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">
+                        <i class="bi bi-check-circle-fill text-success fs-2 d-block mb-1"></i>
+                        No products were skipped! Every item in your catalogue was located on the official website.
+                    </td>
+                </tr>`;
+        } else {
+            skippedList.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="fw-semibold text-dark">${escapeHtml(s.name)}</td>
+                    <td class="text-muted">Rs ${parseFloat(s.price || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td><span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-exclamation-triangle me-1"></i>${escapeHtml(s.reason)}</span></td>
+                `;
+                skippedTableBody.appendChild(tr);
+            });
+        }
+
+        updateSelectionSummary();
+        resultsSection.classList.remove('d-none');
+        resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Select All Checkbox
+    selectAllCheck.addEventListener('change', function() {
+        const checked = this.checked;
+        document.querySelectorAll('.item-check').forEach(cb => cb.checked = checked);
+        updateSelectionSummary();
+    });
+
+    readyTableBody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-check')) {
+            updateSelectionSummary();
+        }
+    });
+
+    function updateSelectionSummary() {
+        const total = document.querySelectorAll('.item-check').length;
+        const selected = document.querySelectorAll('.item-check:checked').length;
+        selectionCountInfo.textContent = `${selected} of ${total} products selected for publishing.`;
+        commitBtn.disabled = selected === 0;
+        commitBtnBottom.disabled = selected === 0;
+    }
+
+    // Download Converted CSV Button
+    downloadCsvBtn.addEventListener('click', function() {
+        if (!currentConvertedCsv) return;
+        const blob = new Blob([currentConvertedCsv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `converted_catalogue_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    });
+
+    // Preview Scraped Product Details Modal
+    readyTableBody.addEventListener('click', function(e) {
+        const btn = e.target.closest('.preview-btn');
+        if (!btn) return;
+        const idx = parseInt(btn.getAttribute('data-idx'));
+        const p = currentProcessedProducts[idx];
+        if (!p) return;
+
+        document.getElementById('modalProductTitle').textContent = p.name;
+        
+        let galleryHtml = '';
+        if (p.gallery_images && p.gallery_images.length > 0) {
+            galleryHtml = `
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted d-block mb-2">Scraped Website Gallery Photos (${p.gallery_images.length})</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        ${p.gallery_images.map(img => `<img src="${img}" class="rounded border" style="width: 70px; height: 70px; object-fit: cover;">`).join('')}
+                    </div>
+                </div>`;
+        }
+
+        let specsHtml = '';
+        if (p.specs_text) {
+            const lines = p.specs_text.split('\n').filter(l => l.trim());
+            specsHtml = `
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted d-block mb-1">Technical Specifications (${lines.length})</label>
+                    <div class="table-responsive rounded border bg-light p-2" style="max-height: 220px; overflow-y: auto;">
+                        <table class="table table-sm table-borderless mb-0 small">
+                            ${lines.map(line => {
+                                const parts = line.split(':');
+                                return `<tr><td class="fw-bold text-secondary" style="width: 40%;">${escapeHtml(parts[0])}</td><td class="text-dark">${escapeHtml(parts.slice(1).join(':'))}</td></tr>`;
+                            }).join('')}
+                        </table>
+                    </div>
+                </div>`;
+        }
+
+        let highlightsHtml = '';
+        if (p.highlights_text) {
+            const hls = p.highlights_text.split('\n').filter(l => l.trim());
+            highlightsHtml = `
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted d-block mb-1">Key Features / Highlights</label>
+                    <ul class="small text-dark mb-0 ps-3">
+                        ${hls.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
+                    </ul>
+                </div>`;
+        }
+
+        document.getElementById('modalProductBody').innerHTML = `
+            <div class="row g-3 mb-3">
+                <div class="col-md-4 text-center">
+                    ${p.image_path ? `<img src="${p.image_path}" class="img-fluid rounded border shadow-sm" style="max-height: 180px;">` : '<div class="p-4 bg-light border rounded">No Image</div>'}
+                </div>
+                <div class="col-md-8">
+                    <h6 class="fw-bold text-dark mb-2">${escapeHtml(p.name)}</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="badge bg-secondary-subtle text-dark border">Cost: Rs ${p.cost_price}</span>
+                        <span class="badge bg-warning text-dark fw-bold">Sale: Rs ${p.sale_price}</span>
+                        <span class="badge bg-success-subtle text-success border">Profit: +Rs ${(p.sale_price - p.cost_price).toFixed(2)}</span>
+                    </div>
+                    <p class="text-secondary small mb-0" style="line-height: 1.6; max-height: 100px; overflow-y: auto;">
+                        ${escapeHtml(p.description || 'No description extracted.')}
+                    </p>
+                </div>
+            </div>
+            ${galleryHtml}
+            ${specsHtml}
+            ${highlightsHtml}
+        `;
+
+        new bootstrap.Modal(document.getElementById('previewModal')).show();
+    });
+
+    // Commit / Publish Products
+    [commitBtn, commitBtnBottom].forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const selectedIdxs = Array.from(document.querySelectorAll('.item-check:checked'))
+                .map(cb => parseInt(cb.getAttribute('data-idx')));
+
+            if (selectedIdxs.length === 0) {
+                alert('Please select at least one product to publish.');
+                return;
+            }
+
+            const itemsToSave = selectedIdxs.map(idx => currentProcessedProducts[idx]);
+
+            if (!confirm(`Are you sure you want to publish ${itemsToSave.length} product(s) to your SmartCart store?`)) {
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Publishing...';
+
+            try {
+                const resp = await fetch("{{ url_for('admin.commit_imported_products') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ products: itemsToSave })
+                });
+
+                const data = await resp.json();
+                if (data.success) {
+                    window.location.href = data.redirect || "{{ url_for('admin.products') }}";
+                } else {
+                    alert('Failed to publish: ' + (data.error || 'Unknown error'));
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-cloud-upload-fill me-1"></i>Publish Selected Products to Store';
+                }
+            } catch (err) {
+                alert('Error publishing products: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-cloud-upload-fill me-1"></i>Publish Selected Products to Store';
+            }
+        });
+    });
+
+    // Reset Button
+    resetBtn.addEventListener('click', function() {
+        resultsSection.classList.add('d-none');
+        uploadCard.classList.remove('d-none');
+        fileInput.value = '';
+        dropZoneContent.classList.remove('d-none');
+        selectedFileInfo.classList.add('d-none');
+        uploadCard.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+});
+</script>
+{% endblock %}
