@@ -90,27 +90,55 @@
                         <label class="form-label fw-bold text-dark mb-1">
                             Catalogue Document <span class="text-danger">*</span>
                         </label>
-                        <div class="file-dropzone border border-2 border-dashed rounded-3 p-4 text-center bg-light" id="dropZone" style="cursor: pointer; transition: all 0.2s ease;">
-                            <input type="file" id="catalogueFileInput" name="catalogue_file" accept=".pdf,.csv,.xlsx,.xls,.txt" class="d-none" required>
+                        <div class="file-dropzone border border-2 border-dashed rounded-3 p-4 text-center bg-light position-relative" id="dropZone" style="cursor: pointer; transition: all 0.2s ease;">
+                            <!-- Accessible File Input (Offscreen instead of display:none so browsers never block .click()) -->
+                            <input type="file" id="catalogueFileInput" name="catalogue_file" accept=".pdf,.csv,.xlsx,.xls,.txt" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;" required>
+                            
                             <div id="dropZoneContent">
-                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-1 d-block mb-2" id="fileIcon"></i>
+                                <i class="bi bi-cloud-arrow-up-fill text-warning fs-1 d-block mb-2" id="fileIcon"></i>
                                 <h6 class="fw-bold text-dark mb-1" id="filePrompt">Drop your PDF, Excel, or CSV catalogue here</h6>
-                                <p class="text-muted small mb-2">or click to browse from your computer</p>
-                                <div class="d-flex justify-content-center gap-2">
-                                    <span class="badge bg-danger-subtle text-danger border">.PDF (Auto-converts to CSV)</span>
-                                    <span class="badge bg-success-subtle text-success border">.XLSX / .XLS</span>
-                                    <span class="badge bg-primary-subtle text-primary border">.CSV</span>
+                                <p class="text-muted small mb-3">Drag and drop file here, or click the button below to browse</p>
+                                
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-warning px-4 py-2 fw-bold shadow-sm" id="browseFileBtn">
+                                        <i class="bi bi-folder2-open me-2"></i>Choose Catalogue File
+                                    </button>
+                                </div>
+
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <span class="badge bg-danger-subtle text-danger border"><i class="bi bi-file-earmark-pdf me-1"></i>.PDF (Auto-converts to CSV)</span>
+                                    <span class="badge bg-success-subtle text-success border"><i class="bi bi-file-earmark-excel me-1"></i>.XLSX / .XLS</span>
+                                    <span class="badge bg-primary-subtle text-primary border"><i class="bi bi-filetype-csv me-1"></i>.CSV</span>
                                 </div>
                             </div>
-                            <div id="selectedFileInfo" class="d-none">
-                                <div class="badge bg-success fs-6 mb-2 py-2 px-3">
-                                    <i class="bi bi-check-circle-fill me-2"></i><span id="selectedFileName">catalogue.pdf</span>
+
+                            <div id="selectedFileInfo" class="d-none py-2">
+                                <div class="p-3 bg-white border border-success rounded-3 shadow-sm d-inline-block text-start" style="max-width: 90%;">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <i class="bi bi-check-circle-fill text-success fs-2"></i>
+                                        <div>
+                                            <div class="fw-bold text-dark fs-6" id="selectedFileName">catalogue.pdf</div>
+                                            <div class="small text-muted" id="selectedFileSize">0 KB</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" id="clearFileBtn">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Choose Different File
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="small text-muted" id="selectedFileSize"></div>
-                                <button type="button" class="btn btn-sm btn-link text-danger mt-1" id="clearFileBtn">Change File</button>
                             </div>
                         </div>
+
+                        <!-- Native standard fallback button -->
+                        <div class="mt-1 d-flex justify-content-between align-items-center">
+                            <span class="text-muted small" style="font-size: 0.78rem;">Supported formats: PDF, Excel (.xlsx/.xls), CSV.</span>
+                            <label for="catalogueFileInput" class="btn btn-link btn-sm text-decoration-none text-secondary p-0 small" style="cursor: pointer; font-size: 0.8rem;">
+                                <i class="bi bi-paperclip me-1"></i>Standard file picker
+                            </label>
+                        </div>
                     </div>
+
 
                     <!-- Margin, Category & Rules Settings -->
                     <div class="col-lg-5">
@@ -362,6 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedFileName = document.getElementById('selectedFileName');
     const selectedFileSize = document.getElementById('selectedFileSize');
     const clearFileBtn = document.getElementById('clearFileBtn');
+    const browseFileBtn = document.getElementById('browseFileBtn');
     const startProcessBtn = document.getElementById('startProcessBtn');
     
     const uploadCard = document.getElementById('uploadCard');
@@ -388,43 +417,78 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentProcessedProducts = [];
     let currentConvertedCsv = '';
 
+    // File Chooser Helper
+    function triggerFilePicker(e) {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        fileInput.click();
+    }
+
+    if (browseFileBtn) {
+        browseFileBtn.addEventListener('click', triggerFilePicker);
+    }
+
+    dropZone.addEventListener('click', function(e) {
+        if (e.target.closest('#clearFileBtn')) return;
+        if (!e.target.closest('#browseFileBtn')) {
+            triggerFilePicker(e);
+        }
+    });
+
     // File Drag & Drop Handling
-    dropZone.addEventListener('click', () => fileInput.click());
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         dropZone.classList.add('border-warning', 'bg-warning-subtle');
     });
     ['dragleave', 'dragend'].forEach(evt => {
-        dropZone.addEventListener(evt, () => {
+        dropZone.addEventListener(evt, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             dropZone.classList.remove('border-warning', 'bg-warning-subtle');
         });
     });
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         dropZone.classList.remove('border-warning', 'bg-warning-subtle');
-        if (e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            try {
+                fileInput.files = e.dataTransfer.files;
+            } catch (err) {
+                const dt = new DataTransfer();
+                dt.items.add(e.dataTransfer.files[0]);
+                fileInput.files = dt.files;
+            }
             updateFileDisplay();
         }
     });
     fileInput.addEventListener('change', updateFileDisplay);
 
     function updateFileDisplay() {
-        if (fileInput.files.length > 0) {
+        if (fileInput.files && fileInput.files.length > 0) {
             const f = fileInput.files[0];
             selectedFileName.textContent = f.name;
             selectedFileSize.textContent = `${(f.size / 1024).toFixed(1)} KB`;
             dropZoneContent.classList.add('d-none');
             selectedFileInfo.classList.remove('d-none');
+            dropZone.classList.add('border-success', 'bg-success-subtle');
+            dropZone.classList.remove('border-dashed');
         }
     }
 
     clearFileBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        e.preventDefault();
         fileInput.value = '';
         dropZoneContent.classList.remove('d-none');
         selectedFileInfo.classList.add('d-none');
+        dropZone.classList.remove('border-success', 'bg-success-subtle');
+        dropZone.classList.add('border-dashed');
     });
+
 
     // Verify Company Official Website URL
     verifyUrlBtn.addEventListener('click', async function() {
