@@ -135,13 +135,19 @@
 
                                 <!-- Default Category -->
                                 <div class="mb-3">
-                                    <label class="form-label small fw-bold text-secondary mb-1">Default Category</label>
+                                    <label class="form-label small fw-bold text-secondary mb-1">
+                                        Default Category <span class="badge bg-light text-muted border small ms-1">Fallback</span>
+                                    </label>
                                     <select class="form-select" name="default_category_id" id="categorySelect">
                                         {% for c in categories %}
                                             <option value="{{ c[0] }}" {% if 'electronic' in c[1]|lower %}selected{% endif %}>{{ c[1] }}</option>
                                         {% endfor %}
                                     </select>
+                                    <div class="form-text small" style="font-size: 0.78rem;">
+                                        <i class="bi bi-magic text-warning me-1"></i>Categories are <strong>auto-detected</strong> from your catalogue &amp; created if new. This is only used as a fallback if an item has no category.
+                                    </div>
                                 </div>
+
 
                                 <!-- Default Brand -->
                                 <div class="mb-3">
@@ -545,8 +551,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </td>
                     <td>
-                        <span class="badge bg-secondary-subtle text-dark border">
-                            ${p.category_id ? document.querySelector(`#categorySelect option[value="${p.category_id}"]`)?.textContent || 'General' : 'General'}
+                        <span class="badge bg-primary-subtle text-primary border fw-semibold">
+                            <i class="bi bi-tag-fill me-1"></i>${escapeHtml(p.category_name || (p.category_id ? document.querySelector(`#categorySelect option[value="${p.category_id}"]`)?.textContent : 'General') || 'General')}
                         </span>
                     </td>
                     <td>
@@ -580,14 +586,29 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             skippedList.forEach(s => {
                 const tr = document.createElement('tr');
+                const isDup = s.reason && s.reason.toLowerCase().includes('already listed');
                 tr.innerHTML = `
                     <td class="fw-semibold text-dark">${escapeHtml(s.name)}</td>
                     <td class="text-muted">Rs ${parseFloat(s.price || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                    <td><span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-exclamation-triangle me-1"></i>${escapeHtml(s.reason)}</span></td>
+                    <td>
+                        <span class="badge ${isDup ? 'bg-danger-subtle text-danger border' : 'bg-warning-subtle text-warning-emphasis border'}">
+                            <i class="bi ${isDup ? 'bi-shield-slash' : 'bi-exclamation-triangle'} me-1"></i>${escapeHtml(s.reason)}
+                        </span>
+                    </td>
                 `;
                 skippedTableBody.appendChild(tr);
             });
         }
+
+        // Dynamically update Category dropdown if new categories were auto-created
+        if (data.categories && data.categories.length > 0) {
+            const catSelect = document.getElementById('categorySelect');
+            const currentSel = catSelect.value;
+            catSelect.innerHTML = data.categories.map(c => 
+                `<option value="${c.id}" ${c.id == currentSel ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+            ).join('');
+        }
+
 
         updateSelectionSummary();
         resultsSection.classList.remove('d-none');

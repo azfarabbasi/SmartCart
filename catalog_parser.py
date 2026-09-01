@@ -34,6 +34,49 @@ def clean_price_value(raw_val):
     return None
 
 
+def _detect_column_roles(header):
+    """Accurately identify column indexes without keyword collision.
+    E.g. ensures 'Catalogue Price' is treated as price, not category.
+    """
+    name_col = -1
+    price_col = -1
+    stock_col = -1
+    cat_col = -1
+    url_col = -1
+    brand_col = -1
+
+    for idx, raw_col in enumerate(header):
+        col = re.sub(r'[^a-z0-9]', ' ', str(raw_col or '').lower()).strip()
+        tokens = col.split()
+
+        # 1. Price check (takes priority over 'catalog' substring)
+        if any(t in tokens for t in ['price', 'cost', 'rate', 'rs', 'amount', 'pkr', 'wholesale']) or 'price' in col or 'cost' in col:
+            if price_col == -1:
+                price_col = idx
+        # 2. Category check
+        elif any(t in tokens for t in ['category', 'categories', 'department', 'section', 'type', 'dept']) or 'category' in col:
+            if cat_col == -1:
+                cat_col = idx
+        # 3. Stock check
+        elif any(t in tokens for t in ['stock', 'qty', 'quantity', 'count']):
+            if stock_col == -1:
+                stock_col = idx
+        # 4. URL check
+        elif any(t in tokens for t in ['url', 'link', 'website', 'page']):
+            if url_col == -1:
+                url_col = idx
+        # 5. Brand check
+        elif any(t in tokens for t in ['brand', 'company', 'manufacturer']):
+            if brand_col == -1:
+                brand_col = idx
+        # 6. Name check
+        elif any(t in tokens for t in ['product', 'item', 'description', 'title', 'model', 'name']) or 'name' in col or 'product' in col:
+            if name_col == -1:
+                name_col = idx
+
+    return name_col, price_col, stock_col, cat_col, url_col, brand_col
+
+
 def extract_from_pdf(pdf_source):
     """Extract product names and catalogue prices from a PDF file.
     
@@ -55,22 +98,8 @@ def extract_from_pdf(pdf_source):
                 if not table or len(table) < 2:
                     continue
 
-                # Header detection
-                header = [str(c or '').strip().lower() for c in table[0]]
-                name_col = -1
-                price_col = -1
-                stock_col = -1
-
-                for idx, col in enumerate(header):
-                    if any(k in col for k in ['product', 'item', 'description', 'title', 'model', 'name']):
-                        if name_col == -1:
-                            name_col = idx
-                    if any(k in col for k in ['price', 'cost', 'rate', 'rs', 'amount', 'pkr', 'wholesale', 'catalog']):
-                        if price_col == -1:
-                            price_col = idx
-                    if any(k in col for k in ['stock', 'qty', 'quantity']):
-                        if stock_col == -1:
-                            stock_col = idx
+                # Header detection using strict role matcher
+                name_col, price_col, stock_col, cat_col, _url_col, _brand_col = _detect_column_roles(table[0])
 
                 # If no clear headers, inspect first few data rows
                 if name_col == -1 or price_col == -1:
@@ -88,6 +117,7 @@ def extract_from_pdf(pdf_source):
                         if len(row) > max(name_col, price_col):
                             name_val = str(row[name_col] or '').strip()
                             price_val = clean_price_value(row[price_col])
+                            cat_val = str(row[cat_col] or '').strip() if cat_col != -1 and len(row) > cat_col else ''
                             stock_val = 20
                             if stock_col != -1 and len(row) > stock_col:
                                 try:
@@ -101,16 +131,27 @@ def extract_from_pdf(pdf_source):
                                     products.append({
                                         'name': name_val,
                                         'catalogue_price': price_val,
+                                        'category': cat_val,
                                         'stock': stock_val
                                     })
 
             # Fallback to line-by-line regex if table extraction didn't yield items on this page
             if not table_handled:
                 text = page.extract_text() or ''
+                current_category = ''
                 for line in text.splitlines():
                     cleaned = line.strip()
-                    if not cleaned or len(cleaned) < 4:
+                    if not cleaned or len(cleaned) < 3:
                         continue
+
+                    # Check for Category Section Header (e.g. "[Smart Watches]", "Category: Earbuds", "=== Power Banks ===")
+                    cat_header_match = re.match(r'^(?:category\s*[:\-]\s*)?[\[\(\{\-~=_\s]*([A-Za-z0-9\s/&,]+)[\]\)\}\-~=_\s]*$', cleaned, re.I)
+                    if cat_header_match and not re.search(r'\b(rs|pkr|\$|/-)\b', cleaned, re.I) and not re.search(r'\d{3,}', cleaned):
+                        cand_cat = cat_header_match.group(1).strip()
+                        # Verify it's a category title and not generic noise
+                        if 3 <= len(cand_cat) <= 45 and not any(w in cand_cat.lower() for w in ['catalogue', 'catalog', 'price list', 'pricelist', 'page', 'total']):
+                            current_category = cand_cat.title()
+                            continue
 
                     # Filter out catalogue title headers (e.g. "Product Catalogue 2026", "Price List 2025")
                     header_noise = ['catalogue', 'catalog', 'price list', 'pricelist', 'brochure', 'page ', 'total', 'subtotal', 'date:']
@@ -130,6 +171,7 @@ def extract_from_pdf(pdf_source):
                                 products.append({
                                     'name': p_name,
                                     'catalogue_price': p_price,
+                                    'category': current_category,
                                     'stock': 20
                                 })
 
@@ -137,9 +179,9 @@ def extract_from_pdf(pdf_source):
     # Generate equivalent CSV representation
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Product Name', 'Catalogue Price', 'Stock'])
+    writer.writerow(['Product Name', 'Category', 'Catalogue Price', 'Stock'])
     for p in products:
-        writer.writerow([p['name'], f"{p['catalogue_price']:.2f}", p['stock']])
+        writer.writerow([p['name'], p.get('category', ''), f"{p['catalogue_price']:.2f}", p['stock']])
     csv_text = output.getvalue()
 
     return products, csv_text
@@ -167,25 +209,8 @@ def extract_from_csv(csv_content):
     if not rows:
         return products
 
-    # Find columns
-    header = [c.strip().lower() for c in rows[0]]
-    name_col = -1
-    price_col = -1
-    stock_col = -1
-    url_col = -1
-    brand_col = -1
-
-    for idx, col in enumerate(header):
-        if any(k in col for k in ['product', 'item', 'description', 'title', 'model', 'name']):
-            if name_col == -1: name_col = idx
-        if any(k in col for k in ['price', 'cost', 'rate', 'rs', 'amount', 'wholesale', 'catalog']):
-            if price_col == -1: price_col = idx
-        if any(k in col for k in ['stock', 'qty', 'quantity']):
-            if stock_col == -1: stock_col = idx
-        if any(k in col for k in ['url', 'link', 'website', 'page']):
-            if url_col == -1: url_col = idx
-        if any(k in col for k in ['brand', 'company', 'manufacturer']):
-            if brand_col == -1: brand_col = idx
+    # Find columns using strict role detection
+    name_col, price_col, stock_col, cat_col, url_col, brand_col = _detect_column_roles(rows[0])
 
     # If first row wasn't headers, assume col 0 is name and col 1 is price
     start_row = 1
@@ -199,6 +224,7 @@ def extract_from_csv(csv_content):
             continue
         name_val = row[name_col].strip() if name_col < len(row) else ''
         price_val = clean_price_value(row[price_col]) if price_col != -1 and price_col < len(row) else None
+        cat_val = row[cat_col].strip() if cat_col != -1 and cat_col < len(row) else ''
         stock_val = 20
         if stock_col != -1 and stock_col < len(row):
             try:
@@ -213,6 +239,7 @@ def extract_from_csv(csv_content):
             products.append({
                 'name': name_val,
                 'catalogue_price': price_val,
+                'category': cat_val,
                 'stock': stock_val,
                 'url': url_val,
                 'brand': brand_val
@@ -231,25 +258,8 @@ def extract_from_excel(file_stream_or_path):
     if not rows:
         return products
 
-    # Find columns
-    header = [str(c or '').strip().lower() for c in rows[0]]
-    name_col = -1
-    price_col = -1
-    stock_col = -1
-    url_col = -1
-    brand_col = -1
-
-    for idx, col in enumerate(header):
-        if any(k in col for k in ['product', 'item', 'description', 'title', 'model', 'name']):
-            if name_col == -1: name_col = idx
-        if any(k in col for k in ['price', 'cost', 'rate', 'rs', 'amount', 'wholesale', 'catalog']):
-            if price_col == -1: price_col = idx
-        if any(k in col for k in ['stock', 'qty', 'quantity']):
-            if stock_col == -1: stock_col = idx
-        if any(k in col for k in ['url', 'link', 'website', 'page']):
-            if url_col == -1: url_col = idx
-        if any(k in col for k in ['brand', 'company', 'manufacturer']):
-            if brand_col == -1: brand_col = idx
+    # Find columns using strict role detection
+    name_col, price_col, stock_col, cat_col, url_col, brand_col = _detect_column_roles(rows[0])
 
     start_row = 1
     if name_col == -1 or price_col == -1:
@@ -262,6 +272,7 @@ def extract_from_excel(file_stream_or_path):
             continue
         name_val = str(row[name_col] or '').strip() if name_col < len(row) else ''
         price_val = clean_price_value(row[price_col]) if price_col != -1 and price_col < len(row) else None
+        cat_val = str(row[cat_col] or '').strip() if cat_col != -1 and cat_col < len(row) else ''
         stock_val = 20
         if stock_col != -1 and stock_col < len(row):
             try:
@@ -276,12 +287,15 @@ def extract_from_excel(file_stream_or_path):
             products.append({
                 'name': name_val,
                 'catalogue_price': price_val,
+                'category': cat_val,
                 'stock': stock_val,
                 'url': url_val,
                 'brand': brand_val
             })
 
     return products
+
+
 
 
 def parse_catalogue_file(file_storage, filename=None, markup=300.0):

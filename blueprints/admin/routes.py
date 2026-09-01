@@ -1,8 +1,10 @@
 import os
+import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from urllib.parse import quote
+
 
 import oracledb
 from flask import (Blueprint, current_app, flash, jsonify, redirect, render_template,
@@ -458,12 +460,13 @@ def verify_catalogue_url():
 @admin_required
 def sample_catalogue():
     sample_csv = (
-        "Product Name,Catalogue Price,Stock\n"
-        "Anker 737 Power Bank 24000mAh,18500.00,20\n"
-        "Ronin R-520 Earbuds,2500.00,25\n"
-        "Apple 20W USB-C Power Adapter,4200.00,30\n"
-        "Audionic Airbud 400,3200.00,15\n"
+        "Product Name,Category,Catalogue Price,Stock\n"
+        "Anker 737 Power Bank 24000mAh,Power Banks,18500.00,20\n"
+        "Ronin R-520 Earbuds,Earbuds,2500.00,25\n"
+        "Apple 20W USB-C Power Adapter,Chargers & Adapters,4200.00,30\n"
+        "Audionic Airbud 400,Earbuds,3200.00,15\n"
     )
+
     return Response(
         sample_csv,
         mimetype='text/csv',
@@ -494,14 +497,26 @@ def process_catalogue():
         return jsonify({'success': False, 'error': parse_err}), 400
 
     cur = get_db().cursor()
-    # Cache existing categories and brands for smart matching
-    cur.execute("SELECT category_id, LOWER(category_name) FROM Categories")
-    cat_lookup = {r[1]: r[0] for r in cur.fetchall()}
+    # Cache existing categories for smart matching & auto-creation
+    cur.execute("SELECT category_id, category_name FROM Categories")
+    cat_lookup = {r[1].strip().lower(): (r[0], r[1].strip()) for r in cur.fetchall()}
+
     try:
         cur.execute("SELECT brand_id, LOWER(brand_name) FROM Brands")
         brand_lookup = {r[1]: r[0] for r in cur.fetchall()}
     except Exception:
         brand_lookup = {}
+
+    # Load existing products from DB to PREVENT DUPLICATES
+    cur.execute("SELECT product_id, TRIM(name) FROM Products")
+    existing_products = {}
+    for pid, pname in cur.fetchall():
+        if pname:
+            p_clean = re.sub(r'\s+', ' ', pname).strip().lower()
+            existing_products[p_clean] = pid
+            p_alnum = re.sub(r'[^a-z0-9]', '', p_clean)
+            if p_alnum:
+                existing_products[p_alnum] = pid
 
     processed_products = []
     skipped_products = []
@@ -513,6 +528,56 @@ def process_catalogue():
         sale_price = item['sale_price']
         stock_count = item.get('stock', 20)
 
+        # ── DUPLICATE CHECK: Skip if already present on website ─────────
+        clean_item_name = re.sub(r'\s+', ' ', raw_name).strip().lower()
+        alnum_item_name = re.sub(r'[^a-z0-9]', '', clean_item_name)
+        if clean_item_name in existing_products or (alnum_item_name and alnum_item_name in existing_products):
+            dup_id = existing_products.get(clean_item_name) or existing_products.get(alnum_item_name)
+            skipped_products.append({
+                'name': raw_name,
+                'price': cat_cost,
+                'reason': f"Already listed on your website (Product #{dup_id})"
+            })
+            continue
+
+        # ── CATEGORY DETECTION & AUTO-CREATION ─────────────────────────
+        cat_cand = (item.get('category') or '').strip()
+        assigned_cat_id = None
+        assigned_cat_name = ''
+
+        if cat_cand:
+            cat_norm = cat_cand.lower()
+            if cat_norm in cat_lookup:
+                assigned_cat_id, assigned_cat_name = cat_lookup[cat_norm]
+            else:
+                # Category not present in DB -> Auto-create it!
+                clean_cat_title = cat_cand.title()[:100]
+                try:
+                    new_cid_var = cur.var(oracledb.NUMBER)
+                    cur.execute(
+                        "INSERT INTO Categories (category_id, category_name) VALUES (categories_seq.NEXTVAL, :cn) "
+                        "RETURNING category_id INTO :cid",
+                        {'cn': clean_cat_title, 'cid': new_cid_var}
+                    )
+                    assigned_cat_id = int(new_cid_var.getvalue()[0])
+                    assigned_cat_name = clean_cat_title
+                    cat_lookup[cat_norm] = (assigned_cat_id, assigned_cat_name)
+                    get_db().commit()
+                    invalidate_categories()
+                except Exception as cat_err:
+                    current_app.logger.warning(f"Error auto-creating category '{clean_cat_title}': {cat_err}")
+
+        # Fallback to selected default category if row had no category
+        if not assigned_cat_id:
+            if default_category_id and str(default_category_id).isdigit():
+                assigned_cat_id = int(default_category_id)
+                for cid, cname in cat_lookup.values():
+                    if cid == assigned_cat_id:
+                        assigned_cat_name = cname
+                        break
+            elif cat_lookup:
+                assigned_cat_id, assigned_cat_name = list(cat_lookup.values())[0]
+
         # Smart default brand determination
         assigned_brand_id = int(default_brand_id) if default_brand_id and default_brand_id.isdigit() else None
         if not assigned_brand_id:
@@ -521,17 +586,26 @@ def process_catalogue():
                     assigned_brand_id = b_id
                     break
 
-        # Smart default category determination
-        assigned_cat_id = int(default_category_id) if default_category_id and default_category_id.isdigit() else None
-        if not assigned_cat_id and cat_lookup:
-            assigned_cat_id = list(cat_lookup.values())[0]
-
         # Step 2: Search official website if URL provided
         if official_url:
             found_url = search_product_on_official_website(official_url, raw_name)
             if found_url:
                 scraped = scrape_official_product_details(found_url, cat_cost, markup=markup, download_images=True)
                 if scraped and scraped.get('title'):
+                    scraped_title = scraped['title'][:150]
+
+                    # ── DUPLICATE CHECK ON SCRAPED OFFICIAL TITLE ─────────
+                    clean_scraped = re.sub(r'\s+', ' ', scraped_title).strip().lower()
+                    alnum_scraped = re.sub(r'[^a-z0-9]', '', clean_scraped)
+                    if clean_scraped in existing_products or (alnum_scraped and alnum_scraped in existing_products):
+                        dup_id = existing_products.get(clean_scraped) or existing_products.get(alnum_scraped)
+                        skipped_products.append({
+                            'name': scraped_title,
+                            'price': cat_cost,
+                            'reason': f"Already listed on your website (Product #{dup_id})"
+                        })
+                        continue
+
                     # Match brand from scraped details if not yet assigned
                     if not assigned_brand_id and scraped.get('brand'):
                         s_brand = scraped['brand'].lower()
@@ -541,7 +615,7 @@ def process_catalogue():
                                 break
 
                     processed_products.append({
-                        'name': scraped['title'][:150],
+                        'name': scraped_title,
                         'catalogue_price': cat_cost,
                         'cost_price': cost_price,
                         'sale_price': sale_price,
@@ -556,6 +630,7 @@ def process_catalogue():
                         'box_contents_text': scraped.get('box_contents_text', '')[:1000],
                         'official_url': found_url,
                         'category_id': assigned_cat_id,
+                        'category_name': assigned_cat_name,
                         'brand_id': assigned_brand_id,
                         'status': 'scraped'
                     })
@@ -583,6 +658,7 @@ def process_catalogue():
                             'box_contents_text': '',
                             'official_url': '',
                             'category_id': assigned_cat_id,
+                            'category_name': assigned_cat_name,
                             'brand_id': assigned_brand_id,
                             'status': 'partial'
                         })
@@ -610,6 +686,7 @@ def process_catalogue():
                         'box_contents_text': '',
                         'official_url': '',
                         'category_id': assigned_cat_id,
+                        'category_name': assigned_cat_name,
                         'brand_id': assigned_brand_id,
                         'status': 'not_found_fallback'
                     })
@@ -631,9 +708,13 @@ def process_catalogue():
                 'box_contents_text': '',
                 'official_url': '',
                 'category_id': assigned_cat_id,
+                'category_name': assigned_cat_name,
                 'brand_id': assigned_brand_id,
                 'status': 'catalogue_only'
             })
+
+    # Prepare categories list for UI
+    all_categories = [{'id': cid, 'name': cname} for cid, cname in sorted(cat_lookup.values(), key=lambda x: x[1])]
 
     return jsonify({
         'success': True,
@@ -643,8 +724,10 @@ def process_catalogue():
         'products': processed_products,
         'skipped': skipped_products,
         'csv_text': csv_text,
-        'official_url': official_url
+        'official_url': official_url,
+        'categories': all_categories
     })
+
 
 
 @admin_bp.route('/products/import-catalogue/commit', methods=['POST'])
