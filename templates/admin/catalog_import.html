@@ -90,19 +90,16 @@
                         <label class="form-label fw-bold text-dark mb-1">
                             Catalogue Document <span class="text-danger">*</span>
                         </label>
-                        <div class="file-dropzone border border-2 border-dashed rounded-3 p-4 text-center bg-light position-relative" id="dropZone" style="cursor: pointer; transition: all 0.2s ease;">
-                            <!-- Accessible File Input (Offscreen instead of display:none so browsers never block .click()) -->
-                            <input type="file" id="catalogueFileInput" name="catalogue_file" accept=".pdf,.csv,.xlsx,.xls,.txt" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;" required>
-                            
+                        <div class="file-dropzone border border-2 border-dashed rounded-3 p-4 text-center bg-light position-relative" id="dropZone" style="transition: all 0.2s ease;">
                             <div id="dropZoneContent">
                                 <i class="bi bi-cloud-arrow-up-fill text-warning fs-1 d-block mb-2" id="fileIcon"></i>
                                 <h6 class="fw-bold text-dark mb-1" id="filePrompt">Drop your PDF, Excel, or CSV catalogue here</h6>
                                 <p class="text-muted small mb-3">Drag and drop file here, or click the button below to browse</p>
                                 
                                 <div class="mb-3">
-                                    <button type="button" class="btn btn-warning px-4 py-2 fw-bold shadow-sm" id="browseFileBtn">
+                                    <label for="catalogueFileInput" class="btn btn-warning px-4 py-2 fw-bold shadow-sm" id="browseFileBtn" style="cursor: pointer;">
                                         <i class="bi bi-folder2-open me-2"></i>Choose Catalogue File
-                                    </button>
+                                    </label>
                                 </div>
 
                                 <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -130,14 +127,16 @@
                             </div>
                         </div>
 
-                        <!-- Native standard fallback button -->
-                        <div class="mt-1 d-flex justify-content-between align-items-center">
-                            <span class="text-muted small" style="font-size: 0.78rem;">Supported formats: PDF, Excel (.xlsx/.xls), CSV.</span>
-                            <label for="catalogueFileInput" class="btn btn-link btn-sm text-decoration-none text-secondary p-0 small" style="cursor: pointer; font-size: 0.8rem;">
-                                <i class="bi bi-paperclip me-1"></i>Standard file picker
+                        <!-- Direct native file input (100% foolproof on any browser) -->
+                        <div class="mt-2 p-2 bg-white rounded border">
+                            <label for="catalogueFileInput" class="form-label small fw-bold text-muted mb-1 d-flex align-items-center justify-content-between">
+                                <span><i class="bi bi-paperclip me-1"></i>Select file directly:</span>
+                                <span class="text-secondary fw-normal small">Supported: PDF, Excel, CSV</span>
                             </label>
+                            <input type="file" id="catalogueFileInput" name="catalogue_file" class="form-control" accept=".pdf,.csv,.xlsx,.xls,.txt" required>
                         </div>
                     </div>
+
 
 
                     <!-- Margin, Category & Rules Settings -->
@@ -417,25 +416,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentProcessedProducts = [];
     let currentConvertedCsv = '';
 
-    // File Chooser Helper
-    function triggerFilePicker(e) {
-        if (e) {
-            e.stopPropagation();
-            e.preventDefault();
+    // File Drag & Drop & Click Handling
+    dropZone.addEventListener('click', function(e) {
+        // Let native label for="catalogueFileInput" and clearFileBtn handle themselves
+        if (e.target.closest('#clearFileBtn') || e.target.closest('#browseFileBtn') || e.target.id === 'catalogueFileInput') {
+            return;
         }
         fileInput.click();
-    }
-
-    if (browseFileBtn) {
-        browseFileBtn.addEventListener('click', triggerFilePicker);
-    }
-
-    dropZone.addEventListener('click', function(e) {
-        if (e.target.closest('#clearFileBtn')) return;
-        if (!e.target.closest('#browseFileBtn')) {
-            triggerFilePicker(e);
-        }
     });
+
 
     // File Drag & Drop Handling
     dropZone.addEventListener('dragover', (e) => {
