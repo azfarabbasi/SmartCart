@@ -65,6 +65,24 @@ class ProdConfig(Config):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
 
+    @classmethod
+    def validate_production_secrets(cls):
+        insecure_defaults = {
+            'change-me-generate-with-python-secrets-token-hex-32',
+            'dev-secret',
+            'secret',
+            '123456',
+        }
+        key = (cls.SECRET_KEY or '').strip()
+        if not key or key in insecure_defaults or len(key) < 16:
+            raise RuntimeError(
+                "CRITICAL SECURITY ERROR: Insecure or default SECRET_KEY configured in production. "
+                "Please set a strong, random SECRET_KEY in your production environment variables."
+            )
+
 
 def get_config():
-    return ProdConfig if os.environ.get('APP_ENV') == 'production' else DevConfig
+    if os.environ.get('APP_ENV') == 'production':
+        ProdConfig.validate_production_secrets()
+        return ProdConfig
+    return DevConfig

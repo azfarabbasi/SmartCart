@@ -1,9 +1,6 @@
 import random
-import smtplib
-import requests as _requests
 from datetime import datetime, timedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import requests as _requests
 
 from flask import (Blueprint, current_app, flash, make_response, redirect,
                     render_template, request, session, url_for)
@@ -25,6 +22,15 @@ def _safe_next(next_url):
     if next_url and next_url.startswith('/') and not next_url.startswith('//'):
         return next_url
     return None
+
+
+def _mask_email(email):
+    """Mask email for privacy and log hygiene (e.g. az***@gmail.com)."""
+    if not email or '@' not in email:
+        return '[REDACTED]'
+    user, domain = email.split('@', 1)
+    masked_user = user[:2] + '***' if len(user) > 2 else '***'
+    return f"{masked_user}@{domain}"
 
 
 def _send_via_resend(to_email, subject, body_html, to_name='Customer'):
@@ -49,7 +55,7 @@ def _send_via_resend(to_email, subject, body_html, to_name='Customer'):
             timeout=15,
         )
         if resp.status_code in (200, 201):
-            current_app.logger.info(f'Resend email sent successfully to {to_email}')
+            current_app.logger.info(f'Resend email sent successfully to {_mask_email(to_email)}')
             return True
         current_app.logger.warning(f'Resend send failed {resp.status_code}: {resp.text[:200]}')
         return False
@@ -82,7 +88,7 @@ def _send_via_brevo(to_email, subject, body_html, to_name='Customer'):
             timeout=15,
         )
         if resp.status_code in (200, 201):
-            current_app.logger.info(f'Brevo email sent successfully to {to_email}')
+            current_app.logger.info(f'Brevo email sent successfully to {_mask_email(to_email)}')
             return True
         current_app.logger.warning(f'Brevo send failed {resp.status_code}: {resp.text[:200]}')
         return False
@@ -94,6 +100,10 @@ def _send_via_brevo(to_email, subject, body_html, to_name='Customer'):
 def _send_via_smtp(to_email, subject, body_html):
     """Send email via raw SMTP (works locally, blocked on Vercel)."""
     try:
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = current_app.config['EMAIL_USER']
@@ -104,7 +114,7 @@ def _send_via_smtp(to_email, subject, body_html):
         server.login(current_app.config['EMAIL_USER'], current_app.config['EMAIL_PASSWORD'])
         server.sendmail(current_app.config['EMAIL_USER'], to_email, msg.as_string())
         server.quit()
-        current_app.logger.info(f'SMTP email sent successfully to {to_email}')
+        current_app.logger.info(f'SMTP email sent successfully to {_mask_email(to_email)}')
         return True
     except Exception as e:
         current_app.logger.warning(f'SMTP send failed: {e}')
@@ -207,7 +217,7 @@ def login():
         # Fallback alias matching for admin accounts
         if not user and email.lower() in ('admin@smart.com', 'admin@smartcart.com'):
             cur.execute(
-                "SELECT user_id, name, password, role, email_verified FROM Users WHERE LOWER(email) IN ('admin@smartcart.com', 'admin@smart.com') OR role = 'admin'"
+                "SELECT user_id, name, password, role, email_verified FROM Users WHERE LOWER(email) IN ('admin@smartcart.com', 'admin@smart.com')"
             )
             user = cur.fetchone()
 
@@ -219,22 +229,13 @@ def login():
             except Exception:
                 ok = False
 
-            # Backward compatibility for plain-text passwords
-            if not ok and stored_pw == password:
+            # Backward compatibility for plain-text passwords (auto-migrates to secure hash)
+            if not ok and stored_pw and len(stored_pw) >= 6 and stored_pw == password:
                 ok = True
                 cur.execute(
                     "UPDATE Users SET password = :p, email_verified = 1 WHERE user_id = :p_uid",
                     {'p': generate_password_hash(password), 'p_uid': user[0]},
                 )
-
-            # Auto-recovery for admin accounts with legacy/seed password hashes
-            if not ok and (user[3] == 'admin' or email.lower() in ('admin@smartcart.com', 'admin@smart.com')):
-                if password in ('mission_654321', 'mission', 'admin123'):
-                    ok = True
-                    cur.execute(
-                        "UPDATE Users SET password = :p, email_verified = 1 WHERE user_id = :p_uid",
-                        {'p': generate_password_hash(password), 'p_uid': user[0]},
-                    )
 
         record_login_attempt(cur, email, ok)
         get_db().commit()

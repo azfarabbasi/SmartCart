@@ -3,6 +3,7 @@ from flask import Blueprint, current_app, flash, redirect, render_template, requ
 from blueprints.auth.decorators import admin_required, login_required
 from auth_tokens import current_user_id
 from db import get_db
+from extensions import limiter
 from security import log_admin_action
 from uploads import process_upload, save_upload, validate_upload
 from validators import validate_rating, validate_required_text
@@ -11,6 +12,7 @@ feedback_bp = Blueprint('feedback', __name__)
 
 
 @feedback_bp.route('/product/<int:product_id>/feedback', methods=['POST'])
+@limiter.limit('5 per minute')
 @login_required
 def submit_feedback(product_id):
     rating_raw = request.form.get('rating')
@@ -51,6 +53,7 @@ def submit_feedback(product_id):
 
 
 @feedback_bp.route('/product-suggestions', methods=['POST'])
+@limiter.limit('5 per minute')
 @login_required
 def submit_product_suggestion():
     description = request.form.get('description', '').strip()

@@ -1,15 +1,17 @@
 import os
+import random
 import re
 from urllib.parse import quote
 
 import oracledb
-from flask import (Blueprint, abort, current_app, flash, redirect,
+from flask import (Blueprint, abort, current_app, flash, make_response, redirect,
                     render_template, request, session, url_for)
 
 import sitesettings
 from activity import log_activity
 from blueprints.auth.decorators import login_required
-from auth_tokens import current_user_id
+from auth_tokens import clear_auth_cookie, current_user_id
+from extensions import limiter
 from db import get_db
 from slugs import slugify
 from uploads import process_upload, save_upload, validate_upload
@@ -640,6 +642,7 @@ def _get_user_default_address(cur, user_id):
 
 # ── CHECKOUT / ORDERS ────────────────────────────────────────────
 @customer_bp.route('/checkout', methods=['GET', 'POST'])
+@limiter.limit('5 per minute', methods=['POST'])
 @login_required
 def checkout():
     cur = get_db().cursor()
@@ -1000,6 +1003,58 @@ def profile():
         'customer/profile.html', user=user, order_count=order_count,
         wishlist_count=wishlist_count, recent_ledger=recent_ledger,
     )
+
+
+@customer_bp.route('/account/delete', methods=['POST'])
+@limiter.limit('3 per minute')
+@login_required
+def delete_account():
+    """Customer self-service account deletion & PII anonymization flow."""
+    password = request.form.get('confirm_password', '').strip()
+    user_id = current_user_id()
+    if not password:
+        flash('Please enter your password to confirm account deletion.', 'error')
+        return redirect(url_for('customer.profile'))
+
+    cur = get_db().cursor()
+    cur.execute("SELECT password, role FROM Users WHERE user_id = :1", [user_id])
+    row = cur.fetchone()
+    if not row:
+        return redirect(url_for('customer.index'))
+
+    stored_hash, role = row
+    from werkzeug.security import check_password_hash
+    if role == 'admin':
+        flash('Admin accounts cannot be deleted through customer self-service.', 'error')
+        return redirect(url_for('customer.profile'))
+
+    if not check_password_hash(stored_hash, password):
+        flash('Incorrect password. Account deletion cancelled.', 'error')
+        return redirect(url_for('customer.profile'))
+
+    # Anonymize PII in Users table while preserving order records for accounting integrity
+    anonymized_email = f"deleted_{user_id}_{random.randint(1000, 9999)}@smartcart.internal"
+    cur.execute(
+        """
+        UPDATE Users 
+        SET name = 'Deleted User', 
+            email = :1, 
+            password = 'DELETED_ACCOUNT', 
+            email_verified = 0,
+            loyalty_points_balance = 0
+        WHERE user_id = :2
+        """,
+        [anonymized_email, user_id],
+    )
+    # Clear active cart and wishlist
+    cur.execute("DELETE FROM Cart WHERE user_id = :1", [user_id])
+    cur.execute("DELETE FROM Wishlist WHERE user_id = :1", [user_id])
+    get_db().commit()
+
+    session.clear()
+    flash('Your account and personal data have been deleted successfully.', 'success')
+    return clear_auth_cookie(make_response(redirect(url_for('customer.index'))))
+
 
 
 # ── LOYALTY ──────────────────────────────────────────────────────

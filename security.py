@@ -10,6 +10,8 @@ def register_security_headers(app):
         resp.headers['X-Content-Type-Options'] = 'nosniff'
         resp.headers['X-Frame-Options'] = 'DENY'
         resp.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        resp.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
+        resp.headers['X-Permitted-Cross-Domain-Policies'] = 'none'
         # Every asset is self-hosted now (see build_assets.py), so nothing
         # third-party needs allow-listing. 'unsafe-inline' stays on style-src
         # only, for the style="" attributes and the print stylesheet.
@@ -25,8 +27,8 @@ def register_security_headers(app):
             "form-action 'self'; "
             "frame-ancestors 'none'"
         )
-        if app.config.get('SESSION_COOKIE_SECURE'):
-            resp.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        if app.config.get('SESSION_COOKIE_SECURE') or not app.config.get('DEBUG'):
+            resp.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
         return resp
 
     @app.errorhandler(413)

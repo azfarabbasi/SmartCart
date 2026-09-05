@@ -23,6 +23,23 @@ from validators import (validate_cost_price, validate_coupon_discount,
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 limiter.limit('60 per minute')(admin_bp)
 
+
+@admin_bp.before_request
+def enforce_admin_access():
+    """Defense-in-depth gate: ensure every route under /admin requires verified admin access."""
+    user_id = current_user_id()
+    if user_id is None or current_user_role() != 'admin':
+        flash('Admin access required.', 'error')
+        return redirect(url_for('auth.login', next=request.full_path))
+
+    cur = get_db().cursor()
+    cur.execute("SELECT role FROM Users WHERE user_id = :v_user_id", {'v_user_id': user_id})
+    row = cur.fetchone()
+    if not row or row[0] != 'admin':
+        flash('Admin access required.', 'error')
+        return redirect(url_for('auth.login', next=request.full_path))
+
+
 MAX_PRODUCT_MEDIA = 10
 
 
