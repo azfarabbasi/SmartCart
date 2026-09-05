@@ -9,7 +9,7 @@ from flask import (Blueprint, current_app, flash, jsonify, redirect, render_temp
 
 import sitesettings
 from blueprints.auth.decorators import admin_required
-from auth_tokens import current_user_id
+from auth_tokens import current_user_id, current_user_role
 from cache_service import (invalidate_banners, invalidate_brands,
                            invalidate_categories, invalidate_site_settings)
 from db import get_db
