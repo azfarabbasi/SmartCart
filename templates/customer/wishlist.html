@@ -15,7 +15,7 @@
                             <div class="wishlist-item-image">
                                 {% if item[4] %}
                                     <a href="{{ url_for('customer.product_detail', product_id=item[1]) }}">
-                                        <img src="{{ media_url(item[4]) }}" alt="{{ item[2] }}" loading="lazy">
+                                        <img src="{{ media_url(item[4]) }}" alt="{{ item[2] }}" loading="lazy" decoding="async">
                                     </a>
                                 {% else %}
                                     <div class="no-image"><i class="bi bi-image"></i></div>

@@ -34,7 +34,7 @@
         </main>
     </div>
 
-    <script src="{{ url_for('static', filename='dist/app.js') }}?v={{ asset_version }}"></script>
+    <script defer src="{{ url_for('static', filename='dist/app.js') }}?v={{ asset_version }}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

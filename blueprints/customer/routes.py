@@ -1,8 +1,5 @@
 import os
 import re
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from urllib.parse import quote
 
 import oracledb
@@ -41,6 +38,10 @@ def notify_admin_stock_issue(cur, product_name, requested, available, customer_n
     if not admin_email:
         return
     try:
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
         msg = MIMEMultipart('alternative')
         msg['Subject'] = f'SmartCart stock alert: {product_name}'
         msg['From'] = current_app.config['EMAIL_USER']

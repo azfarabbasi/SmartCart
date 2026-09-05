@@ -7,13 +7,40 @@ the model rises gradually with data sufficiency. No component here ever
 claims near-100% confidence.
 """
 import datetime
+import importlib.util
 
-try:
-    import numpy as np
-    import pandas as pd
-    _HAS_ML_DEPS = True
-except ImportError:
-    _HAS_ML_DEPS = False
+np = None
+pd = None
+
+
+def _get_ml_deps():
+    global np, pd
+    if np is None or pd is None:
+        try:
+            import numpy as _np
+            import pandas as _pd
+            np = _np
+            pd = _pd
+        except ImportError:
+            return None, None
+    return np, pd
+
+
+def _check_ml_deps():
+    if np is not None and pd is not None:
+        return True
+    try:
+        return bool(importlib.util.find_spec('numpy') and importlib.util.find_spec('pandas'))
+    except Exception:
+        return False
+
+
+class _MLDepsChecker:
+    def __bool__(self):
+        return _check_ml_deps()
+
+
+_HAS_ML_DEPS = _MLDepsChecker()
 
 from .seasonal import boost_weight_for_date, get_events_in_range
 
@@ -38,6 +65,7 @@ MODEL_BLEND_WEIGHT = {
 
 
 def load_daily_sales(cur):
+    _get_ml_deps()
     cur.execute(
         """
         SELECT TRUNC(order_date) AS day, SUM(total_amount) AS total
@@ -90,6 +118,7 @@ def naive_seasonal_baseline(daily_series, cur, target_date):
 
 
 def _engineer_features(daily_series):
+    _get_ml_deps()
     df = pd.DataFrame({'total': daily_series.values}, index=daily_series.index)
     df['dow'] = df.index.dayofweek
     df['day_num'] = np.arange(len(df))
@@ -112,6 +141,7 @@ def train_model(daily_series):
 
 
 def _predict_with_model(model, daily_series, target_date):
+    _get_ml_deps()
     day_num = (pd.Timestamp(target_date) - daily_series.index.min()).days
     row = {'day_num': day_num}
     for d in range(7):
@@ -130,7 +160,8 @@ def blend_forecast(naive_value, model_value, level):
 
 
 def forecast_next_week_and_month(cur):
-    if not _HAS_ML_DEPS:
+    _get_ml_deps()
+    if not _HAS_ML_DEPS or pd is None or np is None:
         return {
             'sufficiency_level': 'unavailable',
             'confidence_pct': 0,

@@ -51,7 +51,7 @@
                             {% if fb[5] == 'video' %}
                                 <video src="{{ media_url(fb[4]) }}" controls></video>
                             {% else %}
-                                <img src="{{ media_url(fb[4]) }}" alt="feedback media">
+                                <img src="{{ media_url(fb[4]) }}" alt="feedback media" loading="lazy" decoding="async">
                             {% endif %}
                         </div>
                     {% endif %}
@@ -67,7 +67,7 @@
                                     {% if reply[2] == 'video' %}
                                         <video src="{{ media_url(reply[1]) }}" controls></video>
                                     {% else %}
-                                        <img src="{{ media_url(reply[1]) }}" alt="reply media">
+                                        <img src="{{ media_url(reply[1]) }}" alt="reply media" loading="lazy" decoding="async">
                                     {% endif %}
                                 </div>
                             {% endif %}

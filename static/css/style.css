@@ -3916,3 +3916,24 @@ a:hover {
     }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Lazy Loading & Media Performance
+   ═══════════════════════════════════════════════════════════ */
+img[loading="lazy"] {
+    content-visibility: auto;
+}
+
+img.lazy-loaded {
+    animation: scFadeIn 0.35s ease forwards;
+}
+
+@keyframes scFadeIn {
+    from {
+        opacity: 0.75;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+

@@ -2,8 +2,6 @@ import csv
 import io
 import os
 import re
-import openpyxl
-import pdfplumber
 
 
 def clean_price_value(raw_val):
@@ -87,6 +85,8 @@ def extract_from_pdf(pdf_source):
     Returns:
       (products_list, csv_text)
     """
+    import pdfplumber
+
     products = []
 
     with pdfplumber.open(pdf_source) as pdf:
@@ -250,6 +250,8 @@ def extract_from_csv(csv_content):
 
 def extract_from_excel(file_stream_or_path):
     """Extract product names and catalogue prices from Excel (.xlsx / .xls)."""
+    import openpyxl
+
     products = []
     wb = openpyxl.load_workbook(file_stream_or_path, data_only=True)
     ws = wb.active

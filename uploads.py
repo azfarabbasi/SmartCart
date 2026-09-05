@@ -3,13 +3,27 @@ import io
 import os
 import uuid
 
-from PIL import Image, ImageOps
+Image = None
+ImageOps = None
+_imaging_initialized = False
 
-try:
-    import pillow_heif
-    pillow_heif.register_heif_opener()
-except Exception:
-    pass
+
+def _ensure_imaging():
+    global Image, ImageOps, _imaging_initialized
+    if not _imaging_initialized:
+        _imaging_initialized = True
+        try:
+            from PIL import Image as _Image, ImageOps as _ImageOps
+            Image = _Image
+            ImageOps = _ImageOps
+        except ImportError:
+            pass
+        try:
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+        except Exception:
+            pass
+    return Image, ImageOps
 
 IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif', 'bmp', 'tiff', 'hpec'}
 VIDEO_EXTENSIONS = {'mp4', 'webm', 'mov'}
@@ -55,6 +69,9 @@ def _sniff_ok(header, ext, kind):
 def convert_image_to_base64(raw_bytes, ext='jpg', max_dimension=1400, quality=85):
     """Convert raw image bytes (JPG, JPEG, PNG, HEIC, HEIF, WEBP, etc.) to an optimized Base64 data URL."""
     try:
+        _ensure_imaging()
+        if Image is None:
+            raise ImportError("Pillow Image not available")
         img = Image.open(io.BytesIO(raw_bytes))
         try:
             img = ImageOps.exif_transpose(img)

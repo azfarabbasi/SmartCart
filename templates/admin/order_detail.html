@@ -182,6 +182,7 @@
                             <div class="text-center p-2 rounded" style="background: #0d1117; max-height: 380px; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer;"
                                  onclick="openDetailReceiptModal('{{ media_url(order[10]) }}')">
                                 <img src="{{ media_url(order[10]) }}" alt="Payment Receipt" class="img-fluid rounded shadow-sm"
+                                     loading="lazy" decoding="async"
                                      style="max-height: 350px; object-fit: contain; transition: transform 0.2s;"
                                      onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                             </div>

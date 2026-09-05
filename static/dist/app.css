@@ -78,12 +78,15 @@
 .bi-clipboard-x::before { content: "\f28f"; }
 .bi-clock-history::before { content: "\f292"; }
 .bi-clock::before { content: "\f293"; }
+.bi-cloud-arrow-up-fill::before { content: "\f296"; }
 .bi-cloud-arrow-up::before { content: "\f297"; }
+.bi-cloud-upload-fill::before { content: "\f2bf"; }
 .bi-controller::before { content: "\f2d4"; }
 .bi-cpu-fill::before { content: "\f2d5"; }
 .bi-cpu::before { content: "\f2d6"; }
 .bi-credit-card::before { content: "\f2dc"; }
 .bi-cursor-fill::before { content: "\f2e1"; }
+.bi-dash-circle::before { content: "\f2e6"; }
 .bi-display::before { content: "\f302"; }
 .bi-download::before { content: "\f30a"; }
 .bi-envelope-fill::before { content: "\f32c"; }
@@ -95,6 +98,8 @@
 .bi-eye-slash::before { content: "\f340"; }
 .bi-eye::before { content: "\f341"; }
 .bi-file-earmark-code::before { content: "\f362"; }
+.bi-file-earmark-excel::before { content: "\f368"; }
+.bi-file-earmark-spreadsheet-fill::before { content: "\f388"; }
 .bi-file-earmark-text::before { content: "\f38b"; }
 .bi-filter-circle::before { content: "\f3c5"; }
 .bi-filter::before { content: "\f3ca"; }
@@ -104,6 +109,7 @@
 .bi-geo-alt-fill::before { content: "\f3e7"; }
 .bi-geo-alt::before { content: "\f3e8"; }
 .bi-gift::before { content: "\f3ec"; }
+.bi-globe2::before { content: "\f3ef"; }
 .bi-grid-fill::before { content: "\f3fb"; }
 .bi-hand-thumbs-up::before { content: "\f407"; }
 .bi-headphones::before { content: "\f413"; }
@@ -129,6 +135,7 @@
 .bi-megaphone-fill::before { content: "\f483"; }
 .bi-palette-fill::before { content: "\f4b0"; }
 .bi-palette::before { content: "\f4b1"; }
+.bi-paperclip::before { content: "\f4b3"; }
 .bi-patch-check-fill::before { content: "\f4b5"; }
 .bi-patch-check::before { content: "\f4b6"; }
 .bi-pencil-square::before { content: "\f4ca"; }
@@ -154,6 +161,7 @@
 .bi-shield-exclamation::before { content: "\f530"; }
 .bi-shield-lock::before { content: "\f538"; }
 .bi-shield-slash-fill::before { content: "\f53c"; }
+.bi-shield-slash::before { content: "\f53d"; }
 .bi-shop::before { content: "\f543"; }
 .bi-slash-circle::before { content: "\f567"; }
 .bi-sliders::before { content: "\f56b"; }
@@ -182,6 +190,7 @@
 .bi-cash-coin::before { content: "\f632"; }
 .bi-check-lg::before { content: "\f633"; }
 .bi-coin::before { content: "\f634"; }
+.bi-file-earmark-pdf::before { content: "\f63e"; }
 .bi-pin-map-fill::before { content: "\f64b"; }
 .bi-plus-lg::before { content: "\f64d"; }
 .bi-x-lg::before { content: "\f659"; }
@@ -189,10 +198,12 @@
 .bi-graph-up-arrow::before { content: "\f673"; }
 .bi-magic::before { content: "\f675"; }
 .bi-bluetooth::before { content: "\f682"; }
+.bi-robot::before { content: "\f6b1"; }
 .bi-send::before { content: "\f6c0"; }
 .bi-ticket-perforated::before { content: "\f6ca"; }
 .bi-usb-symbol::before { content: "\f6dd"; }
 .bi-bag-heart::before { content: "\f705"; }
+.bi-filetype-csv::before { content: "\f743"; }
 .bi-trash3::before { content: "\f78b"; }
 .bi-fire::before { content: "\f7f6"; }
 .bi-building-check::before { content: "\f868"; }
@@ -4114,4 +4125,25 @@ a:hover {
         opacity: 1;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Lazy Loading & Media Performance
+   ═══════════════════════════════════════════════════════════ */
+img[loading="lazy"] {
+    content-visibility: auto;
+}
+
+img.lazy-loaded {
+    animation: scFadeIn 0.35s ease forwards;
+}
+
+@keyframes scFadeIn {
+    from {
+        opacity: 0.75;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 

@@ -41,7 +41,7 @@
                                 <td>
                                     <div class="table-image">
                                         {% if product[6] and not product[7] %}
-                                            <img src="{{ media_url(product[6]) }}" alt="{{ product[1] }}">
+                                            <img src="{{ media_url(product[6]) }}" alt="{{ product[1] }}" loading="lazy" decoding="async">
                                         {% else %}
                                             <div class="no-image-small"><i class="bi bi-image"></i></div>
                                         {% endif %}

@@ -31,7 +31,7 @@
                                                 {% if item.type == 'video' %}
                                                     <video src="{{ media_url(item.path) }}" class="gallery-media-item" controls playsinline></video>
                                                 {% else %}
-                                                    <img src="{{ media_url(item.path) }}" alt="{{ product[1] }} - View {{ loop.index }}" class="gallery-media-item main-product-img" loading="{% if loop.first %}eager{% else %}lazy{% endif %}">
+                                                    <img src="{{ media_url(item.path) }}" alt="{{ product[1] }} - View {{ loop.index }}" class="gallery-media-item main-product-img" loading="{% if loop.first %}eager{% else %}lazy{% endif %}" {% if loop.first %}fetchpriority="high"{% else %}decoding="async"{% endif %}>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -60,7 +60,7 @@
                                                 <div class="thumb-video-icon"><i class="bi bi-play-circle-fill"></i></div>
                                                 <video src="{{ media_url(item.path) }}#t=0.5" class="gallery-thumb-img"></video>
                                             {% else %}
-                                                <img src="{{ media_url(item.path) }}" alt="Thumbnail {{ loop.index }}" class="gallery-thumb-img">
+                                                <img src="{{ media_url(item.path) }}" alt="Thumbnail {{ loop.index }}" class="gallery-thumb-img" loading="lazy" decoding="async">
                                             {% endif %}
                                         </button>
                                     {% endfor %}
@@ -68,7 +68,7 @@
                             {% endif %}
                         {% elif product[5] %}
                             <div class="gallery-main-viewport single-image">
-                                <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" class="gallery-media-item main-product-img" id="singleMainImg">
+                                <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" class="gallery-media-item main-product-img" id="singleMainImg" loading="eager" fetchpriority="high">
                             </div>
                         {% else %}
                             <div class="no-image-large">
@@ -328,7 +328,7 @@
                 <div class="d-flex align-items-center gap-3 overflow-hidden">
                     <div class="sticky-bar-thumb rounded border overflow-hidden d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px; background: #1a1a1a;">
                         {% if product[5] %}
-                            <img src="{{ media_url(product[5]) }}" id="stickyBarImg" alt="{{ product[1] }}" style="width: 100%; height: 100%; object-fit: contain;">
+                            <img src="{{ media_url(product[5]) }}" id="stickyBarImg" alt="{{ product[1] }}" loading="lazy" decoding="async" style="width: 100%; height: 100%; object-fit: contain;">
                         {% else %}
                             <i class="bi bi-image text-muted"></i>
                         {% endif %}

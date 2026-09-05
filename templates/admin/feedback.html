@@ -35,7 +35,7 @@
                             {% if fb[7] == 'video' %}
                                 <video src="{{ media_url(fb[6]) }}" controls></video>
                             {% else %}
-                                <img src="{{ media_url(fb[6]) }}" alt="feedback media">
+                                <img src="{{ media_url(fb[6]) }}" alt="feedback media" loading="lazy" decoding="async">
                             {% endif %}
                         </div>
                     {% endif %}

@@ -1,17 +1,11 @@
 import os
 import re
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from urllib.parse import quote
 
 
 import oracledb
 from flask import (Blueprint, current_app, flash, jsonify, redirect, render_template,
                     request, Response, url_for)
-from catalog_parser import parse_catalogue_file
-from catalog_scraper import (verify_official_url, search_product_on_official_website,
-                             scrape_official_product_details)
 
 import sitesettings
 from blueprints.auth.decorators import admin_required
@@ -34,6 +28,10 @@ MAX_PRODUCT_MEDIA = 10
 
 def send_payment_verified_email(to_email, name, order_id, total_amount):
     try:
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
         msg = MIMEMultipart('alternative')
         msg['Subject'] = f'SmartCart - Payment Verified for Order #{order_id}'
         msg['From'] = current_app.config['EMAIL_USER']
@@ -445,6 +443,8 @@ def import_catalogue():
 @admin_bp.route('/products/import-catalogue/verify-url', methods=['POST'])
 @admin_required
 def verify_catalogue_url():
+    from catalog_scraper import verify_official_url
+
     data = request.get_json(silent=True) or request.form
     url = (data.get('url') or '').strip()
     ok, clean_url, site_title, err = verify_official_url(url)
@@ -490,6 +490,10 @@ def process_catalogue():
     default_category_id = request.form.get('default_category_id')
     default_brand_id = request.form.get('default_brand_id')
     skip_missing = request.form.get('skip_missing', '1') == '1'
+
+    from catalog_parser import parse_catalogue_file
+    from catalog_scraper import (search_product_on_official_website,
+                                 scrape_official_product_details)
 
     # Step 1: Parse catalogue file (converts PDF to CSV and normalizes items)
     ok, parse_err, parsed_items, csv_text = parse_catalogue_file(file, markup=markup)

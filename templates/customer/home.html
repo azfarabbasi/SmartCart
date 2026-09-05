@@ -81,7 +81,7 @@
                 {% for cat in nav_categories|default([]) %}
                     <a href="{{ url_for('customer.category', slug=cat.slug) }}" class="cat-circle-card {% if active_slug == cat.slug %}active{% endif %}">
                         {% if cat.image %}
-                            <img src="{{ cat.image }}" alt="{{ cat.name }}" class="cat-circle-avatar" style="object-fit: cover; border: 2px solid var(--accent);">
+                            <img src="{{ cat.image }}" alt="{{ cat.name }}" class="cat-circle-avatar" loading="lazy" decoding="async" style="object-fit: cover; border: 2px solid var(--accent);">
                         {% else %}
                             <div class="cat-circle-avatar cat-bg-{{ loop.index % 6 }}">
                                 <i class="bi {{ cat.icon|default('bi-tag') }}"></i>
@@ -117,7 +117,7 @@
                     {% for b in brands %}
                         <a href="{{ url_for('customer.search', q=b[6]|default(b[1])) }}" class="brand-pill-card">
                             {% if b[3] %}
-                                <img src="{{ b[3] }}" alt="{{ b[1] }}" class="brand-badge-circle border border-secondary" style="object-fit: cover; background: #fff;">
+                                <img src="{{ b[3] }}" alt="{{ b[1] }}" class="brand-badge-circle border border-secondary" loading="lazy" decoding="async" style="object-fit: cover; background: #fff;">
                             {% else %}
                                 <div class="brand-badge-circle {{ b[5]|default('brand-bg-dark') }}">{{ b[4]|default(b[1][:2]|upper) }}</div>
                             {% endif %}
@@ -205,7 +205,7 @@
                             <div class="product-image-container position-relative">
                                 <a href="{{ url_for('customer.product_detail', product_id=product[0]) }}" class="product-image">
                                     {% if product[5] %}
-                                        <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" loading="lazy">
+                                        <img src="{{ media_url(product[5]) }}" alt="{{ product[1] }}" loading="lazy" decoding="async">
                                     {% else %}
                                         <div class="no-image"><i class="bi bi-image"></i></div>
                                     {% endif %}

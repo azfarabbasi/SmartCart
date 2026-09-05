@@ -20,7 +20,7 @@
                             {% if s[5] == 'video' %}
                                 <video src="{{ media_url(s[4]) }}" controls></video>
                             {% else %}
-                                <img src="{{ media_url(s[4]) }}" alt="suggested product media">
+                                <img src="{{ media_url(s[4]) }}" alt="suggested product media" loading="lazy" decoding="async">
                             {% endif %}
                         </div>
                     {% endif %}

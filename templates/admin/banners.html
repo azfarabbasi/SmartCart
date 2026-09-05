@@ -242,7 +242,7 @@
                                     <label class="form-label fw-bold text-dark mb-1">Custom Banner Image</label>
                                     {% if b[7] %}
                                         <div class="mb-2 d-flex align-items-center gap-3 p-2 bg-light rounded border">
-                                            <img src="{{ b[7] }}" alt="Banner" class="rounded" style="max-height: 48px; object-fit: contain;">
+                                            <img src="{{ b[7] }}" alt="Banner" class="rounded" loading="lazy" decoding="async" style="max-height: 48px; object-fit: contain;">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="remove_image" value="1" id="removeImg{{ b[0] }}">
                                                 <label class="form-check-label text-danger small fw-bold" for="removeImg{{ b[0] }}">Remove image</label>

@@ -731,25 +731,77 @@ function showToast(message, type = 'info') {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Lazy Load Images
+// Lazy Load Images & Progressive Media
 // ═══════════════════════════════════════════════════════════
 function lazyLoadImages() {
-    const images = document.querySelectorAll('img[data-src]');
+    function markLoaded(img) {
+        img.classList.add('lazy-loaded');
+    }
+
+    const nativeLazyImages = document.querySelectorAll('img[loading="lazy"]');
+    nativeLazyImages.forEach(function(img) {
+        if (img.complete) {
+            markLoaded(img);
+        } else {
+            img.addEventListener('load', function() { markLoaded(img); }, { once: true });
+            img.addEventListener('error', function() { markLoaded(img); }, { once: true });
+        }
+    });
+
+    const hasNativeLazy = 'loading' in HTMLImageElement.prototype;
+    const lazySelector = hasNativeLazy 
+        ? 'img[data-src], [data-bg]' 
+        : 'img[data-src], [data-bg], img[loading="lazy"]';
     
-    const imageObserver = new IntersectionObserver(function(entries, observer) {
-        entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src;
-                img.removeAttribute('data-src');
-                observer.unobserve(img);
-            }
+    const lazyElements = document.querySelectorAll(lazySelector);
+    if (!lazyElements.length) return;
+
+    if ('IntersectionObserver' in window) {
+        const mediaObserver = new IntersectionObserver(function(entries, observer) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    if (el.dataset.src) {
+                        el.src = el.dataset.src;
+                        el.removeAttribute('data-src');
+                    }
+                    if (el.dataset.bg) {
+                        el.style.backgroundImage = "url('" + el.dataset.bg + "')";
+                        el.removeAttribute('data-bg');
+                    }
+                    if (el.tagName === 'IMG') {
+                        if (el.complete) {
+                            markLoaded(el);
+                        } else {
+                            el.addEventListener('load', function() { markLoaded(el); }, { once: true });
+                        }
+                    } else {
+                        markLoaded(el);
+                    }
+                    observer.unobserve(el);
+                }
+            });
+        }, {
+            rootMargin: '200px 0px',
+            threshold: 0.01
         });
-    });
-    
-    images.forEach(function(img) {
-        imageObserver.observe(img);
-    });
+
+        lazyElements.forEach(function(el) {
+            mediaObserver.observe(el);
+        });
+    } else {
+        lazyElements.forEach(function(el) {
+            if (el.dataset.src) {
+                el.src = el.dataset.src;
+                el.removeAttribute('data-src');
+            }
+            if (el.dataset.bg) {
+                el.style.backgroundImage = "url('" + el.dataset.bg + "')";
+                el.removeAttribute('data-bg');
+            }
+            markLoaded(el);
+        });
+    }
 }
 
 // ═══════════════════════════════════════════════════════════
